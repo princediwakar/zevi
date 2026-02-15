@@ -35,6 +35,9 @@ export default function QuestionListScreen() {
     loadMore,
     searchQuestions,
   } = useQuestionsStore();
+  
+  const { progress } = useProgressStore();
+  const { user } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<QuestionCategory | undefined>(
@@ -42,6 +45,14 @@ export default function QuestionListScreen() {
   );
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | undefined>();
   const [isSearching, setIsSearching] = useState(false);
+
+  // Get category progress for header
+  const categoryProgress = React.useMemo(() => {
+    if (!selectedCategory || !progress) return { completed: 0, total: 0 };
+    const completed = progress.category_progress?.[selectedCategory] || 0;
+    const total = questions.length;
+    return { completed, total };
+  }, [selectedCategory, progress, questions.length]);
 
   useEffect(() => {
     loadQuestions();
@@ -99,7 +110,12 @@ export default function QuestionListScreen() {
         >
           <Text style={styles.backText}>← BACK</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{getCategoryName()}</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>{getCategoryName()}</Text>
+          {categoryProgress.total > 0 && (
+            <Text style={styles.headerProgress}>{categoryProgress.completed}/{categoryProgress.total} DONE</Text>
+          )}
+        </View>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -218,11 +234,22 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     letterSpacing: theme.swiss.letterSpacing.normal,
   },
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1,
+  },
   headerTitle: {
     fontSize: theme.swiss.fontSize.heading - 6,
     fontWeight: theme.swiss.fontWeight.bold,
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,
+  },
+  headerProgress: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    marginTop: 2,
   },
   headerSpacer: {
     width: 80,
