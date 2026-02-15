@@ -73,17 +73,17 @@ const UserAvatar = ({ name, size = 80 }: { name?: string; size?: number }) => {
 const StatCard = ({
   value,
   label,
-  icon,
+  code,
   color = theme.colors.primary[500],
 }: {
   value: string | number;
   label: string;
-  icon: string;
+  code: string;
   color?: string;
 }) => (
   <Card variant="filled" padding={4} style={styles.statCard}>
-    <View style={[styles.statIconContainer, { backgroundColor: color + '15' }]}>
-      <BodyLG style={styles.statIcon}>{icon}</BodyLG>
+    <View style={[styles.statCodeContainer, { backgroundColor: color + '15' }]}>
+      <H3 style={[styles.statCode, { color }]}>{code}</H3>
     </View>
     <Spacer size={theme.spacing[2]} />
     <H3 style={[styles.statValue, { color }]}>{value}</H3>
@@ -105,8 +105,8 @@ const SubscriptionBadge = ({ tier }: { tier: SubscriptionTier }) => {
         },
       ]}
     >
-      <BodySM style={{ color: isPremium ? theme.colors.semantic.warning : theme.colors.neutral[600], fontWeight: '600' }}>
-        {isPremium ? '⭐ PREMIUM' : 'FREE'}
+      <BodySM style={{ color: isPremium ? theme.colors.semantic.warning : theme.colors.neutral[600], fontWeight: '700', letterSpacing: 1 }}>
+        {isPremium ? 'PREMIUM' : 'FREE'}
       </BodySM>
     </View>
   );
@@ -114,12 +114,12 @@ const SubscriptionBadge = ({ tier }: { tier: SubscriptionTier }) => {
 
 // Quick action button
 const QuickActionButton = ({
-  icon,
+  code,
   label,
   onPress,
   variant = 'default',
 }: {
-  icon: string;
+  code: string;
   label: string;
   onPress: () => void;
   variant?: 'default' | 'danger';
@@ -132,7 +132,9 @@ const QuickActionButton = ({
     ]}
   >
     <Row style={styles.quickActionContent}>
-      <BodyLG style={styles.quickActionIcon}>{icon}</BodyLG>
+      <View style={styles.quickActionCodeContainer}>
+        <H4 style={[styles.quickActionCode, variant === 'danger' && { color: theme.colors.semantic.error }]}>{code}</H4>
+      </View>
       <BodyMD
         style={[
           styles.quickActionLabel,
@@ -284,25 +286,25 @@ export default function ProfileScreen() {
             <StatCard
               value={userXP.toLocaleString()}
               label="Total XP"
-              icon="⚡"
+              code="XP"
               color={theme.colors.primary[500]}
             />
             <StatCard
               value={userStreak}
               label="Day Streak"
-              icon="🔥"
+              code="ST"
               color={theme.colors.semantic.warning}
             />
             <StatCard
               value={questionsCompleted}
               label="Questions"
-              icon="✓"
+              code="Q"
               color={theme.colors.semantic.success}
             />
             <StatCard
               value={userLevel}
               label="Level"
-              icon="⭐"
+              code="LV"
               color={theme.colors.semantic.info}
             />
           </Grid>
@@ -318,11 +320,11 @@ export default function ProfileScreen() {
               style={[styles.premiumCard, { borderColor: theme.colors.semantic.warning }]}
             >
               <Row style={styles.premiumContent}>
-                <View style={styles.premiumIcon}>
-                  <H2>⭐</H2>
+                <View style={[styles.premiumIcon, { backgroundColor: theme.colors.semantic.warning + '15' }]}>
+                  <H2 style={{ color: theme.colors.semantic.warning }}>PRO</H2>
                 </View>
                 <Column style={styles.premiumText}>
-                  <BodyLG style={{ fontWeight: '600' }}>Upgrade to Premium</BodyLG>
+                  <BodyLG style={{ fontWeight: '700' }}>Upgrade to Premium</BodyLG>
                   <BodySM color="secondary">Advanced analytics & more</BodySM>
                 </Column>
               </Row>
@@ -342,19 +344,19 @@ export default function ProfileScreen() {
           </LabelSM>
           <Card variant="outline" padding={0} style={styles.actionsCard}>
             <QuickActionButton
-              icon="⚙️"
+              code="SET"
               label="App Settings"
               onPress={() => navigation.navigate('Settings')}
             />
             <View style={styles.actionDivider} />
             <QuickActionButton
-              icon="📊"
+              code="PRG"
               label="View Progress"
               onPress={() => navigation.navigate('ProgressTab' as any)}
             />
             <View style={styles.actionDivider} />
             <QuickActionButton
-              icon="❓"
+              code="HLP"
               label="Help & Support"
               onPress={() => Alert.alert('Coming Soon', 'Help center will be available soon!')}
             />
@@ -371,7 +373,7 @@ export default function ProfileScreen() {
             {isGuest && (
               <>
                 <QuickActionButton
-                  icon="👤"
+                  code="NEW"
                   label="Create Account"
                   onPress={() => navigation.navigate('Auth' as any)}
                 />
@@ -379,7 +381,7 @@ export default function ProfileScreen() {
               </>
             )}
             <QuickActionButton
-              icon="🚪"
+              code={isGuest ? 'CLR' : 'OUT'}
               label={isGuest ? 'Clear Guest Data' : 'Sign Out'}
               variant="danger"
               onPress={handleLogout}
@@ -489,15 +491,16 @@ const styles = StyleSheet.create({
   statCard: {
     alignItems: 'center',
   },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  statCodeContainer: {
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
   },
-  statIcon: {
-    fontSize: 20,
+  statCode: {
+    fontSize: 16,
+    fontWeight: '700',
   },
   statValue: {
     marginBottom: theme.spacing[1],
@@ -545,12 +548,23 @@ const styles = StyleSheet.create({
   quickActionContent: {
     alignItems: 'center',
   },
-  quickActionIcon: {
+  quickActionCodeContainer: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: theme.spacing[4],
-    width: 24,
+    backgroundColor: theme.colors.neutral[100],
+    borderWidth: 2,
+    borderColor: theme.colors.border.light,
+  },
+  quickActionCode: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.text.primary,
   },
   quickActionLabel: {
-    fontWeight: '500',
+    fontWeight: '600',
   },
   actionDivider: {
     height: 1,

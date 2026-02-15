@@ -5,52 +5,60 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { theme } from '../theme';
-import { FRAMEWORKS } from '../data/frameworks';
-import { QuestionCategory, QUESTION_CATEGORIES } from '../types';
 import { useProgressStore } from '../stores/progressStore';
 import { useLearningPathStore } from '../stores/learningPathStore';
 import { useAuth } from '../hooks/useAuth';
-import { Spacer, H1, H2, BodySM } from '../components';
-import { CheckCircle, ArrowRight } from 'lucide-react-native';
+import { Spacer } from '../components';
+import { Lesson } from '../types';
 
 type LearnScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LearnScreen'>;
 
-// Swiss design: minimal, high contrast
-const CATEGORY_INFO: Record<QuestionCategory, { label: string; icon: string; color: string }> = {
-  product_sense: { label: 'Product Sense', icon: '💡', color: '#2563EB' },
-  execution: { label: 'Execution', icon: '⚡', color: '#7C3AED' },
-  strategy: { label: 'Strategy', icon: '🎯', color: '#059669' },
-  behavioral: { label: 'Behavioral', icon: '👤', color: '#F59E0B' },
-  technical: { label: 'Technical', icon: '🔧', color: '#EC4899' },
-  estimation: { label: 'Estimation', icon: '📊', color: '#14B8A6' },
-  pricing: { label: 'Pricing', icon: '💰', color: '#64748B' },
-  ab_testing: { label: 'A/B Testing', icon: '🧪', color: '#EF4444' },
-};
-
-interface CategoryWithProgress {
-  category: QuestionCategory;
-  label: string;
-  icon: string;
-  color: string;
-  completed: number;
-  total: number;
-}
-
+// SWISS DESIGN: Sharp, bold, minimal
 export default function LearnScreen() {
   const navigation = useNavigation<LearnScreenNavigationProp>();
   const { user, isGuest, guestId } = useAuth();
-  const { progress, fetchProgress, readinessScore, fetchWeakAreas } = useProgressStore();
+  const { progress, fetchProgress, fetchWeakAreas } = useProgressStore();
   const { units, fetchPath } = useLearningPathStore();
   const [refreshing, setRefreshing] = useState(false);
 
   const userId = user?.id || guestId;
+
+  // Get completed lesson IDs
+  const completedLessonIds = React.useMemo(() => {
+    return new Set(progress?.completed_lessons || []);
+  }, [progress?.completed_lessons]);
+
+  // Get the next uncompleted lesson (today's lesson)
+  const todaysLesson = React.useMemo((): Lesson | null => {
+    if (!units || units.length === 0) return null;
+    
+    const allLessons: Lesson[] = [];
+    units.forEach((unit) => {
+      if (unit.lessons) {
+        allLessons.push(...unit.lessons);
+      }
+    });
+    
+    for (const lesson of allLessons) {
+      if (!completedLessonIds.has(lesson.id)) {
+        return lesson;
+      }
+    }
+    return null;
+  }, [units, completedLessonIds]);
+
+  // Calculate totals
+  const totalLessonsCompleted = completedLessonIds.size;
+  const totalLessons = React.useMemo(() => {
+    if (!units) return 0;
+    return units.reduce((sum, unit) => sum + (unit.lessons?.length || 0), 0);
+  }, [units]);
 
   // Fetch data on focus
   useFocusEffect(
@@ -73,86 +81,44 @@ export default function LearnScreen() {
     setRefreshing(false);
   }, [userId, isGuest, fetchPath, fetchProgress, fetchWeakAreas]);
 
-  // Group units by category and calculate progress
-  const categoriesWithProgress = useMemo((): CategoryWithProgress[] => {
-    const completedLessonIds = new Set(progress?.completed_lessons || []);
-    
-    // Count lessons by category
-    const categoryMap = new Map<QuestionCategory, { completed: number; total: number }>();
-    
-    QUESTION_CATEGORIES.forEach(cat => {
-      categoryMap.set(cat, { completed: 0, total: 0 });
-    });
-    
-    units.forEach(unit => {
-      const category = (unit as any).pathCategory || 'product_sense';
-      const catData = categoryMap.get(category) || { completed: 0, total: 0 };
-      catData.total += (unit.lessons?.length || 0);
-      catData.completed += (unit.lessons?.filter((l: any) => completedLessonIds.has(l.id)).length || 0);
-      categoryMap.set(category, catData);
-    });
-    
-    return QUESTION_CATEGORIES.map(cat => {
-      const data = categoryMap.get(cat) || { completed: 0, total: 0 };
-      const info = CATEGORY_INFO[cat];
-      return {
-        category: cat,
-        label: info.label,
-        icon: info.icon,
-        color: info.color,
-        completed: data.completed,
-        total: data.total,
-      };
-    });
-  }, [units, progress]);
+  const streak = progress?.current_streak || 0;
 
-  // Calculate overall stats
-  const totalLessons = categoriesWithProgress.reduce((sum, c) => sum + c.total, 0);
-  const totalCompleted = categoriesWithProgress.reduce((sum, c) => sum + c.completed, 0);
-  const progressPercent = totalLessons > 0 ? Math.round((totalCompleted / totalLessons) * 100) : 0;
-
-  const handleCategoryPress = (category: QuestionCategory) => {
-    navigation.navigate('CategoryDetail', { category });
+  const handleStartLesson = () => {
+    if (todaysLesson) {
+      navigation.navigate('LessonScreen', { lessonId: todaysLesson.id });
+    }
   };
 
-  const currentReadiness = readinessScore || progress?.readiness_score || 0;
+  const handleBrowseCategories = () => {
+    navigation.navigate('CategoryDetail', { category: 'product_sense' });
+  };
+
+  // Get lesson type emoji
+  const getLessonEmoji = (type: string) => {
+    switch (type) {
+      case 'learn': return '01';
+      case 'drill': return '02';
+      case 'pattern': return '03';
+      case 'full_practice': return '04';
+      case 'quiz': return '05';
+      default: return '00';
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Swiss header - bold bar */}
       <View style={styles.header}>
-        <H1 style={styles.title}>LEARN</H1>
-        <BodySM color="secondary" style={styles.headerSubtitle}>
-          {totalCompleted}/{totalLessons} lessons completed
-        </BodySM>
-        
-        {/* Progress bar */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
-          </View>
-          <Text style={styles.progressText}>{progressPercent}%</Text>
-        </View>
-
-        {/* Stats row */}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>🔥</Text>
-            <Text style={styles.statValue}>{progress?.current_streak || 0}</Text>
-            <Text style={styles.statLabel}>streak</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>⭐</Text>
-            <Text style={styles.statValue}>{totalCompleted * 10}</Text>
-            <Text style={styles.statLabel}>XP</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>🎯</Text>
-            <Text style={styles.statValue}>{currentReadiness}%</Text>
-            <Text style={styles.statLabel}>ready</Text>
-          </View>
+        <Text style={styles.headerTitle}>LEARN</Text>
+        <View style={styles.headerRight}>
+          <Text style={styles.headerCount}>
+            {totalLessonsCompleted}/{totalLessons}
+          </Text>
+          {streak > 0 && (
+            <View style={styles.streakBox}>
+              <Text style={styles.streakText}>{streak}</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -164,58 +130,92 @@ export default function LearnScreen() {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh}
-            tintColor="#2563EB"
+            tintColor="#000000"
           />
         }
       >
-        {/* Categories with Progress */}
-        <Text style={styles.sectionTitle}>YOUR LEARNING PATHS</Text>
-        
-        {categoriesWithProgress.map((cat) => {
-          const catProgress = cat.total > 0 ? Math.round((cat.completed / cat.total) * 100) : 0;
-          const hasLessons = cat.total > 0;
-          
-          return (
-            <TouchableOpacity
-              key={cat.category}
-              style={styles.categoryCard}
-              onPress={() => handleCategoryPress(cat.category)}
-              activeOpacity={0.7}
+        {/* Heavy separator */}
+        <View style={styles.separator} />
+
+        {/* ============================================ */}
+        {/* ALL DONE STATE */}
+        {/* ============================================ */}
+        {totalLessonsCompleted > 0 && !todaysLesson && (
+          <View style={styles.doneContent}>
+            <View style={styles.doneLine} />
+            <Text style={styles.doneTitle}>COMPLETE</Text>
+            <Text style={styles.doneSubtitle}>All lessons done</Text>
+            <View style={styles.doneLine} />
+            
+            <TouchableOpacity 
+              style={styles.doneAction}
+              onPress={handleBrowseCategories}
             >
-              {/* Left: Icon */}
-              <View style={[styles.categoryIcon, { backgroundColor: cat.color + '15' }]}>
-                <Text style={styles.categoryIconText}>{cat.icon}</Text>
-              </View>
-
-              {/* Center: Info */}
-              <View style={styles.categoryInfo}>
-                <Text style={styles.categoryLabel}>{cat.label}</Text>
-                {hasLessons ? (
-                  <View style={styles.categoryProgressRow}>
-                    <View style={styles.categoryProgressBar}>
-                      <View 
-                        style={[
-                          styles.categoryProgressFill, 
-                          { width: `${catProgress}%`, backgroundColor: cat.color }
-                        ]} 
-                      />
-                    </View>
-                    <Text style={styles.categoryProgressText}>
-                      {cat.completed}/{cat.total}
-                    </Text>
-                  </View>
-                ) : (
-                  <Text style={styles.categoryEmpty}>No lessons yet</Text>
-                )}
-              </View>
-
-              {/* Right: Arrow */}
-              <ArrowRight size={20} color="#9CA3AF" />
+              <Text style={styles.doneActionText}>BROWSE →</Text>
             </TouchableOpacity>
-          );
-        })}
+          </View>
+        )}
 
-        <Spacer size={40} />
+        {/* ============================================ */}
+        {/* TODAY'S LESSON */}
+        {/* ============================================ */}
+        {todaysLesson && (
+          <View style={styles.lessonSection}>
+            <Text style={styles.sectionLabel}>TODAY'S LESSON</Text>
+            
+            {/* Lesson card - stark bordered */}
+            <View style={styles.lessonCard}>
+              {/* Number indicator */}
+              <Text style={styles.lessonNumber}>
+                {getLessonEmoji(todaysLesson.type)}
+              </Text>
+              
+              {/* Lesson name - heavy */}
+              <Text style={styles.lessonName}>{todaysLesson.name}</Text>
+              
+              {/* Meta info */}
+              <View style={styles.lessonMeta}>
+                <Text style={styles.lessonMetaText}>
+                  {todaysLesson.estimated_minutes || 5} MIN
+                </Text>
+                <Text style={styles.lessonMetaText}>
+                  +{todaysLesson.xp_reward || 10} XP
+                </Text>
+              </View>
+            </View>
+
+            {/* START button - bordered */}
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={handleStartLesson}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.startButtonText}>START</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ============================================ */}
+        {/* NO LESSONS */}
+        {/* ============================================ */}
+        {!todaysLesson && totalLessonsCompleted === 0 && (
+          <View style={styles.emptyContent}>
+            <Text style={styles.emptyTitle}>NO LESSONS</Text>
+            <TouchableOpacity onPress={handleBrowseCategories}>
+              <Text style={styles.emptyLink}>BROWSE →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.separator} />
+
+        {/* Bottom browse link */}
+        <TouchableOpacity 
+          style={styles.browseLink}
+          onPress={handleBrowseCategories}
+        >
+          <Text style={styles.browseLinkText}>BROWSE →</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -226,141 +226,188 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  
+  // Header - Swiss bold
   header: {
-    paddingTop: theme.spacing[8],
-    paddingBottom: theme.spacing[5],
-    paddingHorizontal: theme.spacing[6],
-    backgroundColor: '#2563EB',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 3,
+    borderBottomColor: '#000000',
+    backgroundColor: '#FFFFFF',
   },
-  title: {
-    color: '#FFFFFF',
+  headerTitle: {
     fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: -1,
+    fontWeight: '900',
+    letterSpacing: 2,
+    color: '#000000',
   },
-  headerSubtitle: {
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
-  },
-  progressContainer: {
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: theme.spacing[4],
     gap: 12,
   },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 3,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 3,
-  },
-  progressText: {
-    color: '#FFFFFF',
+  headerCount: {
     fontSize: 14,
     fontWeight: '600',
-    width: 40,
-    textAlign: 'right',
+    color: '#666666',
   },
-  statsRow: {
-    flexDirection: 'row',
-    marginTop: theme.spacing[4],
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 8,
-    padding: theme.spacing[3],
+  streakBox: {
+    borderWidth: 2,
+    borderColor: '#000000',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statIcon: {
-    fontSize: 18,
-  },
-  statValue: {
-    color: '#FFFFFF',
-    fontSize: 20,
+  streakText: {
+    fontSize: 14,
     fontWeight: '700',
-    marginTop: 2,
+    color: '#000000',
   },
-  statLabel: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
+  
+  // Scroll View
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: theme.spacing[6],
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
-  sectionTitle: {
+  
+  // Separator
+  separator: {
+    height: 3,
+    backgroundColor: '#000000',
+    marginBottom: 24,
+  },
+  
+  // Lesson Section
+  lessonSection: {
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    color: '#666666',
+    marginBottom: 16,
+  },
+  
+  // Lesson Card - bordered
+  lessonCard: {
+    borderWidth: 2,
+    borderColor: '#000000',
+    padding: 24,
+    marginBottom: 24,
+  },
+  lessonNumber: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#000000',
+    marginBottom: 16,
+  },
+  lessonName: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#000000',
+    lineHeight: 30,
+    marginBottom: 16,
+  },
+  lessonMeta: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  lessonMetaText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#666666',
     letterSpacing: 0.5,
-    marginBottom: theme.spacing[4],
   },
-  categoryCard: {
-    flexDirection: 'row',
+  
+  // START Button
+  startButton: {
+    borderWidth: 3,
+    borderColor: '#000000',
+    backgroundColor: '#000000',
+    paddingVertical: 18,
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: theme.spacing[4],
-    marginBottom: theme.spacing[3],
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
-  categoryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryIconText: {
-    fontSize: 24,
-  },
-  categoryInfo: {
-    flex: 1,
-    marginLeft: theme.spacing[4],
-  },
-  categoryLabel: {
+  startButtonText: {
     fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 3,
+  },
+  
+  // Done State
+  doneContent: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  doneLine: {
+    width: 40,
+    height: 3,
+    backgroundColor: '#000000',
+    marginVertical: 20,
+  },
+  doneTitle: {
+    fontSize: 36,
+    fontWeight: '900',
+    letterSpacing: 3,
+    color: '#000000',
+  },
+  doneSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666666',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  doneAction: {
+    marginTop: 32,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderWidth: 2,
+    borderColor: '#000000',
+  },
+  doneActionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: '#000000',
+  },
+  
+  // Empty State
+  emptyContent: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: 2,
+    color: '#000000',
+    marginBottom: 16,
+  },
+  emptyLink: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#000000',
-    marginBottom: 8,
+    letterSpacing: 1,
   },
-  categoryProgressRow: {
-    flexDirection: 'row',
+  
+  // Browse Link
+  browseLink: {
     alignItems: 'center',
-    gap: 8,
+    paddingVertical: 24,
   },
-  categoryProgressBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-  },
-  categoryProgressFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  categoryProgressText: {
+  browseLinkText: {
     fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  categoryEmpty: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontStyle: 'italic',
+    fontWeight: '600',
+    color: '#666666',
+    letterSpacing: 1,
   },
 });

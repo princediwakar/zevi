@@ -1,11 +1,45 @@
 # 🚀 Zevi - Elite Product Builder Playbook
 
-**Role:** You're an fully autonomous coding agent, that decides, debugs and builds till the app is functional and robust.
+**Role:** You're an fully autonomous coding agent, decides, debugs and builds till the app is functional and robust.
 **Capability:** Elite Product Builder & Senior Software Engineer
 **Mission:** Ship a world-class PM interview prep app with mobile-native AI coaching. Think Duolingo × PM coaching.
 
 ## 🎯 Core Product Concept
 Mobile-native PM interview prep with **framework mastery + pattern recognition**. AI analyzes framework application (not just answers). Differentiator: bullet outline builder + voice (no essays).
+
+## 🎯 Design Philosophy (Habit Building)
+**Bold. Immersive. One thing at a time.**
+- No clutter. No "AI slop" UI.
+- Every element must earn its place.
+- Full-screen experiences, not list views.
+- Big typography. Confident design.
+
+### The Four Tabs
+```
+┌─────────────┬─────────────┬─────────────┬─────────────┐
+│  PRACTICE   │    LEARN    │  PROGRESS   │   PROFILE   │
+└─────────────┴─────────────┴─────────────┴─────────────┘
+```
+
+### Tab 1: PRACTICE (Default View)
+When user opens app → ONE question. Bold.
+- Show personalized question (adaptive algorithm)
+- Big START button
+- Streak visible but not competing
+- "Done for today" full-screen state after completion
+
+### Tab 2: LEARN
+**Same philosophy as Practice: One lesson. Bold. Done.**
+- "Today's Lesson" hero (parallel to Practice)
+- Use existing unified streak (no separate lesson streak)
+- "Done learning" full-screen state
+- After lesson → prompt to practice
+
+### The Habit Flow
+1. **Open app** → See ONE question (bold)
+2. **Tap START** → Do the question
+3. **Done** → Full-screen celebration
+4. **Come back tomorrow** → New question
 
 ### Key Metrics to Ship
 - **Activation:** 75% complete onboarding → 80% finish first lesson
@@ -23,17 +57,28 @@ Mobile-native PM interview prep with **framework mastery + pattern recognition**
 - **FullPracticeLesson:** ✅ INTEGRATED - uses OutlineBuilder for step-by-step framework practice
 - **Database:** ✅ SEEDED - 2 learning paths, 5 units, 50 questions (with MCQ data)
 - **Quick Quiz:** ✅ WORKING - Multiple choice questions with proper UUIDs
+- **Four tabs:** Home/Learn/Progress/Profile navigation
+- **Streak tracking:** current_streak, longest_streak, last_practice_date
 
-### 🟡 IN PROGRESS / NEEDS POLISH
-- **AI Feedback (60%):** Basic service exists, needs framework-specific analysis (CIRCLES, STAR, METRICS)
-- **Learning Paths (100%):** Database seeded, units/lessons structure complete
-- **Lesson types:** Learn/Drill/Pattern basics exist, need swipeable cards & templates
-- **Progress Dashboard (40%):** Basic screen, needs mastery visualization & readiness calculation
+### 🔴 CRITICAL GAPS (Habit Building Implementation)
 
-### 🔴 CRITICAL GAPS (Block Launch)
-1. **AI Framework Analysis** - Core product differentiator, needs rubric-based evaluation
-2. **VoiceRecorder.tsx** - (voice → Whisper → AI analysis)
-3. **Premium Features:** Voice practice, mock interviews, advanced analytics
+**Phase 1: Practice Tab Redesign**
+- ❌ Today's Pick hero (simplify existing Home) - NEEDS BUILD
+- ❌ "Done for today" full-screen state - NEEDS BUILD
+- ❌ Remove clutter (keep question + streak + browse accessible)
+
+**Phase 2: Learn Tab Redesign**
+- ❌ Today's lesson hero - NEEDS BUILD
+- ❌ "Done learning" full-screen state - NEEDS BUILD
+- ❌ Track lessons completed (use unified streak) - NEEDS BUILD
+- ❌ Auto-jump to Practice after lesson - NEEDS BUILD
+
+**Phase 3: Database**
+- ❌ Add `total_lessons_completed` column - NEEDS BUILD
+
+**Phase 4: Connection**
+- ❌ Learn → Practice auto-connection after lesson - NEEDS BUILD
+- ❌ "Now practice what you learned" prompt - NEEDS BUILD
 
 ## 🏗️ Architecture Patterns
 

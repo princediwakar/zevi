@@ -14,14 +14,14 @@ import { PatternLesson } from './lessons/PatternLesson';
 import { FullPracticeLesson } from './lessons/FullPracticeLesson';
 import QuizLesson from './lessons/QuizLesson';
 
-// Lesson type labels for display
-const LESSON_TYPE_LABELS: Record<LessonType, { label: string; emoji: string; description: string }> = {
-  learn: { label: 'Learn', emoji: '📖', description: 'Learn the framework concepts' },
-  drill: { label: 'Drill', emoji: '🎯', description: 'Practice specific skills' },
-  pattern: { label: 'Pattern', emoji: '📝', description: 'Practice with outlines' },
-  full_practice: { label: 'Practice', emoji: '🚀', description: 'Complete interview practice' },
-  quiz: { label: 'Quiz', emoji: '✅', description: 'Test your knowledge' },
-  practice: { label: 'Practice', emoji: '✍️', description: 'Practice skills' },
+// Lesson type labels for display - Swiss Style with letter codes
+const LESSON_TYPE_LABELS: Record<LessonType, { label: string; code: string; description: string }> = {
+  learn: { label: 'LEARN', code: 'LRN', description: 'Learn the framework concepts' },
+  drill: { label: 'DRILL', code: 'DRL', description: 'Practice specific skills' },
+  pattern: { label: 'PATTERN', code: 'PAT', description: 'Practice with outlines' },
+  full_practice: { label: 'PRACTICE', code: 'PRX', description: 'Complete interview practice' },
+  quiz: { label: 'QUIZ', code: 'QZ', description: 'Test your knowledge' },
+  practice: { label: 'PRACTICE', code: 'PRX', description: 'Practice skills' },
 };
 
 export default function LessonScreen() {
@@ -164,7 +164,7 @@ export default function LessonScreen() {
     );
   }
 
-  const lessonTypeInfo = LESSON_TYPE_LABELS[lesson.type] || { label: 'Lesson', emoji: '📚', description: '' };
+  const lessonTypeInfo = LESSON_TYPE_LABELS[lesson.type] || { label: 'LESSON', code: 'LSN', description: '' };
 
   // Check if lesson is already completed
   const isAlreadyCompleted = progress?.completed_lessons?.includes(lesson.id) || false;
@@ -389,6 +389,16 @@ export default function LessonScreen() {
     }
   };
 
+  // Get lesson category for practice prompt
+  const lessonCategory = (lesson as any)?.category || 'product_sense';
+
+  // Handle practice now button - navigate to question list with category
+  const handlePracticeNow = () => {
+    setShowCompletionModal(false);
+    // @ts-expect-error - navigation typing issue with dynamic params
+    navigation.navigate('QuestionList', { category: lessonCategory });
+  };
+
   // Completion Modal
   if (showCompletionModal) {
     const nextLesson = getNextLesson();
@@ -397,13 +407,15 @@ export default function LessonScreen() {
     return (
       <View style={[styles.completionContainer, { backgroundColor: theme.colors.background }]}>
         <ScrollView contentContainerStyle={styles.completionContent}>
-          <Text style={styles.completionEmoji}>🎉</Text>
+          <View style={styles.completionCodeContainer}>
+            <Text style={styles.completionCode}>DONE</Text>
+          </View>
           <Text style={[styles.completionTitle, { color: theme.colors.text.primary }]}>
             Lesson Complete!
           </Text>
           
           <View style={[styles.xpCard, { backgroundColor: theme.colors.primary[50], borderColor: theme.colors.primary[200] }]}>
-            <Text style={[styles.xpLabel, { color: theme.colors.primary[700] }]}>XP Earned</Text>
+            <Text style={[styles.xpLabel, { color: theme.colors.primary[700] }]}>XP EARNED</Text>
             <Text style={[styles.xpValue, { color: theme.colors.primary[600] }]}>+{earnedXp}</Text>
           </View>
 
@@ -418,13 +430,26 @@ export default function LessonScreen() {
             </View>
           </View>
 
+          {/* Practice Now Button - Swiss Style */}
+          <TouchableOpacity 
+            style={[styles.practiceNowButton, { backgroundColor: theme.colors.primary[600] }]}
+            onPress={handlePracticeNow}
+          >
+            <Text style={styles.practiceNowButtonText}>
+              PRACTICE NOW
+            </Text>
+            <Text style={styles.practiceNowSubtext}>
+              {lessonCategory.replace('_', ' ').toUpperCase()} QUESTIONS
+            </Text>
+          </TouchableOpacity>
+
           {nextLesson ? (
             <TouchableOpacity 
               style={[styles.continueButton, { backgroundColor: theme.colors.primary[500] }]}
               onPress={handleContinueToNext}
             >
               <Text style={styles.continueButtonText}>
-                Continue to Next Lesson →
+                CONTINUE →
               </Text>
               <Text style={styles.nextLessonName}>
                 {nextLesson.name}
@@ -433,7 +458,7 @@ export default function LessonScreen() {
           ) : (
             <View style={[styles.completedAllCard, { backgroundColor: theme.colors.semantic.success + '20' }]}>
               <Text style={[styles.completedAllText, { color: theme.colors.semantic.success }]}>
-                🎊 You've completed this learning path!
+                PATH COMPLETE
               </Text>
             </View>
           )}
@@ -443,7 +468,7 @@ export default function LessonScreen() {
             onPress={handleGoBack}
           >
             <Text style={[styles.backButtonOutlineText, { color: theme.colors.text.secondary }]}>
-              Back to Learn
+              BACK TO LEARN
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -459,7 +484,9 @@ export default function LessonScreen() {
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerEmoji}>{lessonTypeInfo.emoji}</Text>
+          <View style={styles.headerCodeContainer}>
+            <Text style={styles.headerCode}>{lessonTypeInfo.code}</Text>
+          </View>
           <Text style={styles.headerTitle}>{lesson.name}</Text>
           <View style={styles.headerMeta}>
             <Text style={styles.headerMetaText}>
@@ -498,9 +525,20 @@ const styles = StyleSheet.create({
   headerContent: {
     alignItems: 'center',
   },
-  headerEmoji: {
-    fontSize: 40,
-    marginBottom: 8,
+  headerCodeContainer: {
+    width: 64,
+    height: 64,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
+  headerCode: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '700',
   },
   headerTitle: {
     color: 'white',
@@ -638,9 +676,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: '100%',
   },
-  completionEmoji: {
-    fontSize: 80,
-    marginBottom: 16,
+  completionCodeContainer: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#2563EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 4,
+    borderColor: '#1E40AF',
+  },
+  completionCode: {
+    color: 'white',
+    fontSize: 28,
+    fontWeight: '700',
   },
   completionTitle: {
     fontSize: 28,
@@ -755,5 +804,24 @@ const styles = StyleSheet.create({
   },
   markCompleteTextCompleted: {
     color: '#FFFFFF',
+  },
+  // Practice Now Button
+  practiceNowButton: {
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+  },
+  practiceNowButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  practiceNowSubtext: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    marginTop: 4,
   },
 });

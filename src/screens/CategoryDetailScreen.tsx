@@ -19,26 +19,26 @@ import { CheckCircle, ArrowRight } from 'lucide-react-native';
 type CategoryDetailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CategoryDetail'>;
 type CategoryDetailRouteProp = RouteProp<RootStackParamList, 'CategoryDetail'>;
 
-// Swiss design category info
-const CATEGORY_INFO: Record<QuestionCategory, { label: string; icon: string; color: string; description: string }> = {
-  product_sense: { label: 'Product Sense', icon: '💡', color: '#2563EB', description: 'Design, improve, and add features to products' },
-  execution: { label: 'Execution', icon: '⚡', color: '#7C3AED', description: 'Metrics, prioritization, and roadmap planning' },
-  strategy: { label: 'Strategy', icon: '🎯', color: '#059669', description: 'Business strategy and market analysis' },
-  behavioral: { label: 'Behavioral', icon: '👤', color: '#F59E0B', description: 'Leadership, teamwork, and conflicts' },
-  technical: { label: 'Technical', icon: '🔧', color: '#EC4899', description: 'Technical PM questions and system design' },
-  estimation: { label: 'Estimation', icon: '📊', color: '#14B8A6', description: 'Fermi estimates and guesstimates' },
-  pricing: { label: 'Pricing', icon: '💰', color: '#64748B', description: 'Pricing strategies and models' },
-  ab_testing: { label: 'A/B Testing', icon: '🧪', color: '#EF4444', description: 'Experiment design and analysis' },
+// Swiss design category info - with letter codes
+const CATEGORY_INFO: Record<QuestionCategory, { label: string; code: string; color: string; description: string }> = {
+  product_sense: { label: 'Product Sense', code: 'PS', color: '#2563EB', description: 'Design, improve, and add features to products' },
+  execution: { label: 'Execution', code: 'EX', color: '#7C3AED', description: 'Metrics, prioritization, and roadmap planning' },
+  strategy: { label: 'Strategy', code: 'ST', color: '#059669', description: 'Business strategy and market analysis' },
+  behavioral: { label: 'Behavioral', code: 'BH', color: '#F59E0B', description: 'Leadership, teamwork, and conflicts' },
+  technical: { label: 'Technical', code: 'TC', color: '#EC4899', description: 'Technical PM questions and system design' },
+  estimation: { label: 'Estimation', code: 'EST', color: '#14B8A6', description: 'Fermi estimates and guesstimates' },
+  pricing: { label: 'Pricing', code: 'PRC', color: '#64748B', description: 'Pricing strategies and models' },
+  ab_testing: { label: 'A/B Testing', code: 'AB', color: '#EF4444', description: 'Experiment design and analysis' },
 };
 
-// Lesson type configs
-const LESSON_TYPE_CONFIG: Record<string, { label: string; icon: string; bgColor: string }> = {
-  learn: { label: 'Learn', icon: '📖', bgColor: '#E0E7FF' },
-  drill: { label: 'Drill', icon: '🎯', bgColor: '#EDE9FE' },
-  pattern: { label: 'Pattern', icon: '📝', bgColor: '#D1FAE5' },
-  full_practice: { label: 'Practice', icon: '🚀', bgColor: '#D1FAE5' },
-  quiz: { label: 'Quiz', icon: '✅', bgColor: '#FEF3C7' },
-  practice: { label: 'Practice', icon: '✍️', bgColor: '#D1FAE5' },
+// Lesson type configs - with letter codes
+const LESSON_TYPE_CONFIG: Record<string, { label: string; code: string; bgColor: string }> = {
+  learn: { label: 'LEARN', code: 'LRN', bgColor: '#E0E7FF' },
+  drill: { label: 'DRILL', code: 'DRL', bgColor: '#EDE9FE' },
+  pattern: { label: 'PATTERN', code: 'PAT', bgColor: '#D1FAE5' },
+  full_practice: { label: 'PRACTICE', code: 'PRX', bgColor: '#D1FAE5' },
+  quiz: { label: 'QUIZ', code: 'QZ', bgColor: '#FEF3C7' },
+  practice: { label: 'PRACTICE', code: 'PRX', bgColor: '#D1FAE5' },
 };
 
 export default function CategoryDetailScreen() {
@@ -99,7 +99,9 @@ export default function CategoryDetailScreen() {
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         
-        <Text style={styles.categoryIcon}>{info.icon}</Text>
+        <View style={styles.categoryCodeContainer}>
+          <Text style={styles.categoryCode}>{info.code}</Text>
+        </View>
         <Text style={styles.categoryTitle}>{info.label}</Text>
         <Text style={styles.categoryDescription}>{info.description}</Text>
         
@@ -108,7 +110,7 @@ export default function CategoryDetailScreen() {
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: '#FFFFFF' }]} />
           </View>
-          <Text style={styles.progressText}>{completedCount}/{categoryLessons.length} completed</Text>
+          <Text style={styles.progressText}>{completedCount}/{categoryLessons.length} LESSONS COMPLETE</Text>
         </View>
       </View>
 
@@ -135,9 +137,9 @@ export default function CategoryDetailScreen() {
                 onPress={() => handleLessonPress(lesson.id)}
                 activeOpacity={0.7}
               >
-                {/* Type Badge */}
-                <View style={[styles.typeBadge, { backgroundColor: typeConfig.bgColor }]}>
-                  <Text style={styles.typeIcon}>{typeConfig.icon}</Text>
+                {/* Type Badge - Swiss Style */}
+                <View style={[styles.typeBadge, { backgroundColor: typeConfig.bgColor + '20', borderColor: typeConfig.bgColor, borderWidth: 2 }]}>
+                  <Text style={[styles.typeCode, { color: typeConfig.bgColor }]}>{typeConfig.code}</Text>
                 </View>
                 
                 {/* Lesson Info */}
@@ -148,13 +150,15 @@ export default function CategoryDetailScreen() {
                   <View style={styles.lessonMeta}>
                     <Text style={styles.lessonType}>{typeConfig.label}</Text>
                     <Text style={styles.metaDivider}>·</Text>
-                    <Text style={styles.lessonDuration}>{lesson.estimated_minutes || 10} min</Text>
+                    <Text style={styles.lessonDuration}>{lesson.estimated_minutes || 10} MIN</Text>
                   </View>
                 </View>
                 
                 {/* Status */}
                 {lesson.isCompleted ? (
-                  <CheckCircle size={20} color="#10B981" />
+                  <View style={styles.statusComplete}>
+                    <Text style={styles.statusCode}>✓</Text>
+                  </View>
                 ) : (
                   <ArrowRight size={20} color="#9CA3AF" />
                 )}
@@ -187,9 +191,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  categoryIcon: {
-    fontSize: 48,
-    marginBottom: theme.spacing[2],
+  categoryCodeContainer: {
+    width: 80,
+    height: 80,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing[3],
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
+  categoryCode: {
+    color: 'white',
+    fontSize: 28,
+    fontWeight: '700',
   },
   categoryTitle: {
     color: '#FFFFFF',
@@ -243,14 +258,26 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   typeBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  typeIcon: {
-    fontSize: 18,
+  typeCode: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  statusComplete: {
+    width: 28,
+    height: 28,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusCode: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
   },
   lessonInfo: {
     flex: 1,

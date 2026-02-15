@@ -184,14 +184,22 @@ export const TextInput: React.FC<TextInputProps> = ({
 
 /**
  * Specialized input variants
+ * SWISS STYLE: No emojis - use symbols instead
  */
 export const SearchInput: React.FC<Omit<TextInputProps, 'leftElement' | 'placeholder'>> = (props) => (
   <TextInput
-    leftElement={<Text>🔍</Text>}
-    placeholder="Search..."
+    leftElement={<Text style={styles.searchIcon}>⌕</Text>}
+    placeholder="SEARCH..."
     {...props}
   />
 );
+
+const styles = StyleSheet.create({
+  searchIcon: {
+    fontSize: 18,
+    color: '#71717A',
+  },
+});
 
 export const EmailInput: React.FC<Omit<TextInputProps, 'keyboardType' | 'autoCapitalize' | 'autoCorrect' | 'autoComplete'>> = (props) => (
   <TextInput

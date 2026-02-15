@@ -306,13 +306,13 @@ export default function QuickQuizScreen() {
         )}
       </View>
 
-      {/* Minimal close button */}
-      <GhostButton
-        style={styles.closeButton}
-        onPress={() => navigation.goBack()}
-      >
-        ✕
-      </GhostButton>
+  {/* Minimal close button - SWISS STYLE: No emoji */}
+  <GhostButton
+    style={styles.closeButton}
+    onPress={() => navigation.goBack()}
+  >
+    CLOSE
+  </GhostButton>
     </Container>
   );
 }

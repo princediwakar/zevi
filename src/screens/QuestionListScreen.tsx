@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Keyboard,
+  Text,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,7 +14,6 @@ import type { RootStackParamList } from '../navigation/types';
 import { QuestionCard } from '../components/QuestionCard';
 import { useQuestionsStore } from '../stores/questionsStore';
 import { QuestionCategory, Difficulty } from '../types';
-import { Container, H2, BodyLG, BodyMD, TextInput, PrimaryButton, Row, LabelSM } from '../components/ui';
 import { theme } from '../theme';
 
 type QuestionListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'QuestionList'>;
@@ -80,67 +80,83 @@ export default function QuestionListScreen() {
     }
   };
 
+  // Get category display name
+  const getCategoryName = () => {
+    if (!selectedCategory) return 'QUESTIONS';
+    return selectedCategory.replace('_', ' ').toUpperCase();
+  };
+
   return (
-    <Container variant="screen" padding="none" safeArea>
+    <View style={styles.container}>
+      {/* Swiss header */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-             <H2>{selectedCategory ? selectedCategory.replace('_', ' ').toUpperCase() : 'QUESTIONS'}</H2>
-        </View>
-
-        <View style={styles.searchContainer}>
-          <TextInput
-            variant="outline"
-            size="md"
-            placeholder="Search questions..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSubmitEditing={handleSearch}
-            returnKeyType="search"
-            fullWidth
-            rightElement={
-              searchQuery ? (
-                <TouchableOpacity onPress={handleClearSearch}>
-                  <BodyMD color="secondary">✕</BodyMD>
-                </TouchableOpacity>
-              ) : undefined
-            }
-          />
-        </View>
-
-        {!isSearching && (
-            <View style={styles.filterRow}>
-                {(['beginner', 'intermediate', 'advanced'] as Difficulty[]).map((diff) => (
-                    <TouchableOpacity 
-                        key={diff} 
-                        onPress={() => setSelectedDifficulty(selectedDifficulty === diff ? undefined : diff)}
-                        style={[
-                            styles.filterChip, 
-                            selectedDifficulty === diff && styles.filterChipActive
-                        ]}
-                    >
-                        <LabelSM 
-                            style={[
-                                styles.filterText,
-                                selectedDifficulty === diff && styles.filterTextActive
-                            ]}
-                        >
-                            {String(diff).toUpperCase()}
-                        </LabelSM>
-                    </TouchableOpacity>
-                ))}
-            </View>
-        )}
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backText}>← BACK</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{getCategoryName()}</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
+      {/* Search bar - bordered */}
+      <View style={styles.searchContainer}>
+        <TouchableOpacity 
+          style={styles.searchBar}
+          onPress={handleSearch}
+        >
+          {searchQuery ? (
+            <Text style={styles.searchClear} onPress={handleClearSearch}>✕</Text>
+          ) : null}
+          <Text style={searchQuery ? styles.searchText : styles.searchPlaceholder}>
+            {searchQuery || 'Search...'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Filter chips - bordered boxes */}
+      <View style={styles.filterRow}>
+        {(['beginner', 'intermediate', 'advanced'] as Difficulty[]).map((diff) => (
+          <TouchableOpacity 
+            key={diff} 
+            onPress={() => setSelectedDifficulty(selectedDifficulty === diff ? undefined : diff)}
+            style={[
+              styles.filterChip, 
+              selectedDifficulty === diff && styles.filterChipActive
+            ]}
+          >
+            <Text style={[
+              styles.filterText,
+              selectedDifficulty === diff && styles.filterTextActive
+            ]}>
+              {String(diff).toUpperCase()}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Heavy separator */}
+      <View style={styles.separator} />
+
+      {/* Questions list */}
       <FlatList
         data={questions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <QuestionCard
-            question={item}
+          <TouchableOpacity
+            style={styles.questionRow}
             onPress={() => navigation.navigate('QuestionDetail', { questionId: item.id })}
-            style={styles.card}
-          />
+            activeOpacity={0.7}
+          >
+            <Text style={styles.questionText} numberOfLines={2}>
+              {item.question_text}
+            </Text>
+            <View style={styles.questionMeta}>
+              <Text style={styles.questionMetaText}>{item.difficulty}</Text>
+              <Text style={styles.arrow}>→</Text>
+            </View>
+          </TouchableOpacity>
         )}
         contentContainerStyle={styles.listContent}
         onEndReached={handleLoadMore}
@@ -148,93 +164,177 @@ export default function QuestionListScreen() {
         ListFooterComponent={
           loading ? (
             <View style={styles.loader}>
-              <ActivityIndicator color={theme.colors.primary[500]} />
+              <ActivityIndicator color="#000000" />
             </View>
           ) : null
         }
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyContainer}>
-              <H2 style={styles.emptyTitle}>NO QUESTIONS FOUND</H2>
-              <BodyLG color="secondary" align="center" style={styles.emptySubtext}>
-                Try adjusting your filters or search terms
-              </BodyLG>
-              
-              <PrimaryButton
-                size="md"
+              <Text style={styles.emptyTitle}>NO QUESTIONS</Text>
+              <TouchableOpacity 
+                style={styles.resetButton}
                 onPress={() => {
                   handleClearSearch();
                   setSelectedDifficulty(undefined);
                 }}
               >
-                RESET FILTERS
-              </PrimaryButton>
+                <Text style={styles.resetText}>RESET</Text>
+              </TouchableOpacity>
             </View>
           ) : null
         }
       />
-    </Container>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: theme.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
-    paddingBottom: theme.spacing[4],
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  headerTop: {
-      paddingHorizontal: theme.spacing[6],
-      paddingTop: theme.spacing[4],
-      paddingBottom: theme.spacing[4],
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 3,
+    borderBottomColor: '#000000',
+  },
+  backButton: {
+    width: 80,
+  },
+  backText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#000000',
+    letterSpacing: 0.5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: '#000000',
+  },
+  headerSpacer: {
+    width: 80,
   },
   searchContainer: {
-    paddingHorizontal: theme.spacing[6],
-    paddingBottom: theme.spacing[4],
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#000000',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchText: {
+    fontSize: 14,
+    color: '#000000',
+    flex: 1,
+  },
+  searchPlaceholder: {
+    fontSize: 14,
+    color: '#999999',
+    flex: 1,
+  },
+  searchClear: {
+    fontSize: 14,
+    color: '#000000',
+    marginRight: 12,
+    fontWeight: '600',
   },
   filterRow: {
-      flexDirection: 'row',
-      paddingHorizontal: theme.spacing[6],
-      gap: theme.spacing[2],
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    gap: 8,
   },
-  // Swiss Style: sharp corners (no borderRadius)
   filterChip: {
-      paddingVertical: theme.spacing[2],
-      paddingHorizontal: theme.spacing[4],
-      borderWidth: 1,
-      borderColor: theme.colors.border.medium,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#000000',
   },
   filterChipActive: {
-      backgroundColor: theme.colors.primary[500],
-      borderColor: theme.colors.primary[500],
+    backgroundColor: '#000000',
   },
   filterText: {
-      color: theme.colors.text.secondary,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#000000',
+    letterSpacing: 0.5,
   },
   filterTextActive: {
-      color: theme.colors.text.inverse,
+    color: '#FFFFFF',
+  },
+  separator: {
+    height: 3,
+    backgroundColor: '#000000',
+    marginTop: 16,
   },
   listContent: {
-    padding: theme.spacing[6],
+    paddingHorizontal: 24,
   },
-  card: {
-      marginBottom: theme.spacing[4],
+  questionRow: {
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  questionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  questionMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  questionMetaText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666666',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  arrow: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000000',
   },
   loader: {
-    paddingVertical: theme.spacing[6],
+    paddingVertical: 24,
+    alignItems: 'center',
   },
   emptyContainer: {
-    padding: theme.spacing[8],
+    paddingVertical: 48,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: theme.spacing[10],
   },
   emptyTitle: {
-    marginBottom: theme.spacing[3],
-    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#000000',
+    letterSpacing: 1,
+    marginBottom: 16,
   },
-  emptySubtext: {
-    marginBottom: theme.spacing[8],
+  resetButton: {
+    borderWidth: 2,
+    borderColor: '#000000',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  resetText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: 1,
   },
 });

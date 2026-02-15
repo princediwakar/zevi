@@ -47,7 +47,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: theme.spacing[4],
+    paddingHorizontal: theme.spacing.screenPadding,
     paddingVertical: theme.spacing[4],
   },
   grid: {
@@ -61,8 +61,10 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing[4],
     paddingHorizontal: theme.spacing[3],
     backgroundColor: theme.colors.surface.primary,
-    borderWidth: 1,
+    borderWidth: theme.spacing.borderWidth.thin,
     borderColor: theme.colors.border.light,
+    // SWISS STYLE: Sharp edges
+    borderRadius: theme.spacing.borderRadius.none,
   },
   actionTitle: {
     fontSize: 14,
@@ -73,6 +75,8 @@ const styles = StyleSheet.create({
   actionSubtitle: {
     fontSize: 11,
     color: theme.colors.text.secondary,
-    marginTop: 2,
+    marginTop: theme.spacing[1],
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
   },
 });

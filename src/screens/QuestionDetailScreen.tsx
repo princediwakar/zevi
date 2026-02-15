@@ -6,7 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  Alert,
+  Text,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,22 +16,6 @@ import { usePracticeStore } from '../stores/practiceStore';
 import { useAuth } from '../hooks/useAuth';
 import { Question } from '../types';
 import * as practiceService from '../services/practiceService';
-import { 
-  Container, 
-  DisplayLG, 
-  H2,
-  H3, 
-  BodyLG, 
-  BodyMD, 
-  LabelSM, 
-  PrimaryButton, 
-  OutlineButton,
-  GhostButton,
-  Row,
-  Spacer,
-  HorizontalSpacer
-} from '../components/ui';
-import { QuestionCard } from '../components/QuestionCard';
 import { theme } from '../theme';
 
 type QuestionDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'QuestionDetail'>;
@@ -58,7 +42,6 @@ export default function QuestionDetailScreen() {
   const loadData = useCallback(async () => {
       if (!questionId) return;
       
-      // 1. Load Question if not present
       let currentQuestion = question;
       if (!currentQuestion) {
         setLoading(true);
@@ -68,11 +51,9 @@ export default function QuestionDetailScreen() {
       }
 
       if (currentQuestion) {
-          // 2. Load Related Questions
           const related = await getRelatedQuestions(currentQuestion.id, currentQuestion.category);
           setRelatedQuestions(related);
 
-          // 3. Check Completion Status
           const userId = user?.id || guestId;
           if (userId) {
               try {
@@ -89,7 +70,6 @@ export default function QuestionDetailScreen() {
       }
   }, [questionId, user, guestId, isGuest, getQuestionById, getRelatedQuestions]);
 
-  // Use useFocusEffect to reload data when returning to the screen (e.g. after practice)
   useFocusEffect(
     useCallback(() => {
       loadData();
@@ -98,23 +78,23 @@ export default function QuestionDetailScreen() {
 
   if (loading) {
     return (
-      <Container variant="screen" padding="lg" safeArea>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-        </View>
-      </Container>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#000000" />
+      </View>
     );
   }
 
   if (!question) {
     return (
-      <Container variant="screen" padding="lg" safeArea>
-        <View style={styles.centerContainer}>
-          <H3 style={{ color: theme.colors.semantic.error }}>QUESTION NOT FOUND</H3>
-          <Spacer size={theme.spacing[5]} />
-          <GhostButton onPress={() => navigation.goBack()}>GO BACK</GhostButton>
-        </View>
-      </Container>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>NOT FOUND</Text>
+        <TouchableOpacity 
+          style={styles.errorButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.errorButtonText}>BACK</Text>
+        </TouchableOpacity>
+      </View>
     );
   }
 
@@ -125,38 +105,27 @@ export default function QuestionDetailScreen() {
       return;
     }
 
-    // Validate question has a valid ID before starting
     if (!question || !question.id) {
       logger.error('Invalid question - cannot start practice');
       return;
     }
     
     try {
-      // Start session - this will validate the question exists in DB for non-guest users
       await startPractice(question, mode, userId, isGuest);
       
       if (mode === 'mcq') {
-         // Pass sourceQuestionId to enable returning to this question after quiz
          navigation.navigate('QuickQuiz', { questions: [question], sourceQuestionId: question.id });
       } else {
          navigation.navigate('TextPractice', { questionId: question.id });
       }
     } catch (error) {
       logger.error('Failed to start practice session:', error);
-      // For guest users or if question is from sample data, try to continue anyway
       if (isGuest) {
         if (mode === 'mcq') {
            navigation.navigate('QuickQuiz', { questions: [question], sourceQuestionId: question.id });
         } else {
            navigation.navigate('TextPractice', { questionId: question.id });
         }
-      } else {
-        // Show error for logged-in users
-        Alert.alert(
-          'Cannot Start Practice',
-          'This question is not available in the database. Please try refreshing or selecting a different question.',
-          [{ text: 'OK' }]
-        );
       }
     }
   };
@@ -166,248 +135,323 @@ export default function QuestionDetailScreen() {
   };
 
   return (
-    <Container variant="screen" padding="none" safeArea>
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Header Section */}
-        <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonTouchable}>
-                <LabelSM>← GO BACK</LabelSM>
-            </TouchableOpacity>
-        </View>
+    <View style={styles.container}>
+      {/* Swiss Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backText}>← BACK</Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* Metadata Badges */}
-        <Row style={styles.badges}>
-          <View style={styles.badge}>
-            <LabelSM style={styles.badgeText}>{question.category.replace('_', ' ')}</LabelSM>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Heavy separator */}
+        <View style={styles.separator} />
+
+        {/* Metadata - bordered boxes */}
+        <View style={styles.metaRow}>
+          <View style={styles.metaBox}>
+            <Text style={styles.metaText}>
+              {question.category.replace('_', ' ').toUpperCase()}
+            </Text>
           </View>
-          <HorizontalSpacer size={theme.spacing[2]} />
-          <View style={styles.badge}>
-            <LabelSM style={styles.badgeText}>{question.difficulty}</LabelSM>
+          <View style={styles.metaBox}>
+            <Text style={styles.metaText}>{String(question.difficulty).toUpperCase()}</Text>
           </View>
           {question.company && (
-            <>
-                <HorizontalSpacer size={theme.spacing[2]} />
-                <View style={styles.badge}>
-                <LabelSM style={styles.badgeText}>{question.company}</LabelSM>
-                </View>
-            </>
-          )}
-        </Row>
-
-        <Spacer size={theme.spacing[6]} />
-
-        {/* Massive Typography Question */}
-        {question.question_text.length > 100 ? (
-             <H2 style={styles.questionText}>{question.question_text}</H2>
-        ) : (
-             <DisplayLG style={styles.questionText}>{question.question_text}</DisplayLG>
-        )}
-
-        <Spacer size={theme.spacing[6]} />
-
-        {/* Framework Hint Section */}
-        <View style={styles.section}>
-             {showHint ? (
-                <View style={styles.hintContainer}>
-                    <Row style={styles.hintHeader}>
-                      <LabelSM>FRAMEWORK HINT</LabelSM>
-                      <TouchableOpacity onPress={() => setShowHint(false)}>
-                          <LabelSM style={{ color: theme.colors.primary[500] }}>HIDE</LabelSM>
-                      </TouchableOpacity>
-                    </Row>
-                    <BodyLG style={styles.hintText}>
-                      {question.framework_hint || 'No specific framework hint for this question.'}
-                    </BodyLG>
-                </View>
-             ) : (
-                 <OutlineButton 
-                    size="sm" 
-                    onPress={() => setShowHint(true)}
-                    style={styles.hintButton}
-                 >
-                     SHOW FRAMEWORK HINT
-                 </OutlineButton>
-             )}
-        </View>
-
-        {/* Expert Answer Section */}
-        <View style={styles.section}>
-             <LabelSM color="secondary" style={styles.sectionTitle}>EXPERT ANSWER</LabelSM>
-             <Spacer size={theme.spacing[2]} />
-             
-             {isCompleted || checkingCompletion ? (
-                 question.expert_answer ? (
-                    <View style={styles.expertAnswerCard}>
-                        <BodyLG>{question.expert_answer}</BodyLG>
-                    </View>
-                 ) : (
-                    <BodyMD color="secondary">No expert answer available for this question.</BodyMD>
-                 )
-             ) : (
-                <View style={styles.previewCard}>
-                    <BodyMD color="secondary" numberOfLines={3} style={styles.previewText}>
-                        {question.expert_answer || "Lorem ipsum dolor sit amet, consectetur adipiscing elit..."}
-                    </BodyMD>
-                    <View style={styles.blurOverlay}>
-                         <View style={styles.blurBadge}>
-                             <LabelSM style={styles.blurText}>COMPLETE TO UNLOCK</LabelSM>
-                         </View>
-                    </View>
-                </View>
-             )}
-        </View>
-
-        <Spacer size={theme.spacing[6]} />
-
-        {/* Related Questions Section */}
-        {relatedQuestions.length > 0 && (
-            <View style={styles.section}>
-                <LabelSM color="secondary" style={styles.sectionTitle}>RELATED QUESTIONS</LabelSM>
-                <Spacer size={theme.spacing[4]} />
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-                    {relatedQuestions.map(q => (
-                        <QuestionCard 
-                            key={q.id} 
-                            question={q} 
-                            onPress={navigateToQuestion} 
-                        />
-                    ))}
-                </ScrollView>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaText}>{question.company.toUpperCase()}</Text>
             </View>
+          )}
+        </View>
+
+        {/* Question Text - bold */}
+        <Text style={styles.questionText}>
+          {question.question_text}
+        </Text>
+
+        {/* Separator */}
+        <View style={styles.separator} />
+
+        {/* Hint Section */}
+        <View style={styles.section}>
+          {showHint ? (
+            <View style={styles.hintBox}>
+              <View style={styles.hintHeader}>
+                <Text style={styles.sectionLabel}>HINT</Text>
+                <TouchableOpacity onPress={() => setShowHint(false)}>
+                  <Text style={styles.hintHide}>HIDE</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.hintText}>
+                {question.framework_hint || 'No hint available.'}
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity 
+              style={styles.showHintButton}
+              onPress={() => setShowHint(true)}
+            >
+              <Text style={styles.showHintText}>SHOW HINT</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Expert Answer */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>ANSWER</Text>
+          
+          {isCompleted || checkingCompletion ? (
+            question.expert_answer ? (
+              <View style={styles.answerBox}>
+                <Text style={styles.answerText}>{question.expert_answer}</Text>
+              </View>
+            ) : (
+              <Text style={styles.noAnswer}>No answer available</Text>
+            )
+          ) : (
+            <View style={styles.lockedBox}>
+              <Text style={styles.lockedText}>COMPLETE TO UNLOCK</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Related Questions */}
+        {relatedQuestions.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>RELATED</Text>
+            {relatedQuestions.slice(0, 3).map(q => (
+              <TouchableOpacity
+                key={q.id}
+                style={styles.relatedRow}
+                onPress={() => navigateToQuestion(q)}
+              >
+                <Text style={styles.relatedText} numberOfLines={2}>
+                  {q.question_text}
+                </Text>
+                <Text style={styles.relatedArrow}>→</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         )}
 
+        <View style={styles.separator} />
       </ScrollView>
 
       {/* Action Footer */}
       <View style={styles.footer}>
-         <PrimaryButton
-           size="lg"
-           fullWidth
-           onPress={() => handleStartPractice('text')}
-           loading={practiceLoading}
-           disabled={practiceLoading}
-         >
-             START ANSWERING
-         </PrimaryButton>
+        <TouchableOpacity
+          style={styles.startButton}
+          onPress={() => handleStartPractice('text')}
+          disabled={practiceLoading}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.startButtonText}>START</Text>
+        </TouchableOpacity>
       </View>
-    </Container>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  centerContainer: {
+  loadingContainer: {
     flex: 1,
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  content: {
-    padding: theme.spacing[6], // 24px
-    paddingBottom: 120,
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#000000',
+    letterSpacing: 1,
+    marginBottom: 24,
+  },
+  errorButton: {
+    borderWidth: 2,
+    borderColor: '#000000',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+  },
+  errorButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: 1,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: theme.spacing[6],
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 3,
+    borderBottomColor: '#000000',
   },
-  backButtonTouchable: {
-    padding: theme.spacing[2],
-    marginLeft: -theme.spacing[2],
-  },
-  badges: {
-    flexWrap: 'wrap',
-  },
-  badge: {
-    borderWidth: 1,
-    borderColor: theme.colors.border.strong,
-    paddingHorizontal: theme.spacing[3],
-    paddingVertical: theme.spacing[1],
-    borderRadius: 0, 
-  },
-  badgeText: {
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: theme.colors.text.primary,
-  },
-  questionText: {
-    color: theme.colors.text.primary,
-  },
-  section: {
-    marginBottom: theme.spacing[8],
-  },
-  sectionTitle: {
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  hintContainer: {
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.primary[500],
-    paddingLeft: theme.spacing[4],
-    paddingVertical: theme.spacing[2],
-    backgroundColor: theme.colors.surface.secondary,
-  },
-  hintHeader: {
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing[4],
-  },
-  hintText: {
-    color: theme.colors.text.primary,
-  },
-  hintButton: {
+  backButton: {
     alignSelf: 'flex-start',
   },
-  expertAnswerCard: {
+  backText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#000000',
+    letterSpacing: 0.5,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: 24,
+  },
+  separator: {
+    height: 3,
+    backgroundColor: '#000000',
+    marginVertical: 24,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  metaBox: {
     borderWidth: 1,
-    borderColor: theme.colors.border.strong,
-    padding: theme.spacing[5],
-    backgroundColor: theme.colors.surface.secondary,
+    borderColor: '#000000',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  previewCard: {
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-    padding: theme.spacing[5],
-    position: 'relative',
-    backgroundColor: theme.colors.surface.primary,
+  metaText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#000000',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  previewText: {
-    opacity: 0.3,
-  },
-  blurOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '100%',
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  blurBadge: {
-    backgroundColor: theme.colors.surface.primary,
-    paddingHorizontal: theme.spacing[4],
-    paddingVertical: theme.spacing[2],
-    borderWidth: 1,
-    borderColor: theme.colors.primary[500],
-  },
-  blurText: {
-    color: theme.colors.primary[500],
-    letterSpacing: 1,
+  questionText: {
+    fontSize: 24,
     fontWeight: '700',
+    color: '#000000',
+    lineHeight: 32,
+    marginBottom: 8,
   },
-  horizontalScroll: {
-    marginHorizontal: -theme.spacing[6], // Negative margin to scroll edge-to-edge
-    paddingHorizontal: theme.spacing[6],
+  section: {
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666666',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  hintBox: {
+    borderWidth: 2,
+    borderColor: '#000000',
+    padding: 16,
+  },
+  hintHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  hintHide: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#000000',
+    letterSpacing: 0.5,
+  },
+  hintText: {
+    fontSize: 15,
+    color: '#000000',
+    lineHeight: 22,
+  },
+  showHintButton: {
+    borderWidth: 1,
+    borderColor: '#000000',
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  showHintText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#000000',
+    letterSpacing: 0.5,
+  },
+  answerBox: {
+    borderWidth: 1,
+    borderColor: '#000000',
+    padding: 16,
+  },
+  answerText: {
+    fontSize: 14,
+    color: '#000000',
+    lineHeight: 22,
+  },
+  noAnswer: {
+    fontSize: 14,
+    color: '#999999',
+    fontStyle: 'italic',
+  },
+  lockedBox: {
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    padding: 24,
+    alignItems: 'center',
+  },
+  lockedText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#999999',
+    letterSpacing: 1,
+  },
+  relatedRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  relatedText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#000000',
+    marginRight: 16,
+  },
+  relatedArrow: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000000',
   },
   footer: {
-    padding: theme.spacing[6],
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
-    backgroundColor: theme.colors.surface.primary,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    padding: 24,
+    borderTopWidth: 3,
+    borderTopColor: '#000000',
   },
-  button: {
-    marginBottom: theme.spacing[3],
+  startButton: {
+    backgroundColor: '#000000',
+    paddingVertical: 18,
+    alignItems: 'center',
+  },
+  startButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 2,
   },
 });

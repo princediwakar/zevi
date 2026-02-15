@@ -1,51 +1,60 @@
 import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, RefreshControl, ActivityIndicator, Text, SectionList, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, RefreshControl, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../hooks/useAuth';
 import { theme } from '../theme';
-import { 
-  QuestionTrackCard,
-  QuickActions,
-  Spacer,
-  H1,
-  H2,
-  BodyMD,
-  BodyLG,
-  Row,
-  Column,
-  Card,
-  HomeScreenSkeleton,
-  PrimaryButton,
-} from '../components';
-import { useLearningPathStore } from '../stores/learningPathStore';
+import { Spacer, HomeScreenSkeleton } from '../components';
 import { useProgressStore } from '../stores/progressStore';
 import { useQuestionsStore } from '../stores/questionsStore';
-import { QuestionCategory, QUESTION_CATEGORIES } from '../types';
+import { getPersonalizedQuestion } from '../services/questionService';
+import { Question } from '../types';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
 
+// SWISS DESIGN: Sharp, bold, minimal, high contrast
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user, isGuest, guestId } = useAuth();
   
-  const { path, units, loading: pathLoading, fetchPath } = useLearningPathStore();
-  const { progress, loading: progressLoading, fetchProgress, readinessScore, weakAreas, incorrectQuestions, fetchWeakAreas } = useProgressStore();
-  const { fetchQuestions, categoryStats, fetchCategoryStats } = useQuestionsStore();
+  const { progress, loading: progressLoading, fetchProgress } = useProgressStore();
+  const { fetchQuestions, fetchCategoryStats } = useQuestionsStore();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [todaysQuestion, setTodaysQuestion] = useState<Question | null>(null);
+  const [loadingQuestion, setLoadingQuestion] = useState(true);
+  
   const userId = user?.id || guestId || undefined;
+
+  // Check if user has practiced today
+  const hasPracticedToday = React.useMemo(() => {
+    if (!progress?.last_practice_date) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return progress.last_practice_date === today;
+  }, [progress?.last_practice_date]);
 
   const loadData = useCallback(async () => {
     if (userId) {
-      await fetchPath();
       await fetchProgress(userId, isGuest);
       await fetchQuestions({});
       await fetchCategoryStats();
-      await fetchWeakAreas(userId, isGuest);
+      
+      if (!hasPracticedToday) {
+        try {
+          setLoadingQuestion(true);
+          const question = await getPersonalizedQuestion(userId, isGuest);
+          setTodaysQuestion(question);
+        } catch (error) {
+          console.error('Error loading question:', error);
+        } finally {
+          setLoadingQuestion(false);
+        }
+      } else {
+        setLoadingQuestion(false);
+      }
     }
-  }, [userId, isGuest, fetchPath, fetchProgress, fetchQuestions, fetchCategoryStats, fetchWeakAreas]);
+  }, [userId, isGuest, fetchProgress, fetchQuestions, fetchCategoryStats, hasPracticedToday]);
 
   useFocusEffect(
     useCallback(() => {
@@ -59,357 +68,327 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const isLoading = pathLoading || (progressLoading && !progress);
-
+  const isLoading = progressLoading && !progress;
   const streak = progress?.current_streak || 0;
-  const totalQuestions = progress?.total_questions_completed || 0;
-  const readiness = readinessScore || progress?.readiness_score || 0;
 
-  const isNewUser = totalQuestions === 0;
-
-  const getCategoryMastery = (category: QuestionCategory): number => {
-    if (!progress?.category_progress) return 0;
-    return progress.category_progress[category] || 0;
-  };
-
-  const getCompletedCount = (category: QuestionCategory): number => {
-    const mastery = getCategoryMastery(category);
-    return Math.floor((mastery / 100) * (categoryStats[category] || 10));
-  };
-
-  const handleTrackPress = (category: QuestionCategory) => {
-    navigation.navigate('QuestionList', { category });
-  };
-
-  const handleDailyQuiz = () => navigation.navigate('QuickQuiz', { questionCount: 5 });
-  const handleRandomPractice = () => navigation.navigate('QuickQuiz', { questionCount: 1 });
-  
-  const handleReviewMistakes = () => {
-    if (incorrectQuestions.length > 0) {
-      const firstWrong = incorrectQuestions[0];
-      if (firstWrong?.question_id) {
-        navigation.navigate('QuestionDetail', { questionId: firstWrong.question_id });
-        return;
-      }
-    }
-    const targetCategory = weakAreas.length > 0 ? weakAreas[0].category : 'product_sense';
-    navigation.navigate('QuestionList', { category: targetCategory });
-  };
-  
-  const handleWeakAreas = () => {
-    if (weakAreas.length > 0) {
-      navigation.navigate('QuestionList', { category: weakAreas[0].category });
+  const handleStartQuestion = () => {
+    if (todaysQuestion) {
+      navigation.navigate('QuestionDetail', { questionId: todaysQuestion.id });
     } else {
-      navigation.navigate('QuestionList', { category: 'product_sense' });
-    }
-  };
-  
-  const handleStartPath = () => {
-    if (units.length > 0 && units[0].lessons?.length > 0) {
-      navigation.navigate('LessonScreen', { lessonId: units[0].lessons[0].id });
+      navigation.navigate('QuickQuiz', { questionCount: 1 });
     }
   };
 
-  if (isLoading && !path) {
+  const handleBrowseCategories = () => {
+    navigation.navigate('CategoryBrowse');
+  };
+
+  if (isLoading) {
     return <HomeScreenSkeleton />;
   }
 
-  const sections = [
-    ...(isNewUser ? [{
-      title: 'Welcome',
-      data: ['welcome'],
-      renderItem: () => (
-        <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeTitle}>👋 Welcome to Zevi!</Text>
-          <Text style={styles.welcomeSubtitle}>
-            Your personalized PM interview prep starts here. Try a sample question to see how it works.
-          </Text>
-          <TouchableOpacity 
-            style={styles.trySampleButton}
-            onPress={handleRandomPractice}
-            accessibilityLabel="Try a sample question"
-            accessibilityHint="Start with a practice question to see how Zevi works"
-            accessibilityRole="button"
-          >
-            <Text style={styles.trySampleButtonText}>Try a Sample Question →</Text>
-          </TouchableOpacity>
+  // ============================================
+  // SWISS STYLE: DONE FOR TODAY
+  // Stark, bold, black & white with accent
+  // ============================================
+  if (hasPracticedToday) {
+    return (
+      <View style={styles.doneContainer}>
+        {/* Stark black header bar */}
+        <View style={styles.doneHeader}>
+          <Text style={styles.doneHeaderText}>ZEVI</Text>
+          {streak > 0 && (
+            <View style={styles.streakBox}>
+              <Text style={styles.streakBoxText}>{streak}</Text>
+            </View>
+          )}
         </View>
-      ),
-    }] : []),
-    {
-      title: 'Quick Actions',
-      data: ['quick_actions'],
-      renderItem: () => (
-        <QuickActions
-          onDailyQuiz={handleDailyQuiz}
-          onRandomPractice={handleRandomPractice}
-          onReviewMistakes={handleReviewMistakes}
-          onWeakAreas={handleWeakAreas}
-        />
-      ),
-    },
-    {
-      title: 'Progress',
-      data: ['progress'],
-      renderItem: () => (
-        <View style={styles.statsGrid}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{streak}</Text>
-            <Text style={styles.statLabel}>STREAK</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{totalQuestions}</Text>
-            <Text style={styles.statLabel}>QUESTIONS</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{readiness}%</Text>
-            <Text style={styles.statLabel}>READY</Text>
-          </View>
-        </View>
-      ),
-    },
-    {
-      title: 'Tracks',
-      data: ['tracks'],
-      renderItem: () => (
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>PRACTICE TRACKS</Text>
-        </View>
-      ),
-    },
-    ...QUESTION_CATEGORIES.slice(0, 6).map((category) => ({
-      title: category,
-      data: [category],
-      renderItem: () => (
-        <View style={styles.trackCardWrapper}>
-          <QuestionTrackCard
-            category={category}
-            questionCount={categoryStats[category] || 0}
-            masteryLevel={getCategoryMastery(category)}
-            completedCount={getCompletedCount(category)}
-            onPress={() => handleTrackPress(category)}
-          />
-        </View>
-      ),
-    })),
-  ];
 
+        {/* Centered content with heavy line */}
+        <View style={styles.doneContent}>
+          <View style={styles.doneLine} />
+          <Text style={styles.doneTitle}>DONE</Text>
+          <Text style={styles.doneSubtitle}>Come back tomorrow</Text>
+          <View style={styles.doneLine} />
+        </View>
+
+        {/* Bottom action */}
+        <TouchableOpacity 
+          style={styles.doneAction}
+          onPress={handleBrowseCategories}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.doneActionText}>BROWSE →</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // ============================================
+  // SWISS STYLE: TODAY'S QUESTION
+  // Heavy typography, stark layout, sharp edges
+  // ============================================
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Row style={styles.headerRow}>
-          <Column>
-            <Text style={styles.greeting}>Welcome back</Text>
-            <H1 style={styles.title}>Ready to practice?</H1>
-          </Column>
-        </Row>
+      {/* Top bar - Swiss grid */}
+      <View style={styles.topBar}>
+        <Text style={styles.brand}>ZEVI</Text>
+        {streak > 0 && (
+          <View style={styles.streakBox}>
+            <Text style={styles.streakBoxText}>{streak}</Text>
+          </View>
+        )}
       </View>
 
-      <SectionList
-        sections={sections}
-        keyExtractor={(item, index) => `${item}-${index}`}
-        renderSectionHeader={({ section }) => {
-          if (section.data[0] === 'quick_actions' || 
-              section.data[0] === 'progress' ||
-              section.data[0] === 'tracks') {
-            return null;
-          }
-          return null;
-        }}
-        renderItem={({ item, section }) => section.renderItem()}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
-            tintColor={theme.colors.primary[500]} 
+            tintColor="#000" 
           />
         }
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      />
+      >
+        {/* Heavy separator line */}
+        <View style={styles.separator} />
+
+        {/* Question - extremely bold */}
+        <View style={styles.questionSection}>
+          {loadingQuestion ? (
+            <ActivityIndicator size="large" color="#000" />
+          ) : todaysQuestion ? (
+            <Text style={styles.questionText}>
+              {todaysQuestion.question_text}
+            </Text>
+          ) : (
+            <Text style={styles.noQuestion}>No question</Text>
+          )}
+        </View>
+
+        {/* Minimal metadata - bordered boxes */}
+        {todaysQuestion && (
+          <View style={styles.metaRow}>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaText}>
+                {todaysQuestion.category.replace('_', ' ')}
+              </Text>
+            </View>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaText}>{todaysQuestion.difficulty}</Text>
+            </View>
+            {todaysQuestion.company && (
+              <View style={styles.metaBox}>
+                <Text style={styles.metaText}>{todaysQuestion.company}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Heavy separator */}
+        <View style={styles.separator} />
+
+        {/* START - Large bordered button */}
+        <TouchableOpacity
+          style={styles.startButton}
+          onPress={handleStartQuestion}
+          disabled={loadingQuestion || !todaysQuestion}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.startButtonText}>START</Text>
+        </TouchableOpacity>
+
+        {/* Alternative link */}
+        <TouchableOpacity 
+          style={styles.altLink}
+          onPress={handleBrowseCategories}
+        >
+          <Text style={styles.altLinkText}>BROWSE →</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: theme.colors.background,
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background,
-  },
-  header: {
-    backgroundColor: theme.colors.primary[500],
-    paddingTop: theme.spacing[8],
-    paddingBottom: theme.spacing[6],
-    paddingHorizontal: theme.spacing[6],
-  },
-  headerRow: {
+  
+  // Top bar - Swiss grid
+  topBar: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 3,
+    borderBottomColor: '#000000',
   },
-  greeting: {
+  brand: {
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 2,
+    color: '#000000',
+  },
+  streakBox: {
+    borderWidth: 2,
+    borderColor: '#000000',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  streakBoxText: {
     fontSize: 14,
-    color: theme.colors.text.inverse,
-    opacity: 0.8,
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    color: '#000000',
   },
-  title: {
-    color: theme.colors.text.inverse,
-    letterSpacing: -1,
+  
+  // Scroll View
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
-    paddingTop: theme.spacing[4],
+    paddingHorizontal: 24,
+    paddingTop: 32,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    paddingHorizontal: theme.spacing[6],
-    gap: theme.spacing[3],
-    marginBottom: theme.spacing[4],
+  
+  // Separator line
+  separator: {
+    height: 3,
+    backgroundColor: '#000000',
+    marginBottom: 32,
   },
-  statBox: {
-    flex: 1,
-    paddingVertical: theme.spacing[4],
-    backgroundColor: theme.colors.surface.primary,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-    alignItems: 'center',
+  
+  // Question Section
+  questionSection: {
+    minHeight: 200,
+    justifyContent: 'center',
+    marginBottom: 24,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
+  questionText: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#000000',
+    lineHeight: 36,
     letterSpacing: -0.5,
   },
-  statLabel: {
-    fontSize: 10,
+  noQuestion: {
+    fontSize: 18,
     fontWeight: '600',
-    color: theme.colors.text.secondary,
-    letterSpacing: 1,
-    marginTop: 4,
+    color: '#999999',
   },
-  sectionHeader: {
-    paddingHorizontal: theme.spacing[6],
-    paddingVertical: theme.spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
-    marginTop: theme.spacing[2],
+  
+  // Meta row - bordered boxes
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 32,
   },
-  sectionTitle: {
+  metaBox: {
+    borderWidth: 1,
+    borderColor: '#000000',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  metaText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#000000',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  
+  // START Button - bordered, sharp
+  startButton: {
+    borderWidth: 3,
+    borderColor: '#000000',
+    backgroundColor: '#000000',
+    paddingVertical: 20,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  startButtonText: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 3,
+  },
+  
+  // Alternative link
+  altLink: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  altLinkText: {
     fontSize: 12,
     fontWeight: '600',
-    color: theme.colors.text.secondary,
+    color: '#000000',
     letterSpacing: 1,
-  },
-  trackCardWrapper: {
-    paddingHorizontal: theme.spacing[6],
-  },
-  footer: {
-    paddingHorizontal: theme.spacing[6],
-    marginTop: theme.spacing[4],
-  },
-  continueCard: {
-    paddingVertical: theme.spacing[4],
-    paddingHorizontal: theme.spacing[4],
-    backgroundColor: theme.colors.surface.secondary,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-  },
-  continueLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: theme.colors.text.secondary,
-    letterSpacing: 1,
-    marginBottom: theme.spacing[2],
-  },
-  continueContent: {
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  continuePath: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    letterSpacing: -0.5,
-  },
-  continueArrow: {
-    fontSize: 18,
-    color: theme.colors.primary[500],
-  },
-  continueArrowInverse: {
-    fontSize: 20,
-    color: theme.colors.text.inverse,
-  },
-  // New user welcome card - Swiss Style: sharp corners
-  welcomeCard: {
-    marginHorizontal: theme.spacing[6],
-    marginBottom: theme.spacing[4],
-    padding: theme.spacing[5],
-    backgroundColor: theme.colors.primary[50],
-    borderWidth: 1,
-    borderColor: theme.colors.primary[200],
-  },
-  welcomeTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing[2],
-  },
-  welcomeSubtitle: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    lineHeight: 20,
-    marginBottom: theme.spacing[4],
-  },
-  trySampleButton: {
-    backgroundColor: theme.colors.primary[500],
-    paddingVertical: theme.spacing[3],
-    paddingHorizontal: theme.spacing[4],
-    alignSelf: 'flex-start',
-  },
-  trySampleButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text.inverse,
   },
 
-  continueRow: {
-    alignItems: 'center',
-  },
-  continueIconContainer: {
-    width: 48,
-    height: 48,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing[3],
-  },
-  continueIcon: {
-    fontSize: 24,
-  },
-  continueInfo: {
+  // ============================================
+  // DONE STATE - Swiss stark
+  // ============================================
+  doneContainer: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  continueLabelPromoted: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.8)',
+  doneHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 3,
+    borderBottomColor: '#000000',
+  },
+  doneHeaderText: {
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 2,
+    color: '#000000',
+  },
+  doneContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  doneLine: {
+    width: 60,
+    height: 3,
+    backgroundColor: '#000000',
+    marginVertical: 24,
+  },
+  doneTitle: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#000000',
+    letterSpacing: 4,
+  },
+  doneSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666666',
     letterSpacing: 1,
-    marginBottom: theme.spacing[1],
+    textTransform: 'uppercase',
   },
-  continuePathPromoted: {
-    fontSize: 16,
+  doneAction: {
+    borderTopWidth: 3,
+    borderTopColor: '#000000',
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  doneActionText: {
+    fontSize: 14,
     fontWeight: '700',
-    color: theme.colors.text.inverse,
-    letterSpacing: -0.5,
-  },
-  continueLesson: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: theme.spacing[1],
+    color: '#000000',
+    letterSpacing: 2,
   },
 });

@@ -125,19 +125,19 @@ const FrameworkMasterySection = ({
     );
 };
 
-// Pattern mastery section
+// Pattern mastery section - SWISS STYLE: No emojis
 const PatternMasterySection = ({ 
     patternMastery 
 }: { 
     patternMastery: Record<string, number>;
 }) => {
     const patterns = [
-        { id: 'design_x_for_y', name: 'Design X for Y', icon: '🎨' },
-        { id: 'improve_x', name: 'Improve X', icon: '📈' },
-        { id: 'metrics_for_x', name: 'Metrics for X', icon: '📊' },
-        { id: 'investigate_drop', name: 'Investigate Drop', icon: '🔍' },
-        { id: 'strategy', name: 'Strategy', icon: '🎯' },
-        { id: 'behavioral_star', name: 'STAR', icon: '⭐' },
+        { id: 'design_x_for_y', name: 'Design X for Y', code: 'DX' },
+        { id: 'improve_x', name: 'Improve X', code: 'IX' },
+        { id: 'metrics_for_x', name: 'Metrics for X', code: 'MX' },
+        { id: 'investigate_drop', name: 'Investigate Drop', code: 'ID' },
+        { id: 'strategy', name: 'Strategy', code: 'ST' },
+        { id: 'behavioral_star', name: 'STAR', code: 'SR' },
     ];
 
     return (
@@ -150,7 +150,9 @@ const PatternMasterySection = ({
                         <View key={pattern.id} style={styles.patternItem}>
                             <View style={styles.patternHeader}>
                                 <View style={styles.patternNameContainer}>
-                                    <LabelSM style={styles.patternIcon}>{pattern.icon}</LabelSM>
+                                    <View style={styles.patternCodeBox}>
+                                        <LabelSM style={styles.patternCode}>{pattern.code}</LabelSM>
+                                    </View>
                                     <BodyMD style={styles.patternName}>{pattern.name}</BodyMD>
                                 </View>
                                 <LabelSM style={{ 
@@ -176,21 +178,21 @@ const PatternMasterySection = ({
     );
 };
 
-// Category readiness section
+// Category readiness section - SWISS STYLE: No emojis, using letter codes
 const CategoryReadinessSection = ({ 
     categoryProgress 
 }: { 
     categoryProgress: Record<string, number>;
 }) => {
-    const categoryInfo: Record<string, { name: string; color: string; icon: string }> = {
-        product_sense: { name: 'Product Sense', color: theme.colors.primary[500], icon: '💡' },
-        execution: { name: 'Execution', color: theme.colors.primary[600], icon: '⚡' },
-        strategy: { name: 'Strategy', color: theme.colors.primary[700], icon: '🎯' },
-        behavioral: { name: 'Behavioral', color: theme.colors.semantic.success, icon: '👤' },
-        technical: { name: 'Technical', color: theme.colors.primary[400], icon: '🔧' },
-        estimation: { name: 'Estimation', color: theme.colors.semantic.warning, icon: '📐' },
-        pricing: { name: 'Pricing', color: theme.colors.neutral[500], icon: '💰' },
-        ab_testing: { name: 'A/B Testing', color: theme.colors.semantic.error, icon: '🧪' },
+    const categoryInfo: Record<string, { name: string; color: string; code: string }> = {
+        product_sense: { name: 'Product Sense', color: theme.colors.primary[500], code: 'PS' },
+        execution: { name: 'Execution', color: theme.colors.primary[600], code: 'EX' },
+        strategy: { name: 'Strategy', color: theme.colors.primary[700], code: 'ST' },
+        behavioral: { name: 'Behavioral', color: theme.colors.semantic.success, code: 'BH' },
+        technical: { name: 'Technical', color: theme.colors.primary[400], code: 'TC' },
+        estimation: { name: 'Estimation', color: theme.colors.semantic.warning, code: 'ES' },
+        pricing: { name: 'Pricing', color: theme.colors.neutral[500], code: 'PR' },
+        ab_testing: { name: 'A/B Testing', color: theme.colors.semantic.error, code: 'AB' },
     };
 
     const getCategoryReadiness = (category: string) => {
@@ -205,14 +207,16 @@ const CategoryReadinessSection = ({
             <LabelSM color="secondary" style={styles.sectionTitle}>CATEGORY READINESS</LabelSM>
             <Card variant="outline" padding={5}>
                 {categories.map(category => {
-                    const info = categoryInfo[category] || { name: category, color: '#666', icon: '📁' };
+                    const info = categoryInfo[category] || { name: category, color: '#666', code: 'XX' };
                     const readiness = getCategoryReadiness(category);
                     
                     return (
                         <View key={category} style={styles.categoryItem}>
                             <View style={styles.categoryHeader}>
                                 <View style={styles.categoryNameContainer}>
-                                    <LabelSM style={styles.categoryIcon}>{info.icon}</LabelSM>
+                                    <View style={styles.categoryCodeBox}>
+                                        <LabelSM style={styles.categoryCode}>{info.code}</LabelSM>
+                                    </View>
                                     <BodyMD style={styles.categoryName}>{info.name}</BodyMD>
                                 </View>
                                 <View style={styles.categoryStats}>
@@ -630,9 +634,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  patternIcon: {
+  patternCodeBox: {
+    width: 28,
+    height: 28,
+    backgroundColor: theme.colors.surface.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: theme.spacing[2],
-    fontSize: 18,
+    borderWidth: theme.spacing.borderWidth.thin,
+    borderColor: theme.colors.border.light,
+  },
+  patternCode: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: theme.colors.text.primary,
+    letterSpacing: -0.5,
   },
   patternName: {
     fontWeight: '500',
@@ -652,9 +668,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  categoryIcon: {
+  categoryCodeBox: {
+    width: 32,
+    height: 24,
+    backgroundColor: theme.colors.surface.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: theme.spacing[2],
-    fontSize: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+  },
+  categoryCode: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.colors.text.primary,
+    letterSpacing: 0.5,
   },
   categoryName: {
     fontWeight: '500',

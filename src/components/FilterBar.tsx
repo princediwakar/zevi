@@ -123,25 +123,29 @@ export function FilterBar({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: theme.colors.surface.primary,
-    borderBottomWidth: 1,
+    borderBottomWidth: theme.spacing.borderWidth.thin,
     borderBottomColor: theme.colors.border.light,
   },
   scrollContent: {
-    paddingHorizontal: theme.spacing[4],
+    paddingHorizontal: theme.spacing.screenPadding,
     paddingVertical: theme.spacing[3],
     gap: theme.spacing[3],
   },
   clearButton: {
-    paddingHorizontal: 14,
+    paddingHorizontal: theme.spacing[4],
     paddingVertical: theme.spacing[2],
-    borderRadius: 20,
+    // SWISS STYLE: Sharp edges, no border-radius
+    borderRadius: theme.spacing.borderRadius.none,
     backgroundColor: theme.colors.semantic.error,
     marginRight: theme.spacing[2],
+    borderWidth: theme.spacing.borderWidth.thin,
+    borderColor: theme.colors.semantic.error,
   },
   clearButtonText: {
     color: theme.colors.text.inverse,
     fontSize: 13,
     fontWeight: '600',
+    letterSpacing: 0.5,
   },
   section: {
     flexDirection: 'row',
@@ -155,12 +159,13 @@ const styles = StyleSheet.create({
     marginRight: theme.spacing[1],
   },
   chip: {
-    paddingHorizontal: 14,
+    paddingHorizontal: theme.spacing[4],
     paddingVertical: theme.spacing[2],
     minHeight: 40,
-    borderRadius: 20,
+    // SWISS STYLE: Sharp edges, no border-radius
+    borderRadius: theme.spacing.borderRadius.none,
     backgroundColor: theme.colors.surface.secondary,
-    borderWidth: 1,
+    borderWidth: theme.spacing.borderWidth.thin,
     borderColor: theme.colors.border.light,
     justifyContent: 'center',
   },
@@ -172,12 +177,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: theme.colors.text.secondary,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
   },
   chipTextActive: {
     color: theme.colors.text.inverse,
   },
   divider: {
-    width: 1,
+    width: theme.spacing.borderWidth.thin,
     height: 24,
     backgroundColor: theme.colors.border.light,
     marginHorizontal: theme.spacing[2],

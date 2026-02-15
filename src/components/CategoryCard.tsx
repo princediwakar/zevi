@@ -11,15 +11,16 @@ interface CategoryCardProps {
   onPress: () => void;
 }
 
-const CATEGORY_INFO: Record<QuestionCategory, { label: string; icon: string; color: string }> = {
-  product_sense: { label: 'Product Sense', icon: '💡', color: theme.colors.category.product_sense },
-  execution: { label: 'Execution', icon: '⚡', color: theme.colors.category.execution },
-  strategy: { label: 'Strategy', icon: '🎯', color: theme.colors.category.strategy },
-  behavioral: { label: 'Behavioral', icon: '👥', color: theme.colors.category.behavioral },
-  estimation: { label: 'Estimation', icon: '📊', color: theme.colors.category.estimation },
-  technical: { label: 'Technical', icon: '⚙️', color: theme.colors.category.technical },
-  pricing: { label: 'Pricing', icon: '💰', color: theme.colors.category.pricing },
-  ab_testing: { label: 'A/B Testing', icon: '🧪', color: theme.colors.category.ab_testing },
+// SWISS STYLE: No emojis - use letter codes instead
+const CATEGORY_INFO: Record<QuestionCategory, { label: string; code: string; color: string }> = {
+  product_sense: { label: 'Product Sense', code: 'PS', color: theme.colors.category.product_sense },
+  execution: { label: 'Execution', code: 'EX', color: theme.colors.category.execution },
+  strategy: { label: 'Strategy', code: 'ST', color: theme.colors.category.strategy },
+  behavioral: { label: 'Behavioral', code: 'BH', color: theme.colors.category.behavioral },
+  estimation: { label: 'Estimation', code: 'ES', color: theme.colors.category.estimation },
+  technical: { label: 'Technical', code: 'TC', color: theme.colors.category.technical },
+  pricing: { label: 'Pricing', code: 'PR', color: theme.colors.category.pricing },
+  ab_testing: { label: 'A/B Testing', code: 'AB', color: theme.colors.category.ab_testing },
 };
 
 export function CategoryCard({ category, questionCount, userProgress = 0, onPress }: CategoryCardProps) {
@@ -37,8 +38,8 @@ export function CategoryCard({ category, questionCount, userProgress = 0, onPres
       >
         <View style={styles.content}>
           <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <BodyLG style={styles.icon}>{info.icon}</BodyLG>
+            <View style={[styles.iconContainer, { borderColor: info.color, borderWidth: theme.spacing.borderWidth.thin }]}>
+              <BodyLG style={[styles.code, { color: info.color }]}>{info.code}</BodyLG>
             </View>
             <View style={styles.textContainer}>
               <BodyLG style={styles.label}>{info.label}</BodyLG>
@@ -88,8 +89,10 @@ const styles = StyleSheet.create({
     marginRight: theme.spacing[3], // 12px
     borderRadius: theme.spacing.borderRadius.none, // Sharp edges
   },
-  icon: {
-    // Using BodyLG component styles
+  code: {
+    fontWeight: '800',
+    fontSize: 16,
+    letterSpacing: -0.5,
   },
   textContainer: {
     flex: 1,

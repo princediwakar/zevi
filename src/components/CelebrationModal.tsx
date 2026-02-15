@@ -6,26 +6,28 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../theme';
+
+// SWISS STYLE: No gradients, no emojis, sharp edges, high contrast
+// Using solid colors and bold typography instead
 
 interface CelebrationModalProps {
   visible: boolean;
   type: 'milestone' | 'level_up' | 'streak' | 'readiness';
   title: string;
   message: string;
-  icon?: string;
+  code?: string;
   onClose: () => void;
 }
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export function CelebrationModal({
   visible,
   type,
   title,
   message,
-  icon,
+  code,
   onClose,
 }: CelebrationModalProps) {
   const scaleAnim = useSharedValue(0);
@@ -54,33 +56,35 @@ export function CelebrationModal({
     transform: [{ scale: scaleAnim.value }],
   }));
 
-  const getGradientColors = (): readonly [string, string, ...string[]] => {
+  // SWISS STYLE: Solid colors instead of gradients
+  const getBackgroundColor = (): string => {
     switch (type) {
       case 'milestone':
-        return theme.colors.celebration.milestone as readonly [string, string];
+        return theme.colors.primary[500];
       case 'level_up':
-        return theme.colors.celebration.level_up as readonly [string, string];
+        return theme.colors.text.primary;
       case 'streak':
-        return theme.colors.celebration.streak as readonly [string, string];
+        return theme.colors.streak.orange;
       case 'readiness':
-        return theme.colors.celebration.readiness as readonly [string, string];
+        return theme.colors.semantic.success;
       default:
-        return theme.colors.celebration.default as readonly [string, string];
+        return theme.colors.primary[500];
     }
   };
 
-  const getDefaultIcon = () => {
+  // SWISS STYLE: Letter codes instead of emojis
+  const getDefaultCode = () => {
     switch (type) {
       case 'milestone':
-        return '🎯';
+        return 'MS';
       case 'level_up':
-        return '⬆️';
+        return 'LV';
       case 'streak':
-        return '🔥';
+        return 'SK';
       case 'readiness':
-        return '🎉';
+        return 'RD';
       default:
-        return '⭐';
+        return 'AW';
     }
   };
 
@@ -100,34 +104,29 @@ export function CelebrationModal({
         <Animated.View 
           style={[
             styles.container,
-            containerStyle
+            containerStyle,
+            { backgroundColor: getBackgroundColor() }
           ]}
         >
-          <LinearGradient
-            colors={getGradientColors()}
-            style={styles.gradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <View style={styles.content}>
-              <View style={styles.iconContainer}>
-                <Text style={styles.icon}>
-                  {icon || getDefaultIcon()}
-                </Text>
-              </View>
-
-              <Text style={styles.title}>{title}</Text>
-              
-              <Text style={styles.message}>{message}</Text>
-
-              <TouchableOpacity
-                onPress={onClose}
-                style={styles.button}
-              >
-                <Text style={styles.buttonText}>AWESOME!</Text>
-              </TouchableOpacity>
+          <View style={styles.content}>
+            {/* SWISS STYLE: Bold letter code instead of emoji */}
+            <View style={styles.iconContainer}>
+              <Text style={styles.code}>
+                {code || getDefaultCode()}
+              </Text>
             </View>
-          </LinearGradient>
+
+            <Text style={styles.title}>{title.toUpperCase()}</Text>
+            
+            <Text style={styles.message}>{message}</Text>
+
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>CONTINUE</Text>
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -146,26 +145,26 @@ export function MilestoneModal({ visible, type, title, value, onClose }: Milesto
   const getMessage = () => {
     switch (type) {
       case 'streak':
-        return `Amazing! You've maintained a ${value}-day streak! Keep it going!`;
+        return `You've maintained a ${value}-day streak. Keep it going!`;
       case 'level_up':
-        return `Congratulations! You've reached level ${value}!`;
+        return `You've reached level ${value}!`;
       case 'readiness':
-        return `You're now ${value}% ready for your interviews!`;
+        return `You're now ${value}% ready for interviews!`;
       default:
         return 'Great job! Keep up the momentum!';
     }
   };
 
-  const getIcon = () => {
+  const getCode = () => {
     switch (type) {
       case 'streak':
-        return '🔥';
+        return 'SK';
       case 'level_up':
-        return '⬆️';
+        return 'LV';
       case 'readiness':
-        return '🎯';
+        return 'RD';
       default:
-        return '⭐';
+        return 'AW';
     }
   };
 
@@ -175,7 +174,7 @@ export function MilestoneModal({ visible, type, title, value, onClose }: Milesto
       type={type}
       title={title}
       message={getMessage()}
-      icon={getIcon()}
+      code={getCode()}
       onClose={onClose}
     />
   );
@@ -184,67 +183,72 @@ export function MilestoneModal({ visible, type, title, value, onClose }: Milesto
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   container: {
     width: width * 0.85,
     maxWidth: 400,
-    borderRadius: 24,
+    // SWISS STYLE: Sharp edges
+    borderRadius: theme.spacing.borderRadius.none,
+    borderWidth: theme.spacing.borderWidth.thick,
+    borderColor: theme.colors.text.primary,
     overflow: 'hidden',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-  },
-  gradient: {
-    padding: 32,
-    alignItems: 'center',
   },
   content: {
     alignItems: 'center',
-    zIndex: 10,
+    padding: theme.spacing[8],
   },
   iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: 80,
+    height: 80,
+    backgroundColor: theme.colors.text.inverse,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing[6],
+    // SWISS STYLE: Sharp edges
+    borderRadius: theme.spacing.borderRadius.none,
+    borderWidth: theme.spacing.borderWidth.medium,
+    borderColor: theme.colors.text.primary,
   },
-  icon: {
-    fontSize: 50,
+  code: {
+    // SWISS STYLE: Bold typography
+    fontSize: 32,
+    fontWeight: '900',
+    color: theme.colors.text.primary,
+    letterSpacing: -1,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#fff',
+    // SWISS STYLE: Massive typography, uppercase
+    fontSize: 24,
+    fontWeight: '800',
+    color: theme.colors.text.inverse,
     textAlign: 'center',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    marginBottom: theme.spacing[3],
+    letterSpacing: 1,
   },
   message: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: theme.colors.text.inverse,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: theme.spacing[6],
     lineHeight: 24,
+    opacity: 0.9,
   },
   button: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 40,
-    paddingVertical: 14,
-    borderRadius: 30,
+    backgroundColor: theme.colors.text.inverse,
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[3],
+    // SWISS STYLE: Sharp edges
+    borderRadius: theme.spacing.borderRadius.none,
+    borderWidth: theme.spacing.borderWidth.medium,
+    borderColor: theme.colors.text.primary,
   },
   buttonText: {
-    color: '#333',
-    fontSize: 16,
+    color: theme.colors.text.primary,
+    fontSize: 14,
     fontWeight: '700',
+    letterSpacing: 1,
   },
 });

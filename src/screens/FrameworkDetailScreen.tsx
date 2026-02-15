@@ -20,12 +20,12 @@ import { CheckCircle } from 'lucide-react-native';
 type FrameworkDetailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'FrameworkDetail'>;
 type FrameworkDetailRouteProp = RouteProp<RootStackParamList, 'FrameworkDetail'>;
 
-// Category info mapping - Using Swiss-style theme colors
-const CATEGORY_INFO: Record<string, { label: string; icon: string; color: string }> = {
-  product_sense: { label: 'Product Sense', icon: '💡', color: theme.colors.primary[500] },
-  execution: { label: 'Execution', icon: '⚡', color: theme.colors.primary[600] },
-  strategy: { label: 'Strategy', icon: '🎯', color: theme.colors.primary[700] },
-  behavioral: { label: 'Behavioral', icon: '👤', color: theme.colors.semantic.success },
+// Category info mapping - Using Swiss-style theme colors with letter codes
+const CATEGORY_INFO: Record<string, { label: string; code: string; color: string }> = {
+  product_sense: { label: 'Product Sense', code: 'PS', color: theme.colors.primary[500] },
+  execution: { label: 'Execution', code: 'EX', color: theme.colors.primary[600] },
+  strategy: { label: 'Strategy', code: 'ST', color: theme.colors.primary[700] },
+  behavioral: { label: 'Behavioral', code: 'BH', color: theme.colors.semantic.success },
 };
 
 export default function FrameworkDetailScreen() {
@@ -140,7 +140,7 @@ export default function FrameworkDetailScreen() {
           {categoryInfo && (
             <View style={styles.categoryBadge}>
               <Text style={styles.categoryBadgeText}>
-                {categoryInfo.icon} {categoryInfo.label}
+                {categoryInfo.code} {categoryInfo.label}
               </Text>
             </View>
           )}

@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing[4],
     backgroundColor: theme.colors.surface.primary,
     justifyContent: 'space-between',
+    // SWISS STYLE: Sharp edges handled by Card component (borderRadius: none)
   },
   questionText: {
     flex: 1,
@@ -65,12 +66,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     marginBottom: theme.spacing[3],
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
+    borderTopWidth: theme.spacing.borderWidth.thin,
     borderTopColor: theme.colors.border.light,
     paddingTop: theme.spacing[3],
   },
@@ -78,6 +80,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing[3],
     paddingVertical: theme.spacing[1],
     backgroundColor: theme.colors.surface.secondary,
-    borderRadius: theme.spacing.borderRadius.sm,
+    // SWISS STYLE: Sharp edges, no border-radius
+    borderRadius: theme.spacing.borderRadius.none,
+    borderWidth: theme.spacing.borderWidth.thin,
+    borderColor: theme.colors.border.light,
   },
 });

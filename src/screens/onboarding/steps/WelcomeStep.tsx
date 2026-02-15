@@ -8,9 +8,9 @@ export default function WelcomeStep({ onNext }: OnboardingStepProps) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Placeholder for a hero illustration */}
+        {/* Swiss Style Hero Container with Letter Code */}
         <View style={styles.heroContainer}>
-          <Text style={styles.emoji}>🚀</Text>
+          <Text style={styles.heroCode}>PM</Text>
         </View>
         
         <Text style={styles.title}>
@@ -30,7 +30,7 @@ export default function WelcomeStep({ onNext }: OnboardingStepProps) {
           accessibilityRole="button"
         >
           <Text style={styles.primaryButtonText}>
-            Get Started
+            GET STARTED
           </Text>
         </TouchableOpacity>
         
@@ -62,16 +62,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heroContainer: {
-    width: 256,
-    height: 256,
-    backgroundColor: theme.colors.primary[100],
-    borderRadius: 128,
+    width: 160,
+    height: 160,
+    backgroundColor: theme.colors.primary[500],
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: theme.spacing[10],
+    borderWidth: 4,
+    borderColor: theme.colors.primary[700],
   },
-  emoji: {
-    fontSize: 64,
+  heroCode: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: 'white',
   },
   title: {
     fontSize: theme.typography.heading.h1.fontSize,
@@ -95,19 +98,15 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary[500],
     width: '100%',
     paddingVertical: theme.spacing[4],
-    borderRadius: theme.spacing.borderRadius.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 2,
+    borderColor: theme.colors.primary[700],
   },
   primaryButtonText: {
     color: theme.colors.text.inverse,
     textAlign: 'center',
     fontWeight: '700',
     fontSize: theme.typography.heading.h4.fontSize,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   secondaryButton: {
     marginTop: theme.spacing[6],
@@ -122,5 +121,3 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
 });
-
-
