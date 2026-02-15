@@ -14,6 +14,7 @@ export type RootStackParamList = {
   TextPractice: { questionId: string };
   LessonScreen: { lessonId: string };
   LearnScreen: undefined;
+  LearningPathBrowse: undefined;
   CategoryDetail: { category: string };
   FrameworkDetail: { frameworkName: string };
   Progress: undefined;

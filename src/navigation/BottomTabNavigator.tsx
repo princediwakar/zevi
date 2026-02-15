@@ -21,6 +21,7 @@ import {
   LearnScreen,
   CategoryDetailScreen,
   FrameworkDetailScreen,
+  LearningPathBrowseScreen,
 } from '../screens';
 import { theme } from '../theme';
 
@@ -47,6 +48,7 @@ function LearnStackNavigator() {
   return (
     <LearnStack.Navigator screenOptions={{ headerShown: false }}>
       <LearnStack.Screen name="LearnScreen" component={LearnScreen} />
+      <LearnStack.Screen name="LearningPathBrowse" component={LearningPathBrowseScreen} />
       <LearnStack.Screen name="CategoryDetail" component={CategoryDetailScreen} />
       <LearnStack.Screen name="FrameworkDetail" component={FrameworkDetailScreen} />
       <LearnStack.Screen name="LessonScreen" component={LessonScreen} />

@@ -11,15 +11,16 @@ import { theme } from '../theme';
 
 type CategoryBrowseScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CategoryBrowse'>;
 
+// Swiss design - all black
 const CATEGORY_INFO: Record<QuestionCategory, { label: string; color: string }> = {
-  product_sense: { label: 'PRODUCT SENSE', color: '#000000' },
-  execution: { label: 'EXECUTION', color: '#000000' },
-  strategy: { label: 'STRATEGY', color: '#000000' },
-  behavioral: { label: 'BEHAVIORAL', color: '#000000' },
-  estimation: { label: 'ESTIMATION', color: '#000000' },
-  technical: { label: 'TECHNICAL', color: '#000000' },
-  pricing: { label: 'PRICING', color: '#000000' },
-  ab_testing: { label: 'A/B TESTING', color: '#000000' },
+  product_sense: { label: 'PRODUCT SENSE', color: theme.colors.text.primary },
+  execution: { label: 'EXECUTION', color: theme.colors.text.primary },
+  strategy: { label: 'STRATEGY', color: theme.colors.text.primary },
+  behavioral: { label: 'BEHAVIORAL', color: theme.colors.text.primary },
+  estimation: { label: 'ESTIMATION', color: theme.colors.text.primary },
+  technical: { label: 'TECHNICAL', color: theme.colors.text.primary },
+  pricing: { label: 'PRICING', color: theme.colors.text.primary },
+  ab_testing: { label: 'A/B TESTING', color: theme.colors.text.primary },
 };
 
 export default function CategoryBrowseScreen() {
@@ -81,7 +82,7 @@ export default function CategoryBrowseScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.text.primary} />
         }
       >
         {/* Heavy separator */}
@@ -126,83 +127,91 @@ export default function CategoryBrowseScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
+  
+  // Header - Swiss style
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 3,
-    borderBottomColor: '#000000',
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    borderBottomWidth: theme.swiss.border.heavy,
+    borderBottomColor: theme.colors.text.primary,
   },
   backButton: {
     width: 80,
   },
   backText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000000',
-    letterSpacing: 0.5,
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: 2,
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.black,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.primary,
   },
   headerSpacer: {
     width: 80,
   },
+  
+  // Scroll View
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
   },
+  
+  // Separator
   separator: {
-    height: 3,
-    backgroundColor: '#000000',
-    marginVertical: 24,
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+    marginVertical: theme.swiss.layout.sectionGap,
   },
+  
+  // Category Row - Swiss bordered
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    paddingVertical: theme.spacing[5],
+    borderBottomWidth: theme.swiss.border.light,
+    borderBottomColor: theme.colors.border.light,
   },
   categoryLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: 0.5,
+    fontSize: theme.swiss.fontSize.heading - 6,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
   categoryMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: theme.spacing[4],
   },
   categoryCount: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#666666',
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
   },
   progressIndicator: {
     width: 60,
     height: 4,
-    backgroundColor: '#E5E5E5',
+    backgroundColor: theme.colors.border.light,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.text.primary,
   },
   arrow: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.label + 4,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
   },
 });

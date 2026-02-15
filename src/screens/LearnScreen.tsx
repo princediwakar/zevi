@@ -20,6 +20,7 @@ import { Lesson } from '../types';
 type LearnScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LearnScreen'>;
 
 // SWISS DESIGN: Sharp, bold, minimal
+// Using centralized theme tokens for consistency
 export default function LearnScreen() {
   const navigation = useNavigation<LearnScreenNavigationProp>();
   const { user, isGuest, guestId } = useAuth();
@@ -90,11 +91,11 @@ export default function LearnScreen() {
   };
 
   const handleBrowseCategories = () => {
-    navigation.navigate('CategoryDetail', { category: 'product_sense' });
+    navigation.navigate('LearningPathBrowse');
   };
 
-  // Get lesson type emoji
-  const getLessonEmoji = (type: string) => {
+  // Get lesson type number
+  const getLessonNumber = (type: string) => {
     switch (type) {
       case 'learn': return '01';
       case 'drill': return '02';
@@ -130,7 +131,7 @@ export default function LearnScreen() {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh}
-            tintColor="#000000"
+            tintColor={theme.colors.text.primary}
           />
         }
       >
@@ -167,7 +168,7 @@ export default function LearnScreen() {
             <View style={styles.lessonCard}>
               {/* Number indicator */}
               <Text style={styles.lessonNumber}>
-                {getLessonEmoji(todaysLesson.type)}
+                {getLessonNumber(todaysLesson.type)}
               </Text>
               
               {/* Lesson name - heavy */}
@@ -224,7 +225,7 @@ export default function LearnScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
   
   // Header - Swiss bold
@@ -232,39 +233,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 3,
-    borderBottomColor: '#000000',
-    backgroundColor: '#FFFFFF',
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    borderBottomWidth: theme.swiss.border.heavy,
+    borderBottomColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.background,
   },
   headerTitle: {
-    fontSize: 32,
-    fontWeight: '900',
-    letterSpacing: 2,
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.title,
+    fontWeight: theme.swiss.fontWeight.black,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.primary,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: theme.spacing[3],
   },
   headerCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666666',
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
   },
   streakBox: {
-    borderWidth: 2,
-    borderColor: '#000000',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[1],
   },
   streakText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
   },
   
   // Scroll View
@@ -272,142 +273,142 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingTop: theme.swiss.layout.sectionGap,
   },
   
   // Separator
   separator: {
-    height: 3,
-    backgroundColor: '#000000',
-    marginBottom: 24,
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+    marginBottom: theme.swiss.layout.sectionGap,
   },
   
   // Lesson Section
   lessonSection: {
-    marginBottom: 24,
+    marginBottom: theme.swiss.layout.elementGap,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1,
-    color: '#666666',
-    marginBottom: 16,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing[4],
   },
   
-  // Lesson Card - bordered
+  // Lesson Card - bordered, sharp
   lessonCard: {
-    borderWidth: 2,
-    borderColor: '#000000',
-    padding: 24,
-    marginBottom: 24,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.swiss.layout.sectionGap,
+    marginBottom: theme.swiss.layout.elementGap,
   },
   lessonNumber: {
     fontSize: 48,
-    fontWeight: '900',
-    color: '#000000',
-    marginBottom: 16,
+    fontWeight: theme.swiss.fontWeight.black,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[4],
   },
   lessonName: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
     lineHeight: 30,
-    marginBottom: 16,
+    marginBottom: theme.spacing[4],
   },
   lessonMeta: {
     flexDirection: 'row',
-    gap: 16,
+    gap: theme.spacing[4],
   },
   lessonMetaText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666666',
-    letterSpacing: 0.5,
+    fontSize: theme.swiss.fontSize.small + 2,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
   
   // START Button
   startButton: {
-    borderWidth: 3,
-    borderColor: '#000000',
-    backgroundColor: '#000000',
-    paddingVertical: 18,
+    borderWidth: theme.swiss.border.heavy,
+    borderColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[5] - 2,
     alignItems: 'center',
   },
   startButtonText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 3,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.xwide3,
   },
   
   // Done State
   doneContent: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 48,
+    paddingVertical: theme.swiss.layout.sectionGap + theme.spacing[4],
   },
   doneLine: {
     width: 40,
-    height: 3,
-    backgroundColor: '#000000',
-    marginVertical: 20,
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+    marginVertical: theme.spacing[5],
   },
   doneTitle: {
-    fontSize: 36,
-    fontWeight: '900',
-    letterSpacing: 3,
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.title,
+    fontWeight: theme.swiss.fontWeight.black,
+    letterSpacing: theme.swiss.letterSpacing.xwide3,
+    color: theme.colors.text.primary,
   },
   doneSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#666666',
-    letterSpacing: 1,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
     textTransform: 'uppercase',
   },
   doneAction: {
-    marginTop: 32,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderWidth: 2,
-    borderColor: '#000000',
+    marginTop: theme.swiss.layout.sectionGap,
+    paddingVertical: theme.spacing[3],
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
   },
   doneActionText: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.small + 2,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.primary,
   },
   
   // Empty State
   emptyContent: {
     alignItems: 'center',
-    paddingVertical: 48,
+    paddingVertical: theme.swiss.layout.sectionGap + theme.spacing[4],
   },
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: 2,
-    color: '#000000',
-    marginBottom: 16,
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[4],
   },
   emptyLink: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
-    letterSpacing: 1,
+    fontSize: theme.swiss.fontSize.label + 2,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   
   // Browse Link
   browseLink: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: theme.swiss.layout.sectionGap,
   },
   browseLinkText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666666',
-    letterSpacing: 1,
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
 });

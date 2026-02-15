@@ -6,7 +6,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
+  Text,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,32 +17,18 @@ import { useUserStore } from '../stores/userStore';
 import { useAuth } from '../hooks/useAuth';
 import { useProgressStore } from '../stores/progressStore';
 
-// UI Components
-import {
-  Container,
-  DisplayLG,
-  H2,
-  H3,
-  H4,
-  BodyLG,
-  BodyMD,
-  BodySM,
-  LabelSM,
-  Card,
-  Grid,
-  Button,
-  Row,
-  Column,
-  Spacer,
-} from '../components/ui';
-
 // Theme
 import { theme } from '../theme';
 import { SubscriptionTier } from '../types';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
-// Avatar component with initials
+// ============================================
+// SWISS DESIGN: Sharp, bold, minimal, high contrast
+// Using centralized theme tokens for consistency
+// ============================================
+
+// Avatar component with initials - sharp corners for Swiss style
 const UserAvatar = ({ name, size = 80 }: { name?: string; size?: number }) => {
   const initials = name
     ? name
@@ -54,65 +40,25 @@ const UserAvatar = ({ name, size = 80 }: { name?: string; size?: number }) => {
     : '??';
 
   return (
-    <View
-      style={[
-        styles.avatar,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-        },
-      ]}
-    >
-      <H2 style={styles.avatarText}>{initials}</H2>
+    <View style={[styles.avatar, { width: size, height: size }]}>
+      <Text style={styles.avatarText}>{initials}</Text>
     </View>
   );
 };
 
-// Stat card component
-const StatCard = ({
-  value,
-  label,
-  code,
-  color = theme.colors.primary[500],
-}: {
-  value: string | number;
-  label: string;
-  code: string;
-  color?: string;
-}) => (
-  <Card variant="filled" padding={4} style={styles.statCard}>
-    <View style={[styles.statCodeContainer, { backgroundColor: color + '15' }]}>
-      <H3 style={[styles.statCode, { color }]}>{code}</H3>
-    </View>
-    <Spacer size={theme.spacing[2]} />
-    <H3 style={[styles.statValue, { color }]}>{value}</H3>
-    <LabelSM color="secondary" uppercase>
-      {label}
-    </LabelSM>
-  </Card>
-);
-
-// Subscription badge component
+// Subscription badge component - sharp corners
 const SubscriptionBadge = ({ tier }: { tier: SubscriptionTier }) => {
   const isPremium = tier === 'premium';
   return (
-    <View
-      style={[
-        styles.subscriptionBadge,
-        {
-          backgroundColor: isPremium ? theme.colors.semantic.warning + '20' : theme.colors.neutral[200],
-        },
-      ]}
-    >
-      <BodySM style={{ color: isPremium ? theme.colors.semantic.warning : theme.colors.neutral[600], fontWeight: '700', letterSpacing: 1 }}>
+    <View style={[styles.subscriptionBadge, isPremium && styles.subscriptionBadgePremium]}>
+      <Text style={[styles.subscriptionBadgeText, isPremium && styles.subscriptionBadgeTextPremium]}>
         {isPremium ? 'PREMIUM' : 'FREE'}
-      </BodySM>
+      </Text>
     </View>
   );
 };
 
-// Quick action button
+// Quick action button - sharp borders
 const QuickActionButton = ({
   code,
   label,
@@ -126,24 +72,15 @@ const QuickActionButton = ({
 }) => (
   <TouchableOpacity
     onPress={onPress}
-    style={[
-      styles.quickAction,
-      variant === 'danger' && styles.quickActionDanger,
-    ]}
+    style={[styles.quickAction, variant === 'danger' && styles.quickActionDanger]}
+    activeOpacity={0.8}
   >
-    <Row style={styles.quickActionContent}>
-      <View style={styles.quickActionCodeContainer}>
-        <H4 style={[styles.quickActionCode, variant === 'danger' && { color: theme.colors.semantic.error }]}>{code}</H4>
+    <View style={styles.quickActionContent}>
+      <View style={styles.quickActionCodeBox}>
+        <Text style={[styles.quickActionCode, variant === 'danger' && styles.quickActionCodeDanger]}>{code}</Text>
       </View>
-      <BodyMD
-        style={[
-          styles.quickActionLabel,
-          variant === 'danger' && { color: theme.colors.semantic.error },
-        ]}
-      >
-        {label}
-      </BodyMD>
-    </Row>
+      <Text style={[styles.quickActionLabel, variant === 'danger' && styles.quickActionLabelDanger]}>{label}</Text>
+    </View>
   </TouchableOpacity>
 );
 
@@ -211,13 +148,14 @@ export default function ProfileScreen() {
   // Show loading while auth or user is loading
   if (userLoading || authLoading || !user) {
     return (
-      <Container variant="screen" padding="lg" safeArea>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-          <Spacer size={theme.spacing[4]} />
-          <BodyMD color="secondary">Loading profile...</BodyMD>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>PROFILE</Text>
         </View>
-      </Container>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>LOADING...</Text>
+        </View>
+      </View>
     );
   }
 
@@ -231,118 +169,125 @@ export default function ProfileScreen() {
   const xpProgress = Math.min((currentLevelXP / xpToNextLevel) * 100, 100);
 
   return (
-    <Container variant="screen" padding="none" safeArea>
+    <View style={styles.container}>
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header */}
+        {/* Header - Swiss bold bar */}
         <View style={styles.header}>
-          <DisplayLG style={styles.title}>PROFILE</DisplayLG>
+          <Text style={styles.headerTitle}>PROFILE</Text>
         </View>
 
-        {/* Profile Card */}
-        <Card variant="filled" padding={6} style={styles.profileCard}>
-          <Row style={styles.profileHeader}>
+        {/* Heavy separator */}
+        <View style={styles.separator} />
+
+        {/* Profile Card - Swiss style with sharp edges */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            {/* Avatar - sharp corners */}
             <UserAvatar name={displayName} size={80} />
-            <Column style={styles.profileInfo}>
-              <Row style={styles.nameRow}>
-                <H2 style={styles.name}>{displayName}</H2>
+            <View style={styles.profileInfo}>
+              <View style={styles.nameRow}>
+                <Text style={styles.name}>{displayName}</Text>
                 <SubscriptionBadge tier={user.subscription_tier} />
-              </Row>
-              <BodyMD color="secondary">{user.email}</BodyMD>
+              </View>
+              <Text style={styles.email}>{user.email}</Text>
               {isGuest && (
                 <View style={styles.guestBadge}>
-                  <LabelSM style={styles.guestText}>GUEST MODE</LabelSM>
+                  <Text style={styles.guestText}>GUEST MODE</Text>
                 </View>
               )}
-            </Column>
-          </Row>
+            </View>
+          </View>
 
-          <Spacer size={theme.spacing[6]} />
-
-          {/* Level Progress */}
+          {/* Level Progress - sharp bar */}
           <View style={styles.levelSection}>
-            <Row style={styles.levelHeader}>
-              <LabelSM color="secondary">LEVEL {userLevel}</LabelSM>
-              <LabelSM color="secondary">{userXP} / {xpToNextLevel} XP</LabelSM>
-            </Row>
+            <View style={styles.levelHeader}>
+              <Text style={styles.levelLabel}>LEVEL {userLevel}</Text>
+              <Text style={styles.xpLabel}>{userXP} / {xpToNextLevel} XP</Text>
+            </View>
             <View style={styles.levelBarBg}>
               <View style={[styles.levelBarFill, { width: `${xpProgress}%` }]} />
             </View>
           </View>
-        </Card>
+        </View>
 
-        <Spacer size={theme.spacing[6]} />
+        {/* Heavy separator */}
+        <View style={styles.separator} />
 
         {/* Stats Grid */}
         <View style={styles.section}>
-          <LabelSM color="secondary" uppercase style={styles.sectionTitle}>
-            Stats
-          </LabelSM>
-          <Grid columns={2} gap={4}>
-            <StatCard
-              value={userXP.toLocaleString()}
-              label="Total XP"
-              code="XP"
-              color={theme.colors.primary[500]}
-            />
-            <StatCard
-              value={userStreak}
-              label="Day Streak"
-              code="ST"
-              color={theme.colors.semantic.warning}
-            />
-            <StatCard
-              value={questionsCompleted}
-              label="Questions"
-              code="Q"
-              color={theme.colors.semantic.success}
-            />
-            <StatCard
-              value={userLevel}
-              label="Level"
-              code="LV"
-              color={theme.colors.semantic.info}
-            />
-          </Grid>
+          <Text style={styles.sectionLabel}>STATS</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statBox}>
+              <View style={styles.statCodeBox}>
+                <Text style={styles.statCodeText}>XP</Text>
+              </View>
+              <Text style={styles.statValue}>{userXP.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>TOTAL XP</Text>
+            </View>
+            <View style={styles.statBox}>
+              <View style={styles.statCodeBox}>
+                <Text style={styles.statCodeText}>ST</Text>
+              </View>
+              <Text style={styles.statValue}>{userStreak}</Text>
+              <Text style={styles.statLabel}>DAY STREAK</Text>
+            </View>
+            <View style={styles.statBox}>
+              <View style={styles.statCodeBox}>
+                <Text style={styles.statCodeText}>Q</Text>
+              </View>
+              <Text style={styles.statValue}>{questionsCompleted}</Text>
+              <Text style={styles.statLabel}>QUESTIONS</Text>
+            </View>
+            <View style={styles.statBox}>
+              <View style={styles.statCodeBox}>
+                <Text style={styles.statCodeText}>LV</Text>
+              </View>
+              <Text style={styles.statValue}>{userLevel}</Text>
+              <Text style={styles.statLabel}>LEVEL</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Premium CTA (for free users) */}
+        {/* Heavy separator */}
+        <View style={styles.separator} />
+
+        {/* Premium CTA (for free users) - Swiss bordered */}
         {user.subscription_tier === 'free' && (
           <>
-            <Spacer size={theme.spacing[6]} />
-            <Card
-              variant="outline"
-              padding={5}
-              style={[styles.premiumCard, { borderColor: theme.colors.semantic.warning }]}
-            >
-              <Row style={styles.premiumContent}>
-                <View style={[styles.premiumIcon, { backgroundColor: theme.colors.semantic.warning + '15' }]}>
-                  <H2 style={{ color: theme.colors.semantic.warning }}>PRO</H2>
+            <View style={styles.premiumCard}>
+              <View style={styles.premiumContent}>
+                <View style={styles.premiumIcon}>
+                  <Text style={styles.premiumIconText}>PRO</Text>
                 </View>
-                <Column style={styles.premiumText}>
-                  <BodyLG style={{ fontWeight: '700' }}>Upgrade to Premium</BodyLG>
-                  <BodySM color="secondary">Advanced analytics & more</BodySM>
-                </Column>
-              </Row>
-              <Spacer size={theme.spacing[4]} />
-              <Button variant="primary" fullWidth onPress={handleUpgrade}>
-                UPGRADE NOW
-              </Button>
-            </Card>
+                <View style={styles.premiumText}>
+                  <Text style={styles.premiumTitle}>Upgrade to Premium</Text>
+                  <Text style={styles.premiumSubtitle}>Advanced analytics & more</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.upgradeButton}
+                onPress={handleUpgrade}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.upgradeButtonText}>UPGRADE NOW</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Heavy separator */}
+            <View style={styles.separator} />
           </>
         )}
 
         {/* Quick Actions */}
-        <Spacer size={theme.spacing[6]} />
         <View style={styles.section}>
-          <LabelSM color="secondary" uppercase style={styles.sectionTitle}>
-            Settings
-          </LabelSM>
-          <Card variant="outline" padding={0} style={styles.actionsCard}>
+          <Text style={styles.sectionLabel}>SETTINGS</Text>
+          <View style={styles.actionsCard}>
             <QuickActionButton
               code="SET"
               label="App Settings"
@@ -360,16 +305,16 @@ export default function ProfileScreen() {
               label="Help & Support"
               onPress={() => Alert.alert('Coming Soon', 'Help center will be available soon!')}
             />
-          </Card>
+          </View>
         </View>
 
+        {/* Heavy separator */}
+        <View style={styles.separator} />
+
         {/* Account Actions */}
-        <Spacer size={theme.spacing[6]} />
         <View style={styles.section}>
-          <LabelSM color="secondary" uppercase style={styles.sectionTitle}>
-            Account
-          </LabelSM>
-          <Card variant="outline" padding={0} style={styles.actionsCard}>
+          <Text style={styles.sectionLabel}>ACCOUNT</Text>
+          <View style={styles.actionsCard}>
             {isGuest && (
               <>
                 <QuickActionButton
@@ -386,189 +331,351 @@ export default function ProfileScreen() {
               variant="danger"
               onPress={handleLogout}
             />
-          </Card>
+          </View>
         </View>
 
         {/* App Version */}
-        <Spacer size={theme.spacing[8]} />
-        <BodySM color="secondary" align="center">
-          Zevi PM Prep v1.0.0
-        </BodySM>
-        <Spacer size={theme.spacing[4]} />
+        <Text style={styles.versionText}>ZEVI PM PREP v1.0.0</Text>
       </ScrollView>
-    </Container>
+    </View>
   );
 }
 
+// ============================================
+// SWISS STYLE: Sharp edges, bold typography, no gradients
+// ============================================
+
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  
+  scrollView: {
+    flex: 1,
+  },
+  
   content: {
-    padding: theme.spacing[6],
-    paddingBottom: theme.spacing[12],
+    paddingBottom: theme.swiss.layout.sectionGap + theme.spacing[8],
   },
+  
+  // Header - Swiss bold bar
   header: {
-    marginBottom: theme.spacing[6],
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    borderBottomWidth: theme.swiss.border.heavy,
+    borderBottomColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.background,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
+  headerTitle: {
+    fontSize: theme.swiss.fontSize.title,
+    fontWeight: theme.swiss.fontWeight.black,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.primary,
   },
-  center: {
+  
+  // Loading
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Profile Card
+  loadingText: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.secondary,
+  },
+  
+  // Heavy separator
+  separator: {
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+  },
+  
+  // Profile Card - Swiss bordered
   profileCard: {
-    backgroundColor: theme.colors.surface.secondary,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    margin: theme.swiss.layout.screenPadding,
+    marginTop: theme.swiss.layout.sectionGap,
+    padding: theme.swiss.layout.sectionGap,
   },
   profileHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: theme.swiss.layout.sectionGap,
+  },
+  // Avatar - sharp corners for Swiss style
+  avatar: {
+    backgroundColor: theme.colors.primary[500],
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+  },
+  avatarText: {
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
   },
   profileInfo: {
     flex: 1,
     marginLeft: theme.spacing[5],
   },
   nameRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: theme.spacing[1],
   },
   name: {
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
     marginRight: theme.spacing[3],
   },
-  avatar: {
-    backgroundColor: theme.colors.primary[500],
-    justifyContent: 'center',
-    alignItems: 'center',
+  
+  email: {
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
   },
-  avatarText: {
-    color: theme.colors.text.inverse,
-    fontWeight: '700',
-  },
+  
+  // Guest badge - sharp corners
   guestBadge: {
-    backgroundColor: theme.colors.neutral[200],
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
     paddingHorizontal: theme.spacing[3],
     paddingVertical: theme.spacing[1],
-    borderRadius: 4,
     alignSelf: 'flex-start',
     marginTop: theme.spacing[2],
+    backgroundColor: theme.colors.neutral[200],
   },
   guestText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
     color: theme.colors.neutral[600],
-    fontWeight: '600',
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
 
-  // Level Progress
+  // Level Progress - sharp bar
   levelSection: {
     marginTop: theme.spacing[2],
   },
   levelHeader: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: theme.spacing[2],
+  },
+  levelLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  xpLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
   },
   levelBarBg: {
     height: 8,
     backgroundColor: theme.colors.neutral[200],
-    borderRadius: 4,
+    borderRadius: 0,
     overflow: 'hidden',
   },
   levelBarFill: {
     height: '100%',
     backgroundColor: theme.colors.primary[500],
-    borderRadius: 4,
+    borderRadius: 0,
   },
 
   // Section
   section: {
-    marginBottom: theme.spacing[2],
+    marginHorizontal: theme.swiss.layout.screenPadding,
+    marginTop: theme.swiss.layout.sectionGap,
   },
-  sectionTitle: {
+  sectionLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.secondary,
     marginBottom: theme.spacing[4],
-    letterSpacing: 1,
   },
-
-  // Stats
-  statCard: {
+  
+  // Stats Grid
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing[3],
+  },
+  statBox: {
+    flex: 1,
+    minWidth: '45%',
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.spacing[4],
     alignItems: 'center',
   },
-  statCodeContainer: {
+  statCodeBox: {
     width: 48,
     height: 48,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    marginBottom: theme.spacing[2],
   },
-  statCode: {
-    fontSize: 16,
-    fontWeight: '700',
+  statCodeText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
   statValue: {
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.black,
+    color: theme.colors.text.primary,
     marginBottom: theme.spacing[1],
   },
-
-  // Subscription
+  statLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  
+  // Subscription - sharp corners
   subscriptionBadge: {
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
     paddingHorizontal: theme.spacing[3],
     paddingVertical: theme.spacing[1],
-    borderRadius: 4,
+    backgroundColor: theme.colors.neutral[200],
+  },
+  subscriptionBadgePremium: {
+    borderColor: theme.colors.semantic.warning,
+    backgroundColor: theme.colors.semantic.warning + '20',
+  },
+  subscriptionBadgeText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.neutral[600],
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  subscriptionBadgeTextPremium: {
+    color: theme.colors.semantic.warning,
   },
 
   // Premium
   premiumCard: {
-    backgroundColor: theme.colors.surface.primary,
-    borderWidth: 2,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.semantic.warning,
+    margin: theme.swiss.layout.screenPadding,
+    padding: theme.swiss.layout.sectionGap,
+    backgroundColor: theme.colors.background,
   },
   premiumContent: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: theme.spacing[4],
   },
   premiumIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.colors.semantic.warning + '20',
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.semantic.warning,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: theme.spacing[4],
+    backgroundColor: theme.colors.semantic.warning + '20',
+  },
+  premiumIconText: {
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.black,
+    color: theme.colors.semantic.warning,
   },
   premiumText: {
     flex: 1,
   },
+  premiumTitle: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+  },
+  premiumSubtitle: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+  },
+  upgradeButton: {
+    borderWidth: theme.swiss.border.heavy,
+    borderColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[4],
+    alignItems: 'center',
+  },
+  upgradeButtonText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.xwide3,
+  },
 
   // Quick Actions
   actionsCard: {
-    overflow: 'hidden',
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
   },
   quickAction: {
     paddingVertical: theme.spacing[4],
-    paddingHorizontal: theme.spacing[5],
+    paddingHorizontal: theme.swiss.layout.screenPadding,
   },
   quickActionDanger: {
     backgroundColor: theme.colors.semantic.error + '05',
   },
   quickActionContent: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  quickActionCodeContainer: {
+  quickActionCodeBox: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: theme.spacing[4],
     backgroundColor: theme.colors.neutral[100],
-    borderWidth: 2,
-    borderColor: theme.colors.border.light,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
   },
   quickActionCode: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
   },
+  quickActionCodeDanger: {
+    color: theme.colors.semantic.error,
+  },
   quickActionLabel: {
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+  },
+  quickActionLabelDanger: {
+    color: theme.colors.semantic.error,
   },
   actionDivider: {
-    height: 1,
-    backgroundColor: theme.colors.border.light,
-    marginHorizontal: theme.spacing[5],
+    height: theme.swiss.border.light,
+    backgroundColor: theme.colors.text.primary,
+    marginHorizontal: theme.swiss.layout.screenPadding,
+  },
+  
+  // Version
+  versionText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    marginTop: theme.swiss.layout.sectionGap,
   },
 });

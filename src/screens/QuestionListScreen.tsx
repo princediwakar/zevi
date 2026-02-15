@@ -19,6 +19,7 @@ import { theme } from '../theme';
 type QuestionListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'QuestionList'>;
 type QuestionListScreenRouteProp = RouteProp<RootStackParamList, 'QuestionList'>;
 
+// Swiss design - all use theme tokens
 export default function QuestionListScreen() {
   const navigation = useNavigation<QuestionListScreenNavigationProp>();
   const route = useRoute<QuestionListScreenRouteProp>();
@@ -164,7 +165,7 @@ export default function QuestionListScreen() {
         ListFooterComponent={
           loading ? (
             <View style={styles.loader}>
-              <ActivityIndicator color="#000000" />
+              <ActivityIndicator color={theme.colors.text.primary} />
             </View>
           ) : null
         }
@@ -192,106 +193,116 @@ export default function QuestionListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
+  
+  // Header - Swiss style
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 3,
-    borderBottomColor: '#000000',
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    borderBottomWidth: theme.swiss.border.heavy,
+    borderBottomColor: theme.colors.text.primary,
   },
   backButton: {
     width: 80,
   },
   backText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000000',
-    letterSpacing: 0.5,
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 1,
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.heading - 6,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.primary,
   },
   headerSpacer: {
     width: 80,
   },
+  
+  // Search
   searchContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingVertical: theme.spacing[4],
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#000000',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[4],
+    paddingVertical: theme.spacing[3],
   },
   searchText: {
-    fontSize: 14,
-    color: '#000000',
+    fontSize: theme.typography.body.md.fontSize,
+    color: theme.colors.text.primary,
     flex: 1,
   },
   searchPlaceholder: {
-    fontSize: 14,
-    color: '#999999',
+    fontSize: theme.typography.body.md.fontSize,
+    color: theme.colors.text.disabled,
     flex: 1,
   },
   searchClear: {
-    fontSize: 14,
-    color: '#000000',
-    marginRight: 12,
-    fontWeight: '600',
+    fontSize: theme.typography.body.md.fontSize,
+    color: theme.colors.text.primary,
+    marginRight: theme.spacing[3],
+    fontWeight: theme.swiss.fontWeight.medium,
   },
+  
+  // Filters - Swiss bordered
   filterRow: {
     flexDirection: 'row',
-    paddingHorizontal: 24,
-    gap: 8,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    gap: theme.spacing[2],
   },
   filterChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#000000',
+    paddingVertical: theme.spacing[2],
+    paddingHorizontal: theme.spacing[4],
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
   },
   filterChipActive: {
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.text.primary,
   },
   filterText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#000000',
-    letterSpacing: 0.5,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
   filterTextActive: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
   },
+  
+  // Separator
   separator: {
-    height: 3,
-    backgroundColor: '#000000',
-    marginTop: 16,
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+    marginTop: theme.spacing[4],
   },
+  
+  // List
   listContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
   },
   questionRow: {
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    paddingVertical: theme.spacing[5],
+    borderBottomWidth: theme.swiss.border.light,
+    borderBottomColor: theme.colors.border.light,
   },
   questionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
+    fontSize: theme.typography.body.lg.fontSize,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
     lineHeight: 22,
-    marginBottom: 8,
+    marginBottom: theme.spacing[2],
   },
   questionMeta: {
     flexDirection: 'row',
@@ -299,42 +310,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   questionMetaText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#666666',
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.secondary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
   arrow: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.label + 2,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
   },
   loader: {
-    paddingVertical: 24,
+    paddingVertical: theme.swiss.layout.sectionGap,
     alignItems: 'center',
   },
   emptyContainer: {
-    paddingVertical: 48,
+    paddingVertical: theme.swiss.layout.sectionGap + theme.spacing[4],
     alignItems: 'center',
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#000000',
-    letterSpacing: 1,
-    marginBottom: 16,
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    marginBottom: theme.spacing[4],
   },
   resetButton: {
-    borderWidth: 2,
-    borderColor: '#000000',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[3],
+    paddingHorizontal: theme.swiss.layout.screenPadding,
   },
   resetText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: 1,
+    fontSize: theme.swiss.fontSize.label + 2,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
 });

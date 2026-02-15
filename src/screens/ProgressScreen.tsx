@@ -1,24 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useProgressStore } from '../stores/progressStore';
 import { useAuth } from '../hooks/useAuth';
-import { 
-  Container, 
-  DisplayLG, 
-  H2,
-  H4, 
-  BodyLG, 
-  BodyMD, 
-  LabelSM, 
-  Card, 
-  Grid, 
-  Row,
-  Spacer
-} from '../components/ui';
 import { theme } from '../theme';
 import { QUESTION_CATEGORIES } from '../types';
 import { FRAMEWORKS } from '../data/frameworks';
+
+// ============================================
+// SWISS DESIGN: Sharp, bold, minimal, high contrast
+// Using centralized theme tokens for consistency
+// ============================================
 
 const getMasteryColor = (score: number) => {
     if (score >= 80) return theme.colors.semantic.success;
@@ -27,9 +19,9 @@ const getMasteryColor = (score: number) => {
 };
 
 const getMasteryLabel = (score: number) => {
-    if (score >= 80) return 'Mastered';
-    if (score >= 50) return 'Learning';
-    return 'Beginner';
+    if (score >= 80) return 'MASTERED';
+    if (score >= 50) return 'LEARNING';
+    return 'BEGINNER';
 };
 
 const ActivityHeatmap = ({ activityData }: { activityData: string[] }) => {
@@ -51,7 +43,7 @@ const ActivityHeatmap = ({ activityData }: { activityData: string[] }) => {
             <View style={styles.heatmapGrid}>
                 {days.map((day, index) => (
                     <View key={index} style={styles.heatmapColumn}>
-                        <LabelSM color="secondary" style={styles.heatmapLabel}>{day}</LabelSM>
+                        <Text style={styles.heatmapLabel}>{day}</Text>
                         <View 
                             style={[
                                 styles.heatmapDot, 
@@ -61,14 +53,12 @@ const ActivityHeatmap = ({ activityData }: { activityData: string[] }) => {
                     </View>
                 ))}
             </View>
-            <LabelSM color="secondary" align="center" style={styles.heatmapFooter}>
-                LAST 7 DAYS ACTIVITY
-            </LabelSM>
+            <Text style={styles.heatmapFooter}>LAST 7 DAYS</Text>
         </View>
     );
 };
 
-// Framework mastery section
+// Framework mastery section - Swiss bordered boxes
 const FrameworkMasterySection = ({ 
     frameworkMastery 
 }: { 
@@ -84,25 +74,24 @@ const FrameworkMasterySection = ({
 
     return (
         <View style={styles.section}>
-            <LabelSM color="secondary" style={styles.sectionTitle}>FRAMEWORK MASTERY</LabelSM>
-            <Card variant="outline" padding={5}>
+            <Text style={styles.sectionLabel}>FRAMEWORK MASTERY</Text>
+            
+            {/* Swiss bordered card */}
+            <View style={styles.masteryCard}>
                 {sortedFrameworks.length > 0 ? (
                     sortedFrameworks.map(([name, framework]) => {
                         const score = frameworkMastery[name] || 0;
                         return (
-                            <View key={name} style={styles.frameworkItem}>
-                                <View style={styles.frameworkHeader}>
-                                    <View style={[styles.frameworkBadge, { backgroundColor: framework.color + '20' }]}>
-                                        <LabelSM style={{ color: framework.color, fontWeight: '600' }}>
-                                            {name}
-                                        </LabelSM>
+                            <View key={name} style={styles.masteryItem}>
+                                <View style={styles.masteryHeader}>
+                                    <View style={styles.frameworkBadge}>
+                                        <Text style={styles.frameworkBadgeText}>
+                                            {name.toUpperCase().slice(0, 3)}
+                                        </Text>
                                     </View>
-                                    <LabelSM style={{ 
-                                        color: getMasteryColor(score), 
-                                        fontWeight: '600' 
-                                    }}>
+                                    <Text style={[styles.masteryPercent, { color: getMasteryColor(score) }]}>
                                         {score}%
-                                    </LabelSM>
+                                    </Text>
                                 </View>
                                 <View style={styles.masteryBarBg}>
                                     <View 
@@ -116,16 +105,16 @@ const FrameworkMasterySection = ({
                         );
                     })
                 ) : (
-                    <BodyMD color="secondary" align="center">
-                        Complete practice questions to track framework mastery
-                    </BodyMD>
+                    <Text style={styles.emptyText}>
+                        Complete practice to track mastery
+                    </Text>
                 )}
-            </Card>
+            </View>
         </View>
     );
 };
 
-// Pattern mastery section - SWISS STYLE: No emojis
+// Pattern mastery section - Swiss bordered boxes
 const PatternMasterySection = ({ 
     patternMastery 
 }: { 
@@ -142,25 +131,21 @@ const PatternMasterySection = ({
 
     return (
         <View style={styles.section}>
-            <LabelSM color="secondary" style={styles.sectionTitle}>PATTERN MASTERY</LabelSM>
-            <Card variant="outline" padding={5}>
+            <Text style={styles.sectionLabel}>PATTERN MASTERY</Text>
+            
+            <View style={styles.masteryCard}>
                 {patterns.map(pattern => {
                     const score = patternMastery[pattern.id] || 0;
                     return (
-                        <View key={pattern.id} style={styles.patternItem}>
-                            <View style={styles.patternHeader}>
-                                <View style={styles.patternNameContainer}>
-                                    <View style={styles.patternCodeBox}>
-                                        <LabelSM style={styles.patternCode}>{pattern.code}</LabelSM>
-                                    </View>
-                                    <BodyMD style={styles.patternName}>{pattern.name}</BodyMD>
+                        <View key={pattern.id} style={styles.masteryItem}>
+                            <View style={styles.masteryHeader}>
+                                <View style={styles.patternCodeBox}>
+                                    <Text style={styles.patternCode}>{pattern.code}</Text>
                                 </View>
-                                <LabelSM style={{ 
-                                    color: getMasteryColor(score), 
-                                    fontWeight: '600' 
-                                }}>
+                                <Text style={styles.patternName}>{pattern.name}</Text>
+                                <Text style={[styles.masteryPercent, { color: getMasteryColor(score) }]}>
                                     {score}%
-                                </LabelSM>
+                                </Text>
                             </View>
                             <View style={styles.masteryBarBg}>
                                 <View 
@@ -173,26 +158,26 @@ const PatternMasterySection = ({
                         </View>
                     );
                 })}
-            </Card>
+            </View>
         </View>
     );
 };
 
-// Category readiness section - SWISS STYLE: No emojis, using letter codes
+// Category readiness section - Swiss bordered boxes
 const CategoryReadinessSection = ({ 
     categoryProgress 
 }: { 
     categoryProgress: Record<string, number>;
 }) => {
-    const categoryInfo: Record<string, { name: string; color: string; code: string }> = {
-        product_sense: { name: 'Product Sense', color: theme.colors.primary[500], code: 'PS' },
-        execution: { name: 'Execution', color: theme.colors.primary[600], code: 'EX' },
-        strategy: { name: 'Strategy', color: theme.colors.primary[700], code: 'ST' },
-        behavioral: { name: 'Behavioral', color: theme.colors.semantic.success, code: 'BH' },
-        technical: { name: 'Technical', color: theme.colors.primary[400], code: 'TC' },
-        estimation: { name: 'Estimation', color: theme.colors.semantic.warning, code: 'ES' },
-        pricing: { name: 'Pricing', color: theme.colors.neutral[500], code: 'PR' },
-        ab_testing: { name: 'A/B Testing', color: theme.colors.semantic.error, code: 'AB' },
+    const categoryInfo: Record<string, { name: string; code: string }> = {
+        product_sense: { name: 'Product Sense', code: 'PS' },
+        execution: { name: 'Execution', code: 'EX' },
+        strategy: { name: 'Strategy', code: 'ST' },
+        behavioral: { name: 'Behavioral', code: 'BH' },
+        technical: { name: 'Technical', code: 'TC' },
+        estimation: { name: 'Estimation', code: 'ES' },
+        pricing: { name: 'Pricing', code: 'PR' },
+        ab_testing: { name: 'A/B Testing', code: 'AB' },
     };
 
     const getCategoryReadiness = (category: string) => {
@@ -200,50 +185,43 @@ const CategoryReadinessSection = ({
         return Math.min(Math.round((count / 10) * 100), 100);
     };
 
-    const categories = QUESTION_CATEGORIES.filter(cat => categoryProgress[cat] !== undefined || true);
+    const categories = QUESTION_CATEGORIES;
 
     return (
         <View style={styles.section}>
-            <LabelSM color="secondary" style={styles.sectionTitle}>CATEGORY READINESS</LabelSM>
-            <Card variant="outline" padding={5}>
+            <Text style={styles.sectionLabel}>CATEGORY READINESS</Text>
+            
+            <View style={styles.masteryCard}>
                 {categories.map(category => {
-                    const info = categoryInfo[category] || { name: category, color: '#666', code: 'XX' };
+                    const info = categoryInfo[category] || { name: category, code: 'XX' };
                     const readiness = getCategoryReadiness(category);
                     
                     return (
-                        <View key={category} style={styles.categoryItem}>
-                            <View style={styles.categoryHeader}>
-                                <View style={styles.categoryNameContainer}>
-                                    <View style={styles.categoryCodeBox}>
-                                        <LabelSM style={styles.categoryCode}>{info.code}</LabelSM>
-                                    </View>
-                                    <BodyMD style={styles.categoryName}>{info.name}</BodyMD>
+                        <View key={category} style={styles.masteryItem}>
+                            <View style={styles.masteryHeader}>
+                                <View style={styles.categoryCodeBox}>
+                                    <Text style={styles.categoryCode}>{info.code}</Text>
                                 </View>
-                                <View style={styles.categoryStats}>
-                                    <LabelSM color="secondary">
-                                        {categoryProgress[category] || 0} questions
-                                    </LabelSM>
-                                    <LabelSM style={{ 
-                                        color: getMasteryColor(readiness), 
-                                        fontWeight: '600',
-                                        marginLeft: 8
-                                    }}>
-                                        {readiness}%
-                                    </LabelSM>
-                                </View>
+                                <Text style={styles.categoryName}>{info.name}</Text>
+                                <Text style={styles.categoryCount}>
+                                    {categoryProgress[category] || 0}
+                                </Text>
+                                <Text style={[styles.masteryPercent, { color: getMasteryColor(readiness) }]}>
+                                    {readiness}%
+                                </Text>
                             </View>
                             <View style={styles.masteryBarBg}>
                                 <View 
                                     style={[
                                         styles.masteryBarFill, 
-                                        { width: `${readiness}%`, backgroundColor: info.color }
+                                        { width: `${readiness}%`, backgroundColor: getMasteryColor(readiness) }
                                     ]} 
                                 />
                             </View>
                         </View>
                     );
                 })}
-            </Card>
+            </View>
         </View>
     );
 };
@@ -314,51 +292,64 @@ export default function ProgressScreen() {
       return theme.colors.semantic.error;
   };
 
-  if (useProgressStore(state => state.loading)) {
+  const getReadinessLabel = (score: number) => {
+      if (score >= 80) return 'READY';
+      if (score >= 50) return 'IN PROGRESS';
+      return 'JUST STARTED';
+  };
+
+  if (loading) {
       return (
-          <Container variant="screen" padding="none" safeArea>
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                  <BodyLG>Loading progress...</BodyLG>
+          <View style={styles.container}>
+              <View style={styles.header}>
+                  <Text style={styles.headerTitle}>PROGRESS</Text>
               </View>
-          </Container>
+              <View style={styles.loadingContainer}>
+                  <Text style={styles.loadingText}>LOADING...</Text>
+              </View>
+          </View>
       );
   }
 
   return (
-    <Container variant="screen" padding="none" safeArea>
-      <ScrollView contentContainerStyle={styles.content}>
+    <View style={styles.container}>
+      {/* Swiss Header - bold bar */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>PROGRESS</Text>
+      </View>
 
-        <DisplayLG style={styles.title}>PROGRESS</DisplayLG>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+            <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh}
+                tintColor={theme.colors.text.primary}
+            />
+        }
+      >
+        {/* Heavy separator */}
+        <View style={styles.separator} />
 
-        {/* Readiness Score - Hero Section */}
-        <Card variant="filled" padding={6} style={styles.readinessCard}>
+        {/* Readiness Score - Hero Section - Swiss bordered */}
+        <View style={styles.readinessCard}>
             <View style={styles.readinessHeader}>
                 <View>
-                    <LabelSM color="secondary">INTERVIEW READY</LabelSM>
-                    <H2 style={[styles.readinessScore, { color: getProgressColor(displayReadiness) }]}>
+                    <Text style={styles.readinessLabel}>INTERVIEW READY</Text>
+                    <Text style={[styles.readinessScore, { color: getProgressColor(displayReadiness) }]}>
                         {displayReadiness}%
-                    </H2>
+                    </Text>
                 </View>
-                <View style={[styles.readinessBadge, { 
-                    backgroundColor: displayReadiness >= 80 
-                        ? theme.colors.semantic.success + '20' 
-                        : displayReadiness >= 50 
-                            ? theme.colors.semantic.warning + '20'
-                            : theme.colors.primary[100]
-                }]}>
-                    <LabelSM style={{ 
-                        color: displayReadiness >= 80 
-                            ? theme.colors.semantic.success 
-                            : displayReadiness >= 50 
-                                ? theme.colors.semantic.warning
-                                : theme.colors.primary[600],
-                        fontWeight: '600'
-                    }}>
-                        {displayReadiness >= 80 ? '🎉 READY!' : displayReadiness >= 50 ? '👨‍🎓 IN PROGRESS' : '🌱 JUST STARTED'}
-                    </LabelSM>
+                <View style={styles.readinessBadge}>
+                    <Text style={[styles.readinessBadgeText, { color: getProgressColor(displayReadiness) }]}>
+                        {getReadinessLabel(displayReadiness)}
+                    </Text>
                 </View>
             </View>
             
+            {/* Sharp bar - no border radius */}
             <View style={styles.readinessBarBg}>
                 <View 
                     style={[
@@ -373,123 +364,187 @@ export default function ProgressScreen() {
 
             {displayReadiness < 80 && (
                 <View style={styles.readinessFooter}>
-                    <BodyMD color="secondary">
-                        To reach 80% ready: Complete {Math.max(0, 40 - Math.round(displayReadiness * 0.4))} more questions
-                    </BodyMD>
-                    <LabelSM color="secondary">
-                        Estimated: {calculateDaysToReadiness()} days
-                    </LabelSM>
+                    <Text style={styles.readinessFooterText}>
+                        To reach 80%: Complete {Math.max(0, 40 - Math.round(displayReadiness * 0.4))} more
+                    </Text>
+                    <Text style={styles.readinessFooterText}>
+                        EST: {calculateDaysToReadiness()} DAYS
+                    </Text>
                 </View>
             )}
 
             {displayReadiness >= 80 && (
                 <View style={styles.readinessFooter}>
-                    <BodyMD style={{ color: theme.colors.semantic.success }}>
-                        🎉 Congratulations! You're ready for your interviews!
-                    </BodyMD>
+                    <Text style={[styles.readinessFooterText, { color: theme.colors.semantic.success }]}>
+                        READY FOR INTERVIEWS
+                    </Text>
                 </View>
             )}
-        </Card>
+        </View>
 
-        {/* Heatmap Section */}
-        <Card variant="outline" padding={6} style={styles.heatmapCard}>
+        {/* Heatmap Section - Swiss bordered */}
+        <View style={styles.heatmapCard}>
             <ActivityHeatmap activityData={activityData} />
-        </Card>
+        </View>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Swiss bordered boxes */}
         <View style={styles.section}>
-            <LabelSM color="secondary" style={styles.sectionTitle}>OVERVIEW</LabelSM>
-            <Grid columns={2} gap={4}>
-                <Card variant="filled" padding={5}>
-                    <H4 style={styles.statNumber}>{currentStreak}</H4>
-                    <LabelSM color="secondary">DAY STREAK</LabelSM>
-                </Card>
-                <Card variant="filled" padding={5}>
-                    <H4 style={styles.statNumber}>{totalCompleted}</H4>
-                    <LabelSM color="secondary">QUESTIONS SOLVED</LabelSM>
-                </Card>
-                <Card variant="filled" padding={5}>
-                    <H4 style={styles.statNumber}>{displayReadiness}%</H4>
-                    <LabelSM color="secondary">READINESS</LabelSM>
-                </Card>
-                <Card variant="filled" padding={5}>
-                    <H4 style={styles.statNumber}>
+            <Text style={styles.sectionLabel}>OVERVIEW</Text>
+            <View style={styles.statsGrid}>
+                <View style={styles.statBox}>
+                    <Text style={styles.statNumber}>{currentStreak}</Text>
+                    <Text style={styles.statLabel}>DAY STREAK</Text>
+                </View>
+                <View style={styles.statBox}>
+                    <Text style={styles.statNumber}>{totalCompleted}</Text>
+                    <Text style={styles.statLabel}>QUESTIONS</Text>
+                </View>
+                <View style={styles.statBox}>
+                    <Text style={styles.statNumber}>{displayReadiness}%</Text>
+                    <Text style={styles.statLabel}>READY</Text>
+                </View>
+                <View style={styles.statBox}>
+                    <Text style={styles.statNumber}>
                         {Object.keys(frameworkMastery).length > 0 
                             ? Math.round(Object.values(frameworkMastery).reduce((a, b) => a + b, 0) / Object.values(frameworkMastery).length)
                             : 0}%
-                    </H4>
-                    <LabelSM color="secondary">AVG FRAMEWORK</LabelSM>
-                </Card>
-            </Grid>
+                    </Text>
+                    <Text style={styles.statLabel}>AVG FRAMEWORK</Text>
+                </View>
+            </View>
         </View>
+
+        {/* Heavy separator */}
+        <View style={styles.separator} />
 
         {/* Framework Mastery Section */}
         <FrameworkMasterySection frameworkMastery={frameworkMastery} />
 
+        {/* Heavy separator */}
+        <View style={styles.separator} />
+
         {/* Pattern Mastery Section */}
         <PatternMasterySection patternMastery={patternMastery} />
+
+        {/* Heavy separator */}
+        <View style={styles.separator} />
 
         {/* Category Readiness Section */}
         <CategoryReadinessSection categoryProgress={categoryStats} />
 
+        {/* Heavy separator */}
+        <View style={styles.separator} />
+
         {/* Recent Activity */}
         <View style={styles.section}>
-            <LabelSM color="secondary" style={styles.sectionTitle}>RECENT ACTIVITY</LabelSM>
+            <Text style={styles.sectionLabel}>RECENT ACTIVITY</Text>
             <View style={styles.activityList}>
-                {useProgressStore.getState().history.length > 0 ? (
-                    useProgressStore.getState().history.slice(0, 5).map((session, index) => (
-                        <Card key={index} variant="outline" padding={4} style={styles.activityCard}>
-                            <Row style={{ justifyContent: 'space-between', marginBottom: 8 }}>
-                                <LabelSM color="secondary">
+                {history.length > 0 ? (
+                    history.slice(0, 5).map((session, index) => (
+                        <View key={index} style={styles.activityCard}>
+                            <View style={styles.activityHeader}>
+                                <Text style={styles.activityDate}>
                                     {new Date(session.created_at).toLocaleDateString()}
-                                </LabelSM>
-                                <LabelSM 
-                                    style={{ 
-                                        color: session.completed ? theme.colors.semantic.success : theme.colors.semantic.warning 
-                                    }}
-                                >
-                                    {session.completed ? 'COMPLETED' : 'IN PROGRESS'}
-                                </LabelSM>
-                            </Row>
-                            <BodyMD style={{ fontWeight: '500', marginBottom: 4 }} numberOfLines={2}>
-                                {session.questions?.question_text || 'Unknown Question'}
-                            </BodyMD>
-                            <Row style={{ justifyContent: 'space-between' }}>
-                                <LabelSM color="secondary">
+                                </Text>
+                                <Text style={[
+                                    styles.activityStatus,
+                                    { color: session.completed ? theme.colors.semantic.success : theme.colors.semantic.warning }
+                                ]}>
+                                    {session.completed ? 'DONE' : 'IN PROGRESS'}
+                                </Text>
+                            </View>
+                            <Text style={styles.activityQuestion} numberOfLines={2}>
+                                {session.questions?.question_text || 'Unknown'}
+                            </Text>
+                            <View style={styles.activityFooter}>
+                                <Text style={styles.activityType}>
                                     {(session as any).session_type?.toUpperCase() || session.mode?.toUpperCase() || 'PRACTICE'}
-                                </LabelSM>
+                                </Text>
                                 {session.ai_feedback && (
-                                    <LabelSM style={{ color: theme.colors.primary[500] }}>
+                                    <Text style={styles.activityScore}>
                                         SCORE: {session.ai_feedback.score}/10
-                                    </LabelSM>
+                                    </Text>
                                 )}
-                            </Row>
-                        </Card>
+                            </View>
+                        </View>
                     ))
                 ) : (
-                    <Card variant="outline" padding={5}>
-                        <BodyMD color="secondary" align="center">No recent activity. Start practicing!</BodyMD>
-                    </Card>
+                    <View style={styles.activityCard}>
+                        <Text style={styles.emptyText}>No recent activity. Start practicing!</Text>
+                    </View>
                 )}
             </View>
         </View>
 
+        {/* Bottom spacing */}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
-    </Container>
+    </View>
   );
 }
 
+// ============================================
+// SWISS STYLE: Sharp edges, bold typography, no gradients
+// ============================================
+
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  
+  // Header - Swiss bold bar
+  header: {
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    borderBottomWidth: theme.swiss.border.heavy,
+    borderBottomColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.background,
+  },
+  headerTitle: {
+    fontSize: theme.swiss.fontSize.title,
+    fontWeight: theme.swiss.fontWeight.black,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.primary,
+  },
+  
+  // Scroll view
+  scrollView: {
+    flex: 1,
+  },
+  
   content: {
-    padding: theme.spacing[6],
-    paddingBottom: 100,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingTop: theme.swiss.layout.sectionGap,
   },
-  title: {
-    marginBottom: theme.spacing[6],
+  
+  // Loading
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  loadingText: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.secondary,
+  },
+  
+  // Heavy separator
+  separator: {
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+    marginVertical: theme.swiss.layout.sectionGap,
+  },
+  
+  // Readiness Card - Swiss bordered
   readinessCard: {
-    marginBottom: theme.spacing[6],
-    backgroundColor: theme.colors.surface.secondary,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.swiss.layout.sectionGap,
+    marginBottom: theme.swiss.layout.sectionGap,
   },
   readinessHeader: {
     flexDirection: 'row',
@@ -497,25 +552,38 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: theme.spacing[4],
   },
+  readinessLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    marginBottom: theme.spacing[1],
+  },
   readinessScore: {
     fontSize: 48,
-    fontWeight: '700',
-    marginTop: theme.spacing[1],
+    fontWeight: theme.swiss.fontWeight.black,
   },
   readinessBadge: {
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
     paddingHorizontal: theme.spacing[4],
     paddingVertical: theme.spacing[2],
-    borderRadius: 20,
   },
+  readinessBadgeText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  // Sharp bar - no border radius
   readinessBarBg: {
     height: 12,
     backgroundColor: theme.colors.neutral[200],
-    borderRadius: 6,
+    borderRadius: 0,
     overflow: 'hidden',
   },
   readinessBarFill: {
     height: '100%',
-    borderRadius: 6,
+    borderRadius: 0,
   },
   readinessFooter: {
     marginTop: theme.spacing[4],
@@ -523,10 +591,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  readinessFooterText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+  },
+  
+  // Heatmap Card
   heatmapCard: {
-    marginBottom: theme.spacing[6],
-    backgroundColor: theme.colors.surface.secondary,
-    borderWidth: 0,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.swiss.layout.sectionGap,
+    marginBottom: theme.swiss.layout.sectionGap,
   },
   heatmapContainer: {
     alignItems: 'center',
@@ -543,12 +619,16 @@ const styles = StyleSheet.create({
     gap: theme.spacing[2],
   },
   heatmapLabel: {
-    opacity: 0.5,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
+  // Sharp dots - no border radius
   heatmapDot: {
     width: 24,
     height: 24,
-    borderRadius: 4,
+    borderRadius: 0,
   },
   heatmapDotActive: {
     backgroundColor: theme.colors.semantic.success,
@@ -557,147 +637,200 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.neutral[300],
   },
   heatmapFooter: {
-    letterSpacing: 2,
-  },
-  section: {
-    marginBottom: theme.spacing[6],
-  },
-  sectionTitle: {
-    marginBottom: theme.spacing[4],
-    letterSpacing: 1,
-  },
-  statNumber: {
-    marginBottom: theme.spacing[2],
-    color: theme.colors.primary[500],
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   
-  // Mastery styles
+  section: {
+    marginBottom: theme.swiss.layout.sectionGap,
+  },
+  sectionLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[4],
+  },
+  
+  // Stats Grid
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing[3],
+  },
+  statBox: {
+    flex: 1,
+    minWidth: '45%',
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.spacing[4],
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: theme.swiss.fontSize.title,
+    fontWeight: theme.swiss.fontWeight.black,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[1],
+  },
+  statLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  
+  // Mastery Card - Swiss bordered
+  masteryCard: {
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.spacing[4],
+  },
   masteryItem: {
     marginBottom: theme.spacing[4],
   },
   masteryHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: theme.spacing[2],
   },
-  masteryLabel: {
-    fontWeight: '600',
-    flex: 1,
+  masteryPercent: {
+    marginLeft: 'auto',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
   },
-  masteryScoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[2],
-  },
-  masteryStatus: {
-    marginLeft: 4,
-  },
+  // Sharp bars
   masteryBarBg: {
     height: 8,
     backgroundColor: theme.colors.neutral[200],
-    borderRadius: 4,
+    borderRadius: 0,
     overflow: 'hidden',
   },
   masteryBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 0,
   },
   
-  // Framework styles
-  frameworkItem: {
-    marginBottom: theme.spacing[5],
-  },
-  frameworkHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing[2],
-  },
+  // Framework Badge
   frameworkBadge: {
-    paddingHorizontal: theme.spacing[3],
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[2],
     paddingVertical: theme.spacing[1],
-    borderRadius: 12,
+    marginRight: theme.spacing[2],
+  },
+  frameworkBadgeText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
   
-  // Pattern styles
-  patternItem: {
-    marginBottom: theme.spacing[4],
-  },
-  patternHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing[2],
-  },
-  patternNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  // Pattern/Category code box
   patternCodeBox: {
     width: 28,
     height: 28,
-    backgroundColor: theme.colors.surface.secondary,
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: theme.spacing[2],
-    borderWidth: theme.spacing.borderWidth.thin,
-    borderColor: theme.colors.border.light,
   },
   patternCode: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
     letterSpacing: -0.5,
   },
   patternName: {
-    fontWeight: '500',
-  },
-  
-  // Category styles
-  categoryItem: {
-    marginBottom: theme.spacing[4],
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing[2],
-  },
-  categoryNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flex: 1,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
   },
   categoryCodeBox: {
     width: 32,
     height: 24,
-    backgroundColor: theme.colors.surface.secondary,
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: theme.spacing[2],
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
   },
   categoryCode: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
     letterSpacing: 0.5,
   },
   categoryName: {
-    fontWeight: '500',
-    textTransform: 'capitalize',
+    flex: 1,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
   },
-  categoryStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  categoryCount: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    marginRight: theme.spacing[2],
+  },
+  
+  emptyText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
   },
   
   // Activity list
   activityList: {
-    gap: theme.spacing[4],
+    gap: theme.spacing[3],
   },
   activityCard: {
-    backgroundColor: theme.colors.background,
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
+    padding: theme.spacing[4],
+  },
+  activityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing[2],
+  },
+  activityDate: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+  },
+  activityStatus: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  activityQuestion: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[2],
+  },
+  activityFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  activityType: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
+  },
+  activityScore: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.primary[500],
+  },
+  
+  bottomSpacer: {
+    height: theme.spacing[10],
   },
 });

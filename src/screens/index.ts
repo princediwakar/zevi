@@ -15,3 +15,4 @@ export { default as LessonScreen } from './LessonScreen';
 export { default as LearnScreen } from './LearnScreen';
 export { default as CategoryDetailScreen } from './CategoryDetailScreen';
 export { default as FrameworkDetailScreen } from './FrameworkDetailScreen';
+export { default as LearningPathBrowseScreen } from './LearningPathBrowseScreen';

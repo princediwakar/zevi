@@ -21,6 +21,8 @@ import { theme } from '../theme';
 type QuestionDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'QuestionDetail'>;
 type QuestionDetailScreenRouteProp = RouteProp<RootStackParamList, 'QuestionDetail'>;
 
+// SWISS DESIGN: Sharp edges, bold typography
+// Using centralized theme tokens for consistency
 export default function QuestionDetailScreen() {
   const navigation = useNavigation<QuestionDetailScreenNavigationProp>();
   const route = useRoute<QuestionDetailScreenRouteProp>();
@@ -79,7 +81,7 @@ export default function QuestionDetailScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#000000" />
+        <ActivityIndicator size="large" color={theme.colors.text.primary} />
       </View>
     );
   }
@@ -260,198 +262,227 @@ export default function QuestionDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Loading
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  
+  // Error
   errorContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: theme.swiss.layout.screenPadding,
   },
   errorTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#000000',
-    letterSpacing: 1,
-    marginBottom: 24,
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    marginBottom: theme.swiss.layout.elementGap,
   },
   errorButton: {
-    borderWidth: 2,
-    borderColor: '#000000',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[3],
+    paddingHorizontal: theme.swiss.layout.screenPadding,
   },
   errorButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: 1,
+    fontSize: theme.swiss.fontSize.label + 2,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
+  
+  // Main container
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
+  
+  // Header
   header: {
-    paddingTop: 60,
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 3,
-    borderBottomColor: '#000000',
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    borderBottomWidth: theme.swiss.border.heavy,
+    borderBottomColor: theme.colors.text.primary,
   },
   backButton: {
     alignSelf: 'flex-start',
   },
   backText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000000',
-    letterSpacing: 0.5,
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
+  
+  // Scroll View
   scrollView: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: 24,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
   },
+  
+  // Separator
   separator: {
-    height: 3,
-    backgroundColor: '#000000',
-    marginVertical: 24,
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+    marginVertical: theme.swiss.layout.sectionGap,
   },
+  
+  // Meta row
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
+    gap: theme.spacing[2],
+    marginBottom: theme.spacing[4],
   },
   metaBox: {
-    borderWidth: 1,
-    borderColor: '#000000',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[1] + 1,
   },
   metaText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
+  
+  // Question text
   questionText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
     lineHeight: 32,
-    marginBottom: 8,
+    marginBottom: theme.spacing[2],
   },
+  
+  // Section
   section: {
-    marginBottom: 24,
+    marginBottom: theme.swiss.layout.sectionGap,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#666666',
-    letterSpacing: 1,
-    marginBottom: 12,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    marginBottom: theme.spacing[3],
   },
+  
+  // Hint box
   hintBox: {
-    borderWidth: 2,
-    borderColor: '#000000',
-    padding: 16,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.spacing[4],
   },
   hintHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: theme.spacing[3],
   },
   hintHide: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#000000',
-    letterSpacing: 0.5,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
   hintText: {
-    fontSize: 15,
-    color: '#000000',
+    fontSize: theme.typography.body.md.fontSize,
+    color: theme.colors.text.primary,
     lineHeight: 22,
   },
+  
+  // Show hint button
   showHintButton: {
-    borderWidth: 1,
-    borderColor: '#000000',
-    paddingVertical: 12,
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[3],
     alignItems: 'center',
   },
   showHintText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000000',
-    letterSpacing: 0.5,
+    fontSize: theme.swiss.fontSize.label + 2,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
+  
+  // Answer box
   answerBox: {
-    borderWidth: 1,
-    borderColor: '#000000',
-    padding: 16,
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
+    padding: theme.spacing[4],
   },
   answerText: {
-    fontSize: 14,
-    color: '#000000',
+    fontSize: theme.typography.body.md.fontSize,
+    color: theme.colors.text.primary,
     lineHeight: 22,
   },
   noAnswer: {
-    fontSize: 14,
-    color: '#999999',
+    fontSize: theme.typography.body.md.fontSize,
+    color: theme.colors.text.disabled,
     fontStyle: 'italic',
   },
+  
+  // Locked box
   lockedBox: {
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    padding: 24,
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.border.light,
+    padding: theme.swiss.layout.sectionGap,
     alignItems: 'center',
   },
   lockedText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#999999',
-    letterSpacing: 1,
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.disabled,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
+  
+  // Related questions
   relatedRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    paddingVertical: theme.spacing[4],
+    borderBottomWidth: theme.swiss.border.light,
+    borderBottomColor: theme.colors.border.light,
   },
   relatedText: {
     flex: 1,
-    fontSize: 14,
-    color: '#000000',
-    marginRight: 16,
+    fontSize: theme.typography.body.md.fontSize,
+    color: theme.colors.text.primary,
+    marginRight: theme.spacing[4],
   },
   relatedArrow: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#000000',
+    fontSize: theme.swiss.fontSize.label + 2,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
   },
+  
+  // Footer
   footer: {
-    padding: 24,
-    borderTopWidth: 3,
-    borderTopColor: '#000000',
+    padding: theme.swiss.layout.screenPadding,
+    borderTopWidth: theme.swiss.border.heavy,
+    borderTopColor: theme.colors.text.primary,
   },
   startButton: {
-    backgroundColor: '#000000',
-    paddingVertical: 18,
+    backgroundColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[5] - 2,
     alignItems: 'center',
   },
   startButtonText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 2,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.xwide,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -13,24 +13,28 @@ import { usePracticeStore } from '../stores/practiceStore';
 import { useAuth } from '../hooks/useAuth';
 import { Question, MCQOption } from '../types';
 import { sampleQuestions } from '../data/sampleQuestions';
-import { Container, H2, H3, BodyLG, BodyMD, BodySM, LabelMD, Card, PrimaryButton, OutlineButton, GhostButton } from '../components/ui';
 import { theme } from '../theme';
 
 type QuickQuizNavigationProp = NativeStackNavigationProp<RootStackParamList, 'QuickQuiz'>;
 type QuickQuizRouteProp = RouteProp<RootStackParamList, 'QuickQuiz'>;
+
+// ============================================
+// SWISS DESIGN: Sharp, bold, minimal, high contrast
+// Using centralized theme tokens for consistency
+// ============================================
 
 export default function QuickQuizScreen() {
   const navigation = useNavigation<QuickQuizNavigationProp>();
   const route = useRoute<QuickQuizRouteProp>();
   const initialQuestions = route.params?.questions;
   const sourceQuestionId = route.params?.sourceQuestionId;
-  const questionCount = route.params?.questionCount ?? 5; // Default to 5 for sprint mode
+  const questionCount = route.params?.questionCount ?? 5;
   const { user, guestId } = useAuth();
 
   const { getRandomMCQQuestion, getRecommendedQuestions } = useQuestionsStore();
   const {
     currentQuestion,
-    currentQuestionIndex, // This is sub-question index within the current question
+    currentQuestionIndex,
     questionQueue,
     currentQueueIndex,
     totalQuizSteps,
@@ -75,13 +79,11 @@ export default function QuickQuizScreen() {
     setInitializing(true);
 
     if (lessonId) {
-       // Fetch specific questions for this lesson
        const { getQuestionsByLessonId } = useQuestionsStore.getState();
        queue = await getQuestionsByLessonId(lessonId);
     } else if (initialQuestions && initialQuestions.length > 0) {
       queue = initialQuestions;
     } else {
-      // Try personalized first, with robust fallback
       try {
         if (userId) {
           queue = await getRecommendedQuestions(userId, isGuest, questionCount);
@@ -90,18 +92,13 @@ export default function QuickQuizScreen() {
         console.error('Error getting personalized questions:', error);
       }
       
-      // Fallback: use sample questions if queue is empty
       if (queue.length === 0) {
-        // Get MCQ questions from sample data
         const mcqQuestions = sampleQuestions.filter(q => q.mcq_version?.enabled);
-        
-        // Shuffle and pick questionCount
         const shuffled = [...mcqQuestions].sort(() => Math.random() - 0.5);
         queue = shuffled.slice(0, questionCount);
       }
     }
 
-    // Final check: ensure we have questions
     if (queue.length === 0) {
       const mcqQuestions = sampleQuestions.filter(q => q.mcq_version?.enabled);
       queue = mcqQuestions.slice(0, questionCount);
@@ -113,7 +110,6 @@ export default function QuickQuizScreen() {
         await startQuiz(queue, finalUserId, isGuest);
       } catch (error) {
         console.error('Error starting quiz:', error);
-        // Try with sample questions directly
         try {
           const mcqQuestions = sampleQuestions.filter(q => q.mcq_version?.enabled);
           await startQuiz(mcqQuestions.slice(0, questionCount), 'guest', true);
@@ -133,17 +129,13 @@ export default function QuickQuizScreen() {
   const handleSubmit = async () => {
     if (!selectedOption || !currentQuestion) return;
 
-    // Check correctness
     const isCorrect = selectedOption.correct;
-
-    // Find option index
     const subQuestions = currentQuestion.mcq_version?.sub_questions || [];
     const currentSubQuestion = subQuestions[currentQuestionIndex];
     const optionIndex = currentSubQuestion.options.findIndex(o => o.text === selectedOption.text);
 
     answerMCQSubQuestion(currentQuestionIndex, optionIndex, isCorrect);
 
-    // Submit result to store immediately to record progress/stats
     const userId = user?.id || guestId || 'guest';
     const isGuest = !user?.id;
     await submitAnswer(userId, isGuest);
@@ -154,7 +146,6 @@ export default function QuickQuizScreen() {
   const handleNext = async () => {
     if (!currentQuestion) return;
 
-    // Use store's intelligent next step logic
     const userId = user?.id || guestId || 'guest';
     const isGuest = !user?.id;
     const hasNext = await nextQuizQuestion(userId, isGuest);
@@ -163,18 +154,17 @@ export default function QuickQuizScreen() {
       setSelectedOption(null);
       setShowFeedback(false);
     } else {
-      // Quiz complete - pass sourceQuestionId to enable returning to the question
       navigation.navigate('QuizResults', { sourceQuestionId });
     }
   };
 
   if (initializing || !currentQuestion || !currentQuestion.mcq_version) {
     return (
-      <Container variant="screen" padding="lg" safeArea>
-        <BodyLG align="center" style={{ marginTop: theme.spacing[14] }}>
-          LOADING QUESTION...
-        </BodyLG>
-      </Container>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.loadingText}>LOADING...</Text>
+        </View>
+      </View>
     );
   }
 
@@ -185,18 +175,13 @@ export default function QuickQuizScreen() {
   const stepProgress = `${currentQuizStep}/${totalQuizSteps}`;
   
   return (
-    <Container variant="screen" padding="none" safeArea>
-      {/* Focus Mode: Minimal progress indicator at top */}
+    <View style={styles.container}>
+      {/* Swiss Progress indicator - bold bar at top */}
       <View style={styles.progressIndicator}>
-        <Animated.View
-          style={[
-            styles.progressBar,
-            progressBarStyle
-          ]}
-        />
-        <LabelMD color="secondary" style={styles.progressText}>
+        <Animated.View style={[styles.progressBar, progressBarStyle]} />
+        <Text style={styles.progressText}>
           {currentQueueIndex + 1}/{questionQueue.length} • STEP {stepProgress}
-        </LabelMD>
+        </Text>
       </View>
 
       <ScrollView
@@ -204,15 +189,15 @@ export default function QuickQuizScreen() {
         contentContainerStyle={styles.contentContainer}
       >
         {/* Large question text with heavy weight */}
-        <H2 style={styles.questionText}>
+        <Text style={styles.questionText}>
           {currentQuestion.question_text}
-        </H2>
+        </Text>
 
-        <BodyLG style={styles.subQuestionPrompt}>
+        <Text style={styles.subQuestionPrompt}>
           {currentSubQuestion.prompt}
-        </BodyLG>
+        </Text>
 
-        {/* Large touch targets with thick borders */}
+        {/* Large touch targets with thick borders - Swiss style */}
         <View style={styles.optionsContainer}>
           {currentSubQuestion.options.map((option, index) => {
             const isSelected = selectedOption?.text === option.text;
@@ -220,120 +205,129 @@ export default function QuickQuizScreen() {
             const showIncorrect = showFeedback && isSelected && !option.correct;
 
             // Determine card variant based on state
-            let cardVariant: 'outline' | 'filled' = 'outline';
-            let borderColor = theme.colors.border.medium;
+            let borderColor = theme.colors.text.primary;
+            let backgroundColor = theme.colors.background;
 
             if (showCorrect) {
-              cardVariant = 'filled';
-              borderColor = theme.colors.semantic.success as any;
+              backgroundColor = theme.colors.semantic.success + '20';
+              borderColor = theme.colors.semantic.success;
             } else if (showIncorrect) {
-              cardVariant = 'filled';
-              borderColor = theme.colors.semantic.error as any;
+              backgroundColor = theme.colors.semantic.error + '20';
+              borderColor = theme.colors.semantic.error;
             } else if (isSelected) {
-              borderColor = theme.colors.primary[500] as any;
+              borderColor = theme.colors.text.primary;
             }
 
-            // Use a combination of question ID, sub-question index, and option text for unique key
             const optionKey = `${currentQuestion.id}-${currentQuestionIndex}-${option.text}`;
 
             return (
-              <Card
+              <TouchableOpacity
                 key={optionKey}
-                variant={cardVariant}
-                radius="none"
-                padding={4}
                 style={[
                   styles.optionCard,
-                  { borderColor },
+                  { borderColor, backgroundColor },
                   (showCorrect || showIncorrect || isSelected) && styles.optionCardSelected,
                 ]}
-                onTouchEnd={() => !showFeedback && handleOptionPress(option)}
+                onPress={() => !showFeedback && handleOptionPress(option)}
+                disabled={showFeedback}
+                activeOpacity={0.8}
               >
-                <BodyMD
+                <Text
                   style={[
                     styles.optionText,
                     (showCorrect || showIncorrect || isSelected) && styles.optionTextSelected,
                   ]}
                 >
                   {option.text}
-                </BodyMD>
-              </Card>
+                </Text>
+              </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Immediate feedback panel */}
+        {/* Immediate feedback panel - Swiss bordered */}
         {showFeedback && selectedOption && (
-          <Card
-            variant="filled"
-            radius="none"
-            padding={4}
+          <View
             style={[
               styles.feedbackCard,
               selectedOption.correct ? styles.correctFeedback : styles.incorrectFeedback,
             ]}
           >
-            <H3 style={styles.feedbackTitle}>
+            <Text style={styles.feedbackTitle}>
               {selectedOption.correct ? 'CORRECT' : 'INCORRECT'}
-            </H3>
-            <BodyMD style={styles.feedbackText}>
+            </Text>
+            <Text style={styles.feedbackText}>
               {selectedOption.explanation}
-            </BodyMD>
-          </Card>
+            </Text>
+          </View>
         )}
       </ScrollView>
 
-      {/* Action button */}
+      {/* Action button - Swiss bordered */}
       <View style={styles.buttonContainer}>
         {!showFeedback ? (
-          <PrimaryButton
-            size="lg"
-            fullWidth
-            disabled={!selectedOption}
+          <TouchableOpacity
+            style={[styles.submitButton, !selectedOption && styles.submitButtonDisabled]}
             onPress={() => selectedOption && handleSubmit()}
-            style={!selectedOption && styles.disabledButton}
+            disabled={!selectedOption}
+            activeOpacity={0.8}
           >
-            SUBMIT ANSWER
-          </PrimaryButton>
+            <Text style={styles.submitButtonText}>SUBMIT ANSWER</Text>
+          </TouchableOpacity>
         ) : (
-          <PrimaryButton
-            size="lg"
-            fullWidth
+          <TouchableOpacity
+            style={styles.nextButton}
             onPress={handleNext}
+            activeOpacity={0.8}
           >
-            {currentQuizStep < totalQuizSteps ? 'NEXT STEP' : 'SEE RESULTS'}
-          </PrimaryButton>
+            <Text style={styles.nextButtonText}>
+              {currentQuizStep < totalQuizSteps ? 'NEXT STEP' : 'SEE RESULTS'}
+            </Text>
+          </TouchableOpacity>
         )}
       </View>
 
-  {/* Minimal close button - SWISS STYLE: No emoji */}
-  <GhostButton
-    style={styles.closeButton}
-    onPress={() => navigation.goBack()}
-  >
-    CLOSE
-  </GhostButton>
-    </Container>
+      {/* Minimal close button - Swiss bordered */}
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.closeButtonText}>CLOSE</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
+// ============================================
+// SWISS STYLE: Sharp edges, bold typography, no gradients
+// ============================================
+
 const styles = StyleSheet.create({
-  // Progress indicator - thin line at top
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  
+  // Progress indicator - bold bar at top
   progressIndicator: {
-    paddingHorizontal: theme.spacing[6], // 24px
-    paddingTop: theme.spacing[6], // 24px
-    paddingBottom: theme.spacing[3], // 12px
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingTop: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.spacing[4],
+    borderBottomWidth: theme.swiss.border.standard,
+    borderBottomColor: theme.colors.text.primary,
   },
   progressBar: {
-    height: 2,
-    backgroundColor: theme.colors.primary[500],
-    marginBottom: theme.spacing[2], // 8px
+    height: 4,
+    backgroundColor: theme.colors.text.primary,
+    marginBottom: theme.spacing[2],
   },
   progressText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
     textAlign: 'right',
-    opacity: 0.7,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
 
   // Content area
@@ -341,61 +335,76 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: theme.spacing[6], // 24px
-    paddingBottom: 80, // Extra padding for button
+    padding: theme.swiss.layout.screenPadding,
+    paddingBottom: 100,
   },
 
   // Question text - large and heavy
   questionText: {
-    marginBottom: theme.spacing[6], // 24px
-    lineHeight: 40,
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    marginBottom: theme.swiss.layout.sectionGap,
+    lineHeight: 32,
     letterSpacing: -0.5,
+    color: theme.colors.text.primary,
   },
   subQuestionPrompt: {
-    marginBottom: theme.spacing[8], // 40px
-    fontWeight: '500',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    marginBottom: theme.swiss.layout.sectionGap + theme.spacing[4],
+    color: theme.colors.text.secondary,
   },
 
   // Options - large touch targets with thick borders
   optionsContainer: {
-    marginBottom: theme.spacing[8], // 40px
-    gap: theme.spacing[3], // 12px gap between options
+    marginBottom: theme.swiss.layout.sectionGap,
+    gap: theme.spacing[3],
   },
   optionCard: {
-    borderWidth: theme.spacing.borderWidth.medium, // Thick borders (2px)
-    minHeight: 72, // Large touch target
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.background,
+    minHeight: 72,
     justifyContent: 'center',
+    padding: theme.spacing[4],
   },
   optionCardSelected: {
-    borderWidth: theme.spacing.borderWidth.thick, // Even thicker when selected (3px)
+    borderWidth: theme.swiss.border.heavy,
   },
   optionText: {
-    fontWeight: '400',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
   },
   optionTextSelected: {
-    fontWeight: '600',
+    fontWeight: theme.swiss.fontWeight.semibold,
   },
 
-  // Feedback card
+  // Feedback card - Swiss bordered
   feedbackCard: {
-    marginBottom: theme.spacing[8], // 40px
+    marginBottom: theme.swiss.layout.sectionGap,
     borderLeftWidth: 4,
+    padding: theme.spacing[4],
   },
   correctFeedback: {
     borderLeftColor: theme.colors.semantic.success,
-    backgroundColor: `${theme.colors.semantic.success}10`, // 10% opacity
+    backgroundColor: theme.colors.semantic.success + '10',
   },
   incorrectFeedback: {
     borderLeftColor: theme.colors.semantic.error,
-    backgroundColor: `${theme.colors.semantic.error}10`, // 10% opacity
+    backgroundColor: theme.colors.semantic.error + '10',
   },
   feedbackTitle: {
-    marginBottom: theme.spacing[2], // 8px
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[2],
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   feedbackText: {
+    fontSize: theme.swiss.fontSize.body,
     lineHeight: 24,
+    color: theme.colors.text.secondary,
   },
 
   // Button container
@@ -404,21 +413,69 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: theme.spacing[6], // 24px
+    padding: theme.swiss.layout.screenPadding,
     backgroundColor: theme.colors.background,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
+    borderTopWidth: theme.swiss.border.heavy,
+    borderTopColor: theme.colors.text.primary,
   },
-  disabledButton: {
+  
+  // Submit button - bordered, filled
+  submitButton: {
+    borderWidth: theme.swiss.border.heavy,
+    borderColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[5],
+    alignItems: 'center',
+  },
+  submitButtonDisabled: {
     opacity: 0.5,
+  },
+  submitButtonText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.xwide3,
+  },
+  
+  // Next button - bordered, outline
+  nextButton: {
+    borderWidth: theme.swiss.border.heavy,
+    borderColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[5],
+    alignItems: 'center',
+  },
+  nextButtonText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.xwide3,
   },
 
   // Close button
   closeButton: {
     position: 'absolute',
-    top: theme.spacing[7], // 32px from top (accounting for safe area)
-    right: theme.spacing[6], // 24px from right
+    top: theme.swiss.layout.headerPaddingTop,
+    right: theme.swiss.layout.screenPadding,
     zIndex: 10,
-    opacity: 0.7,
+    padding: theme.spacing[2],
+  },
+  closeButtonText: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+
+  // Loading
+  header: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.secondary,
   },
 });

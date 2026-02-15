@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { useTheme } from '../contexts/ThemeContext';
 import { useQuestionsStore } from '../stores/questionsStore';
 import { useLearningPathStore } from '../stores/learningPathStore';
 import { useProgressStore } from '../stores/progressStore';
 import { useAuth } from '../hooks/useAuth';
-import { Lesson, LessonType, LessonContent } from '../types';
+import { Lesson, LessonType } from '../types';
+import { theme } from '../theme';
 type LessonScreenRouteProp = RouteProp<{ LessonScreen: { lessonId: string } }, 'LessonScreen'>;
 import { LearnLesson } from './lessons/LearnLesson';
 import { DrillLesson } from './lessons/DrillLesson';
@@ -15,20 +15,23 @@ import { FullPracticeLesson } from './lessons/FullPracticeLesson';
 import QuizLesson from './lessons/QuizLesson';
 
 // Lesson type labels for display - Swiss Style with letter codes
-const LESSON_TYPE_LABELS: Record<LessonType, { label: string; code: string; description: string }> = {
-  learn: { label: 'LEARN', code: 'LRN', description: 'Learn the framework concepts' },
-  drill: { label: 'DRILL', code: 'DRL', description: 'Practice specific skills' },
-  pattern: { label: 'PATTERN', code: 'PAT', description: 'Practice with outlines' },
-  full_practice: { label: 'PRACTICE', code: 'PRX', description: 'Complete interview practice' },
-  quiz: { label: 'QUIZ', code: 'QZ', description: 'Test your knowledge' },
-  practice: { label: 'PRACTICE', code: 'PRX', description: 'Practice skills' },
+const LESSON_TYPE_LABELS: Record<LessonType, { label: string; code: string }> = {
+  learn: { label: 'LEARN', code: 'LRN' },
+  drill: { label: 'DRILL', code: 'DRL' },
+  pattern: { label: 'PATTERN', code: 'PAT' },
+  full_practice: { label: 'PRACTICE', code: 'PRX' },
+  quiz: { label: 'QUIZ', code: 'QZ' },
+  practice: { label: 'PRACTICE', code: 'PRX' },
 };
+
+// ============================================
+// SWISS DESIGN: Sharp, bold, minimal, high contrast
+// ============================================
 
 export default function LessonScreen() {
   const route = useRoute<LessonScreenRouteProp>();
   const lessonId = route.params?.lessonId as string | undefined;
   const navigation = useNavigation();
-  const { theme } = useTheme();
   const { user, isGuest, guestId } = useAuth();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -66,13 +69,10 @@ export default function LessonScreen() {
     setEarnedXp(xpEarned);
     setShowCompletionModal(true);
     
-    // Update progress in database if user is logged in
     if (lesson && userId) {
       try {
-        // Determine category from lesson or use default
         const category = (lesson as any).category || 'product_sense';
         
-        // Determine mode based on lesson type
         let mode: 'mcq' | 'text' | 'guided' | 'mock' = 'mcq';
         if (lesson.type === 'full_practice' || lesson.type === 'pattern') {
           mode = 'text';
@@ -80,10 +80,7 @@ export default function LessonScreen() {
           mode = 'guided';
         }
         
-        // Update progress after completion
         await updateAfterCompletion(userId, mode, category, isGuest);
-        
-        // Refresh progress data
         await useProgressStore.getState().fetchProgress(userId, isGuest);
       } catch (error) {
         console.error('Error updating progress:', error);
@@ -95,13 +92,9 @@ export default function LessonScreen() {
     setShowCompletionModal(false);
     const nextLesson = getNextLesson();
     if (nextLesson) {
-      // Use the full path from RootStackParamList
-      // @ts-expect-error - navigation typing issue with dynamic params
-      navigation.navigate('LessonScreen', { lessonId: nextLesson.id });
+      navigation.navigate('LessonScreen' as never, { lessonId: nextLesson.id } as never);
     } else {
-      // Go back to learn screen
-      // @ts-expect-error - navigation typing issue
-      navigation.navigate('LearnScreen');
+      navigation.navigate('LearnScreen' as never);
     }
   };
 
@@ -115,23 +108,19 @@ export default function LessonScreen() {
     alert('Something went wrong. Please try again.');
   };
 
-  // Loading skeleton
+  // Loading skeleton - Swiss style
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={[styles.header, { backgroundColor: theme.colors.primary[500] }]}>
+      <View style={styles.container}>
+        <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Text style={styles.backButtonText}>← BACK</Text>
           </TouchableOpacity>
-          <View style={styles.headerSkeleton}>
-            <View style={[styles.skeletonTitle, { backgroundColor: 'rgba(255,255,255,0.3)' }]} />
-            <View style={[styles.skeletonSubtitle, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
-          </View>
         </View>
         <View style={styles.contentSkeleton}>
-          <View style={[styles.skeletonLine, { backgroundColor: theme.colors.border.light }]} />
-          <View style={[styles.skeletonLine, { backgroundColor: theme.colors.border.light }]} />
-          <View style={[styles.skeletonLineShort, { backgroundColor: theme.colors.border.light }]} />
+          <View style={styles.skeletonLine} />
+          <View style={styles.skeletonLine} />
+          <View style={styles.skeletonLineShort} />
         </View>
       </View>
     );
@@ -139,122 +128,49 @@ export default function LessonScreen() {
 
   if (!lesson) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={[styles.header, { backgroundColor: theme.colors.primary[500] }]}>
+      <View style={styles.container}>
+        <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Text style={styles.backButtonText}>← BACK</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorEmoji}>📚</Text>
-          <Text style={[styles.errorTitle, { color: theme.colors.text.primary }]}>
-            Lesson Not Found
-          </Text>
-          <Text style={[styles.errorDescription, { color: theme.colors.text.secondary }]}>
-            This lesson may have been removed or is not available yet.
+          <Text style={styles.errorTitle}>NOT FOUND</Text>
+          <Text style={styles.errorDescription}>
+            This lesson may have been removed.
           </Text>
           <TouchableOpacity 
-            style={[styles.errorButton, { backgroundColor: theme.colors.primary[500] }]}
+            style={styles.errorButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.errorButtonText}>Go Back to Learn</Text>
+            <Text style={styles.errorButtonText}>GO BACK</Text>
           </TouchableOpacity>
         </View>
       </View>
     );
   }
 
-  const lessonTypeInfo = LESSON_TYPE_LABELS[lesson.type] || { label: 'LESSON', code: 'LSN', description: '' };
+  const lessonTypeInfo = LESSON_TYPE_LABELS[lesson.type] || { label: 'LESSON', code: 'LSN' };
 
   // Check if lesson is already completed
   const isAlreadyCompleted = progress?.completed_lessons?.includes(lesson.id) || false;
 
-  // Render fallback content for missing lesson content
+  // Render fallback content for missing lesson content - Swiss style
   const renderFallbackContent = () => {
-    const fallbacks: Record<LessonType, React.ReactNode> = {
-      learn: (
-        <View style={styles.fallbackContainer}>
-          <Text style={styles.fallbackEmoji}>📖</Text>
-          <Text style={[styles.fallbackTitle, { color: theme.colors.text.primary }]}>
-            Coming Soon
-          </Text>
-          <Text style={[styles.fallbackDescription, { color: theme.colors.text.secondary }]}>
-            This learn module is being prepared. Check back soon for structured content about this framework.
-          </Text>
-          <View style={[styles.fallbackPreview, { backgroundColor: theme.colors.surface.secondary }]}>
-            <Text style={[styles.fallbackPreviewTitle, { color: theme.colors.text.primary }]}>
-              In the meantime...
-            </Text>
-            <Text style={[styles.fallbackPreviewText, { color: theme.colors.text.secondary }]}>
-              • Practice with the framework's MCQ questions{'\n'}
-              • Explore other categories{'\n'}
-              • Review your weak areas in Progress
-            </Text>
-          </View>
-        </View>
-      ),
-      drill: (
-        <View style={styles.fallbackContainer}>
-          <Text style={styles.fallbackEmoji}>🎯</Text>
-          <Text style={[styles.fallbackTitle, { color: theme.colors.text.primary }]}>
-            Drill Not Available
-          </Text>
-          <Text style={[styles.fallbackDescription, { color: theme.colors.text.secondary }]}>
-            Practice exercises for this skill are coming soon.
-          </Text>
-        </View>
-      ),
-      pattern: (
-        <View style={styles.fallbackContainer}>
-          <Text style={styles.fallbackEmoji}>📝</Text>
-          <Text style={[styles.fallbackTitle, { color: theme.colors.text.primary }]}>
-            Pattern Practice Coming Soon
-          </Text>
-          <Text style={[styles.fallbackDescription, { color: theme.colors.text.secondary }]}>
-            Pattern-based practice exercises are being prepared.
-          </Text>
-        </View>
-      ),
-      full_practice: (
-        <View style={styles.fallbackContainer}>
-          <Text style={styles.fallbackEmoji}>🚀</Text>
-          <Text style={[styles.fallbackTitle, { color: theme.colors.text.primary }]}>
-            Full Practice In Development
-          </Text>
-          <Text style={[styles.fallbackDescription, { color: theme.colors.text.secondary }]}>
-            Complete practice sessions will be available soon.
-          </Text>
-        </View>
-      ),
-      quiz: (
-        <View style={styles.fallbackContainer}>
-          <Text style={styles.fallbackEmoji}>✅</Text>
-          <Text style={[styles.fallbackTitle, { color: theme.colors.text.primary }]}>
-            Quiz Coming Soon
-          </Text>
-          <Text style={[styles.fallbackDescription, { color: theme.colors.text.secondary }]}>
-            Assessment quizzes are being prepared for this unit.
-          </Text>
-        </View>
-      ),
-      practice: (
-        <View style={styles.fallbackContainer}>
-          <Text style={styles.fallbackEmoji}>✍️</Text>
-          <Text style={[styles.fallbackTitle, { color: theme.colors.text.primary }]}>
-            Practice Coming Soon
-          </Text>
-          <Text style={[styles.fallbackDescription, { color: theme.colors.text.secondary }]}>
-            Practice exercises for this skill are being prepared.
-          </Text>
-        </View>
-      ),
-    };
-    
-    return fallbacks[lesson.type] || (
+    return (
       <View style={styles.fallbackContainer}>
-        <Text style={[styles.fallbackDescription, { color: theme.colors.text.secondary }]}>
-          This content is not available yet.
+        <Text style={styles.fallbackTitle}>COMING SOON</Text>
+        <Text style={styles.fallbackDescription}>
+          This content is being prepared.
         </Text>
+        <View style={styles.fallbackPreview}>
+          <Text style={styles.fallbackPreviewTitle}>IN THE MEANTIME</Text>
+          <Text style={styles.fallbackPreviewText}>
+            • Practice MCQ questions{'\n'}
+            • Explore categories{'\n'}
+            • Review Progress
+          </Text>
+        </View>
       </View>
     );
   };
@@ -273,13 +189,11 @@ export default function LessonScreen() {
   const handleMarkComplete = async () => {
     if (!lesson) return;
     
-    // If already completed, just go back
     if (isAlreadyCompleted) {
       navigation.goBack();
       return;
     }
     
-    // Mark as complete
     setEarnedXp(lesson.xp_reward || 10);
     setShowCompletionModal(true);
     
@@ -301,22 +215,15 @@ export default function LessonScreen() {
 
   // Render lesson based on type
   const renderLesson = () => {
-    // Always show mark complete button at bottom
     const renderMarkCompleteButton = () => (
       <View style={styles.markCompleteContainer}>
         <TouchableOpacity
-          style={[
-            styles.markCompleteButton,
-            isAlreadyCompleted && styles.markCompleteButtonCompleted
-          ]}
+          style={[styles.markCompleteButton, isAlreadyCompleted && styles.markCompleteButtonCompleted]}
           onPress={handleMarkComplete}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <Text style={[
-            styles.markCompleteText,
-            isAlreadyCompleted && styles.markCompleteTextCompleted
-          ]}>
-            {isAlreadyCompleted ? '✓ Completed' : 'Mark as Complete'}
+          <Text style={[styles.markCompleteText, isAlreadyCompleted && styles.markCompleteTextCompleted]}>
+            {isAlreadyCompleted ? '✓ DONE' : 'MARK COMPLETE'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -360,7 +267,7 @@ export default function LessonScreen() {
         return (
           <FullPracticeLesson
             content={lesson.content.full_practice_content!}
-            onComplete={(xp, answerData) => handleLessonComplete(xp)}
+            onComplete={(xp) => handleLessonComplete(xp)}
             onError={handleLessonError}
           />
         );
@@ -373,12 +280,11 @@ export default function LessonScreen() {
           />
         );
       case 'practice':
-        // Treat 'practice' type the same as 'full_practice' - use FullPracticeLesson
         if (lesson.content.full_practice_content) {
           return (
             <FullPracticeLesson
               content={lesson.content.full_practice_content!}
-              onComplete={(xp, answerData) => handleLessonComplete(xp)}
+              onComplete={(xp) => handleLessonComplete(xp)}
               onError={handleLessonError}
             />
           );
@@ -392,108 +298,105 @@ export default function LessonScreen() {
   // Get lesson category for practice prompt
   const lessonCategory = (lesson as any)?.category || 'product_sense';
 
-  // Handle practice now button - navigate to question list with category
+  // Handle practice now button
   const handlePracticeNow = () => {
     setShowCompletionModal(false);
-    // @ts-expect-error - navigation typing issue with dynamic params
-    navigation.navigate('QuestionList', { category: lessonCategory });
+    navigation.navigate('QuestionList' as never, { category: lessonCategory } as never);
   };
 
-  // Completion Modal
+  // Completion Modal - Swiss Style
   if (showCompletionModal) {
     const nextLesson = getNextLesson();
     const currentReadiness = readinessScore || progress?.readiness_score || 0;
     
     return (
-      <View style={[styles.completionContainer, { backgroundColor: theme.colors.background }]}>
-        <ScrollView contentContainerStyle={styles.completionContent}>
-          <View style={styles.completionCodeContainer}>
-            <Text style={styles.completionCode}>DONE</Text>
-          </View>
-          <Text style={[styles.completionTitle, { color: theme.colors.text.primary }]}>
-            Lesson Complete!
-          </Text>
+      <View style={styles.completionContainer}>
+        <View style={styles.completionContent}>
+          {/* Heavy separator */}
+          <View style={styles.separator} />
           
-          <View style={[styles.xpCard, { backgroundColor: theme.colors.primary[50], borderColor: theme.colors.primary[200] }]}>
-            <Text style={[styles.xpLabel, { color: theme.colors.primary[700] }]}>XP EARNED</Text>
-            <Text style={[styles.xpValue, { color: theme.colors.primary[600] }]}>+{earnedXp}</Text>
+          <Text style={styles.completionCode}>DONE</Text>
+          
+          <Text style={styles.completionTitle}>LESSON COMPLETE</Text>
+          
+          {/* XP Card - bordered */}
+          <View style={styles.xpCard}>
+            <Text style={styles.xpLabel}>XP EARNED</Text>
+            <Text style={styles.xpValue}>+{earnedXp}</Text>
           </View>
 
-          <View style={[styles.statsRow, { backgroundColor: theme.colors.surface.primary, borderColor: theme.colors.border.light }]}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
-                {currentReadiness}%
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>
-                Interview Ready
-              </Text>
-            </View>
+          {/* Readiness stat */}
+          <View style={styles.statRow}>
+            <Text style={styles.statValue}>{currentReadiness}%</Text>
+            <Text style={styles.statLabel}>INTERVIEW READY</Text>
           </View>
 
-          {/* Practice Now Button - Swiss Style */}
+          {/* Heavy separator */}
+          <View style={styles.separator} />
+
+          {/* Practice Now Button - bordered, filled */}
           <TouchableOpacity 
-            style={[styles.practiceNowButton, { backgroundColor: theme.colors.primary[600] }]}
+            style={styles.actionButton}
             onPress={handlePracticeNow}
           >
-            <Text style={styles.practiceNowButtonText}>
-              PRACTICE NOW
-            </Text>
-            <Text style={styles.practiceNowSubtext}>
-              {lessonCategory.replace('_', ' ').toUpperCase()} QUESTIONS
-            </Text>
+            <Text style={styles.actionButtonText}>PRACTICE NOW</Text>
+            <Text style={styles.actionButtonSubtext}>{lessonCategory.replace('_', ' ').toUpperCase()}</Text>
           </TouchableOpacity>
 
+          {/* Continue Button */}
           {nextLesson ? (
             <TouchableOpacity 
-              style={[styles.continueButton, { backgroundColor: theme.colors.primary[500] }]}
+              style={styles.continueButton}
               onPress={handleContinueToNext}
             >
-              <Text style={styles.continueButtonText}>
-                CONTINUE →
-              </Text>
-              <Text style={styles.nextLessonName}>
-                {nextLesson.name}
-              </Text>
+              <Text style={styles.continueButtonText}>CONTINUE →</Text>
+              <Text style={styles.nextLessonName}>{nextLesson.name}</Text>
             </TouchableOpacity>
           ) : (
-            <View style={[styles.completedAllCard, { backgroundColor: theme.colors.semantic.success + '20' }]}>
-              <Text style={[styles.completedAllText, { color: theme.colors.semantic.success }]}>
-                PATH COMPLETE
-              </Text>
+            <View style={styles.completedAllCard}>
+              <Text style={styles.completedAllText}>PATH COMPLETE</Text>
             </View>
           )}
 
+          {/* Back button */}
           <TouchableOpacity 
-            style={[styles.backButtonOutline, { borderColor: theme.colors.border.light }]}
+            style={styles.backButtonOutline}
             onPress={handleGoBack}
           >
-            <Text style={[styles.backButtonOutlineText, { color: theme.colors.text.secondary }]}>
-              BACK TO LEARN
-            </Text>
+            <Text style={styles.backButtonOutlineText}>BACK TO LEARN</Text>
           </TouchableOpacity>
-        </ScrollView>
+        </View>
       </View>
     );
   }
 
+  // Main render - Swiss Style header
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Header with back button */}
-      <View style={[styles.header, { backgroundColor: theme.colors.primary[500] }]}>
+    <View style={styles.container}>
+      {/* Swiss Header - bold bar */}
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Text style={styles.backButtonText}>← BACK</Text>
         </TouchableOpacity>
+        
         <View style={styles.headerContent}>
-          <View style={styles.headerCodeContainer}>
-            <Text style={styles.headerCode}>{lessonTypeInfo.code}</Text>
+          {/* Code box - bordered */}
+          <View style={styles.codeBox}>
+            <Text style={styles.codeText}>{lessonTypeInfo.code}</Text>
           </View>
+          
           <Text style={styles.headerTitle}>{lesson.name}</Text>
-          <View style={styles.headerMeta}>
-            <Text style={styles.headerMetaText}>
-              {lessonTypeInfo.label} • {lesson.estimated_minutes || 5} min
-            </Text>
-            <View style={styles.xpBadge}>
-              <Text style={styles.xpBadgeText}>+{lesson.xp_reward} XP</Text>
+          
+          {/* Meta row - bordered boxes */}
+          <View style={styles.metaRow}>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaText}>{lessonTypeInfo.label}</Text>
+            </View>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaText}>{lesson.estimated_minutes || 5} MIN</Text>
+            </View>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaText}>+{lesson.xp_reward} XP</Text>
             </View>
           </View>
         </View>
@@ -505,323 +408,334 @@ export default function LessonScreen() {
   );
 }
 
+// ============================================
+// SWISS STYLE: Sharp edges, bold typography, no gradients
+// ============================================
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
   },
+  
+  // Header - Swiss bold bar
   header: {
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 16,
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    borderBottomWidth: theme.swiss.border.heavy,
+    borderBottomColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.background,
   },
   backButton: {
-    marginBottom: 12,
+    alignSelf: 'flex-start',
+    marginBottom: theme.spacing[4],
   },
   backButtonText: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    letterSpacing: theme.swiss.letterSpacing.normal,
+    color: theme.colors.text.primary,
   },
   headerContent: {
     alignItems: 'center',
   },
-  headerCodeContainer: {
-    width: 64,
-    height: 64,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  codeBox: {
+    width: 72,
+    height: 72,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
+    marginBottom: theme.spacing[4],
   },
-  headerCode: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: '700',
+  codeText: {
+    fontSize: theme.swiss.fontSize.title,
+    fontWeight: theme.swiss.fontWeight.black,
+    color: theme.colors.text.primary,
   },
   headerTitle: {
-    color: 'white',
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing[4],
   },
-  headerMeta: {
+  metaRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    gap: theme.spacing[2],
   },
-  headerMetaText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
+  metaBox: {
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[2],
   },
-  xpBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  metaText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+    textTransform: 'uppercase',
   },
-  xpBadgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  // Loading skeleton
-  headerSkeleton: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  skeletonTitle: {
-    width: 150,
-    height: 24,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  skeletonSubtitle: {
-    width: 100,
-    height: 16,
-    borderRadius: 4,
-  },
+  
+  // Content skeleton
   contentSkeleton: {
-    padding: 20,
-    gap: 12,
+    padding: theme.swiss.layout.screenPadding,
+    gap: theme.spacing[4],
   },
   skeletonLine: {
-    width: '100%',
-    height: 100,
-    borderRadius: 8,
+    height: 80,
+    backgroundColor: theme.colors.neutral[200],
   },
   skeletonLineShort: {
+    height: 40,
     width: '60%',
-    height: 20,
-    borderRadius: 4,
+    backgroundColor: theme.colors.neutral[200],
   },
+  
   // Error state
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
-  },
-  errorEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    padding: theme.swiss.layout.screenPadding,
   },
   errorTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 8,
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[4],
   },
   errorDescription: {
-    fontSize: 16,
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
+    marginBottom: theme.swiss.layout.sectionGap,
   },
   errorButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[4],
+    paddingHorizontal: theme.swiss.layout.screenPadding,
   },
   errorButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
+  
   // Fallback content
+  fallbackWrapper: {
+    flex: 1,
+  },
   fallbackContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
-  },
-  fallbackEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    padding: theme.swiss.layout.screenPadding,
   },
   fallbackTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[4],
   },
   fallbackDescription: {
-    fontSize: 16,
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
+    marginBottom: theme.swiss.layout.sectionGap,
   },
   fallbackPreview: {
-    padding: 20,
-    borderRadius: 12,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.swiss.layout.sectionGap,
     width: '100%',
   },
   fallbackPreviewTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[4],
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   fallbackPreviewText: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
+    lineHeight: 24,
   },
-  // Completion modal
-  completionContainer: {
-    flex: 1,
-  },
-  completionContent: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100%',
-  },
-  completionCodeContainer: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#2563EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 4,
-    borderColor: '#1E40AF',
-  },
-  completionCode: {
-    color: 'white',
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  completionTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 24,
-  },
-  xpCard: {
-    paddingVertical: 20,
-    paddingHorizontal: 40,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: 'center',
-    marginBottom: 20,
-    width: '100%',
-  },
-  xpLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  xpValue: {
-    fontSize: 40,
-    fontWeight: '700',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 24,
-    width: '100%',
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 4,
-  },
-  continueButton: {
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 12,
-  },
-  continueButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  nextLessonName: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  completedAllCard: {
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 12,
-  },
-  completedAllText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  backButtonOutline: {
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 8,
-  },
-  backButtonOutlineText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  errorText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 50,
-  },
-  // Mark Complete Button
-  fallbackWrapper: {
-    flex: 1,
-  },
+  
+  // Mark Complete Button - Swiss bordered
   markCompleteContainer: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.swiss.layout.sectionGap + theme.spacing[8],
   },
   markCompleteButton: {
-    backgroundColor: '#2563EB',
-    paddingVertical: 16,
-    borderRadius: 12,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[5],
     alignItems: 'center',
   },
   markCompleteButtonCompleted: {
-    backgroundColor: '#10B981',
+    backgroundColor: theme.colors.semantic.success,
+    borderColor: theme.colors.semantic.success,
   },
   markCompleteText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.xwide3,
   },
   markCompleteTextCompleted: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
   },
-  // Practice Now Button
-  practiceNowButton: {
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+  
+  // Completion Modal - Swiss stark
+  completionContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  completionContent: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: theme.swiss.layout.screenPadding,
+  },
+  separator: {
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+    marginVertical: theme.swiss.layout.sectionGap,
+  },
+  completionCode: {
+    fontSize: theme.swiss.fontSize.display,
+    fontWeight: theme.swiss.fontWeight.black,
+    letterSpacing: theme.swiss.letterSpacing.xwide4,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  completionTitle: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: theme.swiss.layout.sectionGap,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  
+  // XP Card - bordered
+  xpCard: {
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.swiss.layout.sectionGap,
     alignItems: 'center',
-    width: '100%',
-    marginBottom: 12,
+    marginBottom: theme.swiss.layout.elementGap,
   },
-  practiceNowButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+  xpLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    marginBottom: theme.spacing[2],
   },
-  practiceNowSubtext: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
-    marginTop: 4,
+  xpValue: {
+    fontSize: theme.swiss.fontSize.display,
+    fontWeight: theme.swiss.fontWeight.black,
+    color: theme.colors.text.primary,
+  },
+  
+  // Stats Row
+  statRow: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing[4],
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
+    marginBottom: theme.swiss.layout.sectionGap,
+  },
+  statValue: {
+    fontSize: theme.swiss.fontSize.title,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+  },
+  statLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    marginTop: theme.spacing[2],
+  },
+  
+  // Action Button - bordered, filled
+  actionButton: {
+    borderWidth: theme.swiss.border.heavy,
+    borderColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[5],
+    alignItems: 'center',
+    marginBottom: theme.swiss.layout.elementGap,
+  },
+  actionButtonText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.xwide3,
+  },
+  actionButtonSubtext: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.inverse,
+    opacity: 0.8,
+    marginTop: theme.spacing[1],
+  },
+  
+  // Continue Button - bordered, outline
+  continueButton: {
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    paddingVertical: theme.spacing[4],
+    alignItems: 'center',
+    marginBottom: theme.swiss.layout.elementGap,
+  },
+  continueButtonText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  nextLessonName: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing[1],
+  },
+  
+  // Completed All Card
+  completedAllCard: {
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.semantic.success,
+    paddingVertical: theme.spacing[4],
+    alignItems: 'center',
+    marginBottom: theme.swiss.layout.elementGap,
+  },
+  completedAllText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.semantic.success,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  
+  // Back Button Outline
+  backButtonOutline: {
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.secondary,
+    paddingVertical: theme.spacing[4],
+    alignItems: 'center',
+    marginTop: theme.spacing[4],
+  },
+  backButtonOutlineText: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
 });

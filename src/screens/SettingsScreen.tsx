@@ -1,12 +1,16 @@
 import React from 'react';
-import { View, StyleSheet, Switch } from 'react-native';
+import { View, StyleSheet, Switch, ScrollView, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
-import { Container, H1, BodyLG, BodyMD, LabelSM, GhostButton, Row, Spacer } from '../components/ui';
 import { theme } from '../theme';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
+
+// ============================================
+// SWISS DESIGN: Sharp edges, bold typography
+// Using centralized theme tokens for consistency
+// ============================================
 
 export default function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
@@ -14,100 +18,210 @@ export default function SettingsScreen() {
   const [notifications, setNotifications] = React.useState(true);
 
   return (
-    <Container variant="screen" padding="lg" safeArea>
-      <View style={styles.header}>
-        <H1>SETTINGS</H1>
-        <BodyMD color="secondary">Customize your app experience</BodyMD>
-      </View>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Header - Swiss bold */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>SETTINGS</Text>
+          <Text style={styles.headerSubtitle}>Customize your app</Text>
+        </View>
 
-      <View style={styles.content}>
-        {/* Appearance */}
+        {/* Heavy separator */}
+        <View style={styles.separator} />
+
+        {/* Appearance Section */}
         <View style={styles.section}>
-          <LabelSM color="secondary" uppercase>Appearance</LabelSM>
-          <Spacer size={theme.spacing[2]} />
-          <Row style={styles.settingRow}>
-            <BodyLG>Dark Mode</BodyLG>
+          <Text style={styles.sectionLabel}>APPEARANCE</Text>
+          
+          {/* Setting Row - bordered */}
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Dark Mode</Text>
+              <Text style={styles.settingDescription}>Switch theme (coming soon)</Text>
+            </View>
             <Switch
               value={darkMode}
               onValueChange={setDarkMode}
-              trackColor={{ false: theme.colors.neutral[300], true: theme.colors.primary[500] }}
+              trackColor={{ 
+                false: theme.colors.neutral[300], 
+                true: theme.colors.text.primary 
+              }}
+              thumbColor={theme.colors.background}
             />
-          </Row>
-          <BodyMD color="secondary" style={styles.settingDescription}>
-            Switch between light and dark theme (coming soon)
-          </BodyMD>
+          </View>
         </View>
 
-        <Spacer size={theme.spacing[6]} />
+        {/* Heavy separator */}
+        <View style={styles.separator} />
 
-        {/* Notifications */}
+        {/* Notifications Section */}
         <View style={styles.section}>
-          <LabelSM color="secondary" uppercase>Notifications</LabelSM>
-          <Spacer size={theme.spacing[2]} />
-          <Row style={styles.settingRow}>
-            <BodyLG>Practice Reminders</BodyLG>
+          <Text style={styles.sectionLabel}>NOTIFICATIONS</Text>
+          
+          {/* Setting Row - bordered */}
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Practice Reminders</Text>
+              <Text style={styles.settingDescription}>Daily streak reminders</Text>
+            </View>
             <Switch
               value={notifications}
               onValueChange={setNotifications}
-              trackColor={{ false: theme.colors.neutral[300], true: theme.colors.primary[500] }}
+              trackColor={{ 
+                false: theme.colors.neutral[300], 
+                true: theme.colors.text.primary 
+              }}
+              thumbColor={theme.colors.background}
             />
-          </Row>
-          <BodyMD color="secondary" style={styles.settingDescription}>
-            Receive daily reminders to keep your streak
-          </BodyMD>
+          </View>
         </View>
 
-        <Spacer size={theme.spacing[6]} />
+        {/* Heavy separator */}
+        <View style={styles.separator} />
 
-        {/* Account */}
+        {/* Account Section */}
         <View style={styles.section}>
-          <LabelSM color="secondary" uppercase>Account</LabelSM>
-          <Spacer size={theme.spacing[4]} />
-          <GhostButton size="md" fullWidth onPress={() => navigation.navigate('Profile')}>
-            VIEW PROFILE
-          </GhostButton>
-          <Spacer size={theme.spacing[3]} />
-          <GhostButton size="md" fullWidth onPress={() => {}}>
-            CHANGE PASSWORD
-          </GhostButton>
-          <Spacer size={theme.spacing[3]} />
-          <GhostButton size="md" fullWidth onPress={() => {}}>
-            DATA & PRIVACY
-          </GhostButton>
+          <Text style={styles.sectionLabel}>ACCOUNT</Text>
+          
+          {/* Action buttons - Swiss bordered */}
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('Profile')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.actionButtonText}>VIEW PROFILE</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.actionDivider} />
+          
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => {}}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.actionButtonText}>CHANGE PASSWORD</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.actionDivider} />
+          
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => {}}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.actionButtonText}>DATA & PRIVACY</Text>
+          </TouchableOpacity>
         </View>
 
-        <Spacer size={theme.spacing[8]} />
+        {/* Heavy separator */}
+        <View style={styles.separator} />
 
-        {/* App Info */}
+        {/* About Section */}
         <View style={styles.section}>
-          <LabelSM color="secondary" uppercase>About</LabelSM>
-          <Spacer size={theme.spacing[4]} />
-          <BodyMD color="secondary">Version 1.0.0</BodyMD>
-          <Spacer size={theme.spacing[2]} />
-          <BodyMD color="secondary">PM Interview Prep App</BodyMD>
+          <Text style={styles.sectionLabel}>ABOUT</Text>
+          <Text style={styles.aboutText}>Version 1.0.0</Text>
+          <Text style={styles.aboutText}>PM Interview Prep App</Text>
         </View>
-      </View>
-    </Container>
+      </ScrollView>
+    </View>
   );
 }
 
+// ============================================
+// SWISS STYLE: Sharp edges, bold typography, no gradients
+// ============================================
+
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: theme.spacing[8],
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
   },
+  
   content: {
     flex: 1,
   },
-  section: {
-    marginBottom: theme.spacing[6],
+  
+  // Header - Swiss bold bar
+  header: {
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    borderBottomWidth: theme.swiss.border.heavy,
+    borderBottomColor: theme.colors.text.primary,
   },
+  headerTitle: {
+    fontSize: theme.swiss.fontSize.title,
+    fontWeight: theme.swiss.fontWeight.black,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.primary,
+  },
+  headerSubtitle: {
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing[1],
+  },
+  
+  // Heavy separator
+  separator: {
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+  },
+  
+  section: {
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingVertical: theme.swiss.layout.sectionGap,
+  },
+  sectionLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing[4],
+  },
+  
+  // Setting Row - bordered
   settingRow: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: theme.spacing[3],
+    paddingVertical: theme.spacing[4],
+    borderBottomWidth: theme.swiss.border.light,
+    borderBottomColor: theme.colors.text.primary,
+  },
+  settingInfo: {
+    flex: 1,
+  },
+  settingLabel: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
   },
   settingDescription: {
-    marginTop: theme.spacing[2],
-    opacity: 0.7,
+    fontSize: theme.swiss.fontSize.small,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing[1],
+  },
+  
+  // Action buttons - Swiss bordered
+  actionButton: {
+    paddingVertical: theme.spacing[4],
+    borderBottomWidth: theme.swiss.border.light,
+    borderBottomColor: theme.colors.text.primary,
+  },
+  actionButtonText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+  },
+  actionDivider: {
+    height: theme.swiss.border.light,
+    backgroundColor: theme.colors.text.primary,
+  },
+  
+  // About
+  aboutText: {
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing[2],
   },
 });

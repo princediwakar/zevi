@@ -7,9 +7,8 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { useTheme } from '../../contexts/ThemeContext';
 import { Lesson, QuizContent, QuizQuestion } from '../../types';
-import { CheckCircle, XCircle } from 'lucide-react-native';
+import { theme } from '../../theme';
 
 interface QuizLessonProps {
   lesson: Lesson;
@@ -17,8 +16,12 @@ interface QuizLessonProps {
   onError: (error: string) => void;
 }
 
+// ============================================
+// SWISS DESIGN: Sharp, bold, minimal, high contrast
+// Using centralized theme tokens for consistency
+// ============================================
+
 const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) => {
-  const { theme } = useTheme();
   const content = lesson.content.quiz_content as QuizContent;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -68,9 +71,7 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
     // Check if passed (8/10)
     const passed = calculatedScore >= content.passing_score;
 
-    // Unlock next unit if passed
     if (passed) {
-      // TODO: Implement unlocking logic
       Alert.alert('Quiz Passed!', `You scored ${calculatedScore}/${content.questions.length}. Next unit unlocked.`);
     } else {
       Alert.alert('Quiz Failed', `You scored ${calculatedScore}/${content.questions.length}. Need ${content.passing_score} to pass.`);
@@ -87,7 +88,7 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
 
     return (
       <View style={styles.questionContainer}>
-        <Text style={[styles.questionText, { color: theme.colors.text.primary }]}>
+        <Text style={styles.questionText}>
           {question.text}
         </Text>
 
@@ -106,17 +107,18 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
                     backgroundColor: showCorrectness && isCorrect
                       ? theme.colors.semantic.success + '20'
                       : isSelected
-                      ? theme.colors.primary[100]
-                      : theme.colors.surface.primary,
+                      ? theme.colors.surface.secondary
+                      : theme.colors.background,
                     borderColor: showCorrectness && isCorrect
                       ? theme.colors.semantic.success
                       : isSelected
-                      ? theme.colors.primary[500]
-                      : theme.colors.border.light,
+                      ? theme.colors.text.primary
+                      : theme.colors.text.primary,
                   },
                 ]}
                 onPress={() => handleAnswerSelect(index)}
                 disabled={showResults}
+                activeOpacity={0.8}
               >
                 <Text
                   style={[
@@ -125,22 +127,21 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
                       color: showCorrectness && isCorrect
                         ? theme.colors.semantic.success
                         : isSelected
-                        ? theme.colors.primary[700]
+                        ? theme.colors.text.primary
                         : theme.colors.text.primary,
                     },
                   ]}
                 >
                   {String.fromCharCode(65 + index)}. {option}
                 </Text>
-
-                {showResults && isCorrect && (
+                {showCorrectness && isCorrect && (
                   <View style={styles.resultIndicator}>
-                    <CheckCircle size={20} color={theme.colors.semantic.success} />
+                    <Text style={styles.resultText}>✓</Text>
                   </View>
                 )}
-                {showResults && isSelected && !isCorrect && (
+                {showCorrectness && isSelected && !isCorrect && (
                   <View style={styles.resultIndicator}>
-                    <XCircle size={20} color={theme.colors.semantic.error} />
+                    <Text style={styles.resultTextError}>✗</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -154,9 +155,14 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
   const renderProgress = () => {
     return (
       <View style={styles.progressContainer}>
-        <Text style={[styles.progressText, { color: theme.colors.text.secondary }]}>
-          Question {currentQuestionIndex + 1} of {content.questions.length}
-        </Text>
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressText}>
+            QUESTION {currentQuestionIndex + 1} OF {content.questions.length}
+          </Text>
+          <Text style={styles.scoreText}>
+            Score {score}/{content.questions.length} • Pass: {content.passing_score}
+          </Text>
+        </View>
         <View style={styles.progressBar}>
           {content.questions.map((_, index) => (
             <View
@@ -165,8 +171,8 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
                 styles.progressDot,
                 {
                   backgroundColor: index <= currentQuestionIndex
-                    ? theme.colors.primary[500]
-                    : theme.colors.border.light,
+                    ? theme.colors.text.primary
+                    : theme.colors.neutral[300],
                 },
               ]}
             />
@@ -177,18 +183,13 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
+    <View style={styles.container}>
+      {/* Header - Swiss bordered */}
       <View style={styles.header}>
-        <Text style={[styles.headerText, { color: theme.colors.text.primary }]}>
-          Quiz: {lesson.name}
-        </Text>
-        <Text style={[styles.headerSubtext, { color: theme.colors.text.secondary }]}>
-          Score {score}/{content.questions.length} • Pass: {content.passing_score}/{content.questions.length}
-        </Text>
+        <Text style={styles.headerText}>{lesson.name}</Text>
       </View>
 
-      {/* Progress */}
+      {/* Progress - Swiss bordered */}
       {renderProgress()}
 
       {/* Question */}
@@ -196,21 +197,22 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
         {renderQuestion()}
       </ScrollView>
 
-      {/* Navigation */}
+      {/* Navigation - Swiss bordered */}
       <View style={styles.navigation}>
         <TouchableOpacity
           style={[
             styles.navButton,
-            {
-              backgroundColor: theme.colors.surface.primary,
-              borderColor: theme.colors.border.light,
-            },
+            currentQuestionIndex === 0 && styles.navButtonDisabled
           ]}
           onPress={handlePrevious}
           disabled={currentQuestionIndex === 0}
+          activeOpacity={0.8}
         >
-          <Text style={[styles.navButtonText, { color: theme.colors.text.secondary }]}>
-            Previous
+          <Text style={[
+            styles.navButtonText,
+            currentQuestionIndex === 0 && styles.navButtonTextDisabled
+          ]}>
+            PREVIOUS
           </Text>
         </TouchableOpacity>
 
@@ -218,32 +220,36 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
           <TouchableOpacity
             style={[
               styles.navButton,
-              {
-                backgroundColor: theme.colors.primary[500],
-              },
+              styles.navButtonPrimary,
+              selectedAnswers[currentQuestionIndex] === -1 && styles.navButtonDisabled
             ]}
             onPress={handleNext}
             disabled={selectedAnswers[currentQuestionIndex] === -1}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.navButtonText, { color: theme.colors.text.inverse }]}>
-              Next
+            <Text style={[
+              styles.navButtonText,
+              styles.navButtonTextPrimary
+            ]}>
+              NEXT
             </Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
             style={[
               styles.navButton,
-              {
-                backgroundColor: submitted
-                  ? theme.colors.semantic.success
-                  : theme.colors.primary[500],
-              },
+              styles.navButtonPrimary,
+              (selectedAnswers.some(answer => answer === -1) || submitted) && styles.navButtonDisabled
             ]}
             onPress={handleSubmit}
             disabled={selectedAnswers.some(answer => answer === -1) || submitted}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.navButtonText, { color: theme.colors.text.inverse }]}>
-              {submitted ? 'Submitted' : 'Submit Quiz'}
+            <Text style={[
+              styles.navButtonText,
+              styles.navButtonTextPrimary
+            ]}>
+              {submitted ? 'SUBMITTED' : 'SUBMIT QUIZ'}
             </Text>
           </TouchableOpacity>
         )}
@@ -252,95 +258,148 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
   );
 };
 
+// ============================================
+// SWISS STYLE: Sharp edges, bold typography, no gradients
+// ============================================
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
   },
+  
+  // Header - Swiss bordered
   header: {
-    padding: 20,
-    paddingTop: 60,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E4E4E7',
+    padding: theme.swiss.layout.screenPadding,
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    borderBottomWidth: theme.swiss.border.standard,
+    borderBottomColor: theme.colors.text.primary,
   },
   headerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    letterSpacing: -0.5,
   },
-  headerSubtext: {
-    fontSize: 16,
-    marginBottom: 12,
-  },
-  heartsContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  
+  // Progress Container
   progressContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E4E4E7',
+    padding: theme.swiss.layout.screenPadding,
+    borderBottomWidth: theme.swiss.border.standard,
+    borderBottomColor: theme.colors.text.primary,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing[3],
   },
   progressText: {
-    fontSize: 14,
-    marginBottom: 8,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  scoreText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
   },
   progressBar: {
     flexDirection: 'row',
-    gap: 8,
+    gap: theme.spacing[2],
   },
   progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 24,
+    height: 4,
+    borderRadius: 0,
   },
+  
+  // Content
   content: {
     flex: 1,
-    padding: 16,
+    padding: theme.swiss.layout.screenPadding,
   },
+  
+  // Question
   questionContainer: {
-    marginBottom: 24,
+    marginBottom: theme.spacing[6],
   },
   questionText: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-    lineHeight: 24,
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.swiss.layout.sectionGap,
+    lineHeight: 30,
   },
+  
+  // Options
   optionsContainer: {
-    gap: 12,
+    gap: theme.spacing[3],
   },
   optionButton: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+    padding: theme.spacing[4],
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: theme.colors.background,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
     flex: 1,
   },
   resultIndicator: {
-    marginLeft: 8,
+    marginLeft: theme.spacing[2],
   },
+  resultText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.semantic.success,
+  },
+  resultTextError: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.semantic.error,
+  },
+  
+  // Navigation - Swiss bordered
   navigation: {
     flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E4E4E7',
+    padding: theme.swiss.layout.screenPadding,
+    gap: theme.spacing[3],
+    borderTopWidth: theme.swiss.border.heavy,
+    borderTopColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.background,
   },
   navButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: theme.spacing[4],
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
     alignItems: 'center',
-    borderWidth: 1,
+    backgroundColor: theme.colors.background,
+  },
+  navButtonDisabled: {
+    opacity: 0.5,
+  },
+  navButtonPrimary: {
+    backgroundColor: theme.colors.text.primary,
+    borderColor: theme.colors.text.primary,
   },
   navButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  navButtonTextPrimary: {
+    color: theme.colors.text.inverse,
+  },
+  navButtonTextDisabled: {
+    color: theme.colors.text.secondary,
   },
 });
 

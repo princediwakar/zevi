@@ -19,26 +19,26 @@ import { CheckCircle, ArrowRight } from 'lucide-react-native';
 type CategoryDetailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CategoryDetail'>;
 type CategoryDetailRouteProp = RouteProp<RootStackParamList, 'CategoryDetail'>;
 
-// Swiss design category info - with letter codes
+// Swiss design category info - BLACK & WHITE, no bright colors
 const CATEGORY_INFO: Record<QuestionCategory, { label: string; code: string; color: string; description: string }> = {
-  product_sense: { label: 'Product Sense', code: 'PS', color: '#2563EB', description: 'Design, improve, and add features to products' },
-  execution: { label: 'Execution', code: 'EX', color: '#7C3AED', description: 'Metrics, prioritization, and roadmap planning' },
-  strategy: { label: 'Strategy', code: 'ST', color: '#059669', description: 'Business strategy and market analysis' },
-  behavioral: { label: 'Behavioral', code: 'BH', color: '#F59E0B', description: 'Leadership, teamwork, and conflicts' },
-  technical: { label: 'Technical', code: 'TC', color: '#EC4899', description: 'Technical PM questions and system design' },
-  estimation: { label: 'Estimation', code: 'EST', color: '#14B8A6', description: 'Fermi estimates and guesstimates' },
-  pricing: { label: 'Pricing', code: 'PRC', color: '#64748B', description: 'Pricing strategies and models' },
-  ab_testing: { label: 'A/B Testing', code: 'AB', color: '#EF4444', description: 'Experiment design and analysis' },
+  product_sense: { label: 'Product Sense', code: 'PS', color: theme.colors.category.product_sense, description: 'Design, improve, and add features to products' },
+  execution: { label: 'Execution', code: 'EX', color: theme.colors.category.execution, description: 'Metrics, prioritization, and roadmap planning' },
+  strategy: { label: 'Strategy', code: 'ST', color: theme.colors.category.strategy, description: 'Business strategy and market analysis' },
+  behavioral: { label: 'Behavioral', code: 'BH', color: theme.colors.category.behavioral, description: 'Leadership, teamwork, and conflicts' },
+  technical: { label: 'Technical', code: 'TC', color: theme.colors.category.technical, description: 'Technical PM questions and system design' },
+  estimation: { label: 'Estimation', code: 'EST', color: theme.colors.category.estimation, description: 'Fermi estimates and guesstimates' },
+  pricing: { label: 'Pricing', code: 'PRC', color: theme.colors.category.pricing, description: 'Pricing strategies and models' },
+  ab_testing: { label: 'A/B Testing', code: 'AB', color: theme.colors.category.ab_testing, description: 'Experiment design and analysis' },
 };
 
-// Lesson type configs - with letter codes
+// Lesson type configs - Swiss muted colors
 const LESSON_TYPE_CONFIG: Record<string, { label: string; code: string; bgColor: string }> = {
-  learn: { label: 'LEARN', code: 'LRN', bgColor: '#E0E7FF' },
-  drill: { label: 'DRILL', code: 'DRL', bgColor: '#EDE9FE' },
-  pattern: { label: 'PATTERN', code: 'PAT', bgColor: '#D1FAE5' },
-  full_practice: { label: 'PRACTICE', code: 'PRX', bgColor: '#D1FAE5' },
-  quiz: { label: 'QUIZ', code: 'QZ', bgColor: '#FEF3C7' },
-  practice: { label: 'PRACTICE', code: 'PRX', bgColor: '#D1FAE5' },
+  learn: { label: 'LEARN', code: 'LRN', bgColor: theme.colors.neutral[200] },
+  drill: { label: 'DRILL', code: 'DRL', bgColor: theme.colors.neutral[300] },
+  pattern: { label: 'PATTERN', code: 'PAT', bgColor: theme.colors.neutral[200] },
+  full_practice: { label: 'PRACTICE', code: 'PRX', bgColor: theme.colors.neutral[200] },
+  quiz: { label: 'QUIZ', code: 'QZ', bgColor: theme.colors.neutral[300] },
+  practice: { label: 'PRACTICE', code: 'PRX', bgColor: theme.colors.neutral[200] },
 };
 
 export default function CategoryDetailScreen() {
@@ -93,10 +93,10 @@ export default function CategoryDetailScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: info.color }]}>
+      {/* Header - Swiss bordered */}
+      <View style={[styles.header, { backgroundColor: theme.colors.text.primary }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>← BACK</Text>
         </TouchableOpacity>
         
         <View style={styles.categoryCodeContainer}>
@@ -105,10 +105,10 @@ export default function CategoryDetailScreen() {
         <Text style={styles.categoryTitle}>{info.label}</Text>
         <Text style={styles.categoryDescription}>{info.description}</Text>
         
-        {/* Progress */}
+        {/* Progress - Swiss sharp bar */}
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: '#FFFFFF' }]} />
+            <View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: theme.colors.text.inverse }]} />
           </View>
           <Text style={styles.progressText}>{completedCount}/{categoryLessons.length} LESSONS COMPLETE</Text>
         </View>
@@ -138,8 +138,8 @@ export default function CategoryDetailScreen() {
                 activeOpacity={0.7}
               >
                 {/* Type Badge - Swiss Style */}
-                <View style={[styles.typeBadge, { backgroundColor: typeConfig.bgColor + '20', borderColor: typeConfig.bgColor, borderWidth: 2 }]}>
-                  <Text style={[styles.typeCode, { color: typeConfig.bgColor }]}>{typeConfig.code}</Text>
+                <View style={[styles.typeBadge, { backgroundColor: typeConfig.bgColor, borderColor: theme.colors.text.primary, borderWidth: theme.swiss.border.standard }]}>
+                  <Text style={[styles.typeCode, { color: theme.colors.text.primary }]}>{typeConfig.code}</Text>
                 </View>
                 
                 {/* Lesson Info */}
@@ -154,13 +154,13 @@ export default function CategoryDetailScreen() {
                   </View>
                 </View>
                 
-                {/* Status */}
+                {/* Status - Swiss sharp */}
                 {lesson.isCompleted ? (
                   <View style={styles.statusComplete}>
                     <Text style={styles.statusCode}>✓</Text>
                   </View>
                 ) : (
-                  <ArrowRight size={20} color="#9CA3AF" />
+                  <ArrowRight size={20} color={theme.colors.text.secondary} />
                 )}
               </TouchableOpacity>
             );
@@ -176,20 +176,23 @@ export default function CategoryDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
+  
+  // Header - Swiss bordered
   header: {
-    paddingTop: theme.spacing[8],
-    paddingBottom: theme.spacing[6],
-    paddingHorizontal: theme.spacing[6],
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    paddingBottom: theme.swiss.layout.sectionGap,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
   },
   backButton: {
     marginBottom: theme.spacing[4],
   },
   backText: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 16,
-    fontWeight: '500',
+    color: theme.colors.text.inverse,
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
   categoryCodeContainer: {
     width: 80,
@@ -198,23 +201,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: theme.spacing[3],
-    borderWidth: 3,
+    borderWidth: theme.swiss.border.heavy,
     borderColor: 'rgba(255,255,255,0.4)',
   },
   categoryCode: {
-    color: 'white',
+    color: theme.colors.text.inverse,
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: theme.swiss.fontWeight.bold,
   },
   categoryTitle: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '700',
+    color: theme.colors.text.inverse,
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
     marginBottom: theme.spacing[2],
   },
   categoryDescription: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
+    fontSize: theme.typography.body.md.fontSize,
     marginBottom: theme.spacing[4],
   },
   progressContainer: {
@@ -223,39 +226,45 @@ const styles = StyleSheet.create({
   progressBar: {
     height: 4,
     backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 2,
+    borderRadius: 0, // Sharp!
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 0, // Sharp!
   },
   progressText: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
+    fontSize: theme.swiss.fontSize.small,
     marginTop: 4,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
+  
+  // Scroll View
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: theme.spacing[6],
+    padding: theme.swiss.layout.screenPadding,
   },
+  
+  // Section
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
-    letterSpacing: 0.5,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
     marginBottom: theme.spacing[4],
   },
+  
+  // Lesson Card - Swiss bordered
   lessonCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: theme.colors.background,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.border.light,
     padding: theme.spacing[4],
     marginBottom: theme.spacing[3],
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   typeBadge: {
     width: 48,
@@ -264,57 +273,58 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   typeCode: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: theme.swiss.fontSize.label + 2,
+    fontWeight: theme.swiss.fontWeight.bold,
   },
   statusComplete: {
     width: 28,
     height: 28,
-    backgroundColor: '#10B981',
+    backgroundColor: theme.colors.semantic.success,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 0, // Sharp!
   },
   statusCode: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
+    color: theme.colors.text.inverse,
+    fontSize: theme.swiss.fontSize.label + 2,
+    fontWeight: theme.swiss.fontWeight.bold,
   },
   lessonInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: theme.spacing[3],
   },
   lessonName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000000',
+    fontSize: theme.typography.body.lg.fontSize,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
   },
   lessonNameCompleted: {
-    color: '#9CA3AF',
+    color: theme.colors.text.disabled,
   },
   lessonMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: theme.spacing[1],
   },
   lessonType: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: theme.swiss.fontSize.small,
+    color: theme.colors.text.secondary,
   },
   metaDivider: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginHorizontal: 6,
+    fontSize: theme.swiss.fontSize.small,
+    color: theme.colors.text.disabled,
+    marginHorizontal: theme.spacing[1],
   },
   lessonDuration: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: theme.swiss.fontSize.small,
+    color: theme.colors.text.secondary,
   },
   emptyState: {
-    padding: theme.spacing[8],
+    padding: theme.swiss.layout.sectionGap + theme.spacing[4],
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
-    color: '#9CA3AF',
+    fontSize: theme.typography.body.md.fontSize,
+    color: theme.colors.text.disabled,
   },
 });

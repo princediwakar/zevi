@@ -14,16 +14,8 @@ import Animated, {
   withSpring,
   FadeIn,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../theme';
 import { LearnContent, LearnCardType, LearnSection } from '../../types';
-import {
-  ChevronRight,
-  CheckCircle,
-  BookOpen,
-  ChevronDown,
-  Sparkles,
-} from 'lucide-react-native';
 
 interface LearnLessonProps {
   content: LearnContent;
@@ -31,53 +23,31 @@ interface LearnLessonProps {
   onError: (error: string) => void;
 }
 
-// Card type configuration for visual styling
+// ============================================
+// SWISS DESIGN: Sharp, bold, minimal, high contrast
+// Using centralized theme tokens for consistency
+// ============================================
+
+// Card type configuration - Swiss bordered boxes
 const CARD_TYPE_CONFIG: Record<LearnCardType, {
-  icon: React.ReactNode;
-  gradient: [string, string];
   label: string;
 }> = {
-  concept: {
-    icon: <BookOpen size={20} color={theme.colors.primary[500]} />,
-    gradient: [theme.colors.primary[50], theme.colors.primary[100]] as [string, string],
-    label: 'CONCEPT',
-  },
-  example: {
-    icon: <BookOpen size={20} color={theme.colors.semantic.info} />,
-    gradient: [theme.colors.semantic.info + '20', theme.colors.semantic.info + '30'] as [string, string],
-    label: 'REAL EXAMPLE',
-  },
-  practice: {
-    icon: <BookOpen size={20} color={theme.colors.semantic.warning} />,
-    gradient: [theme.colors.semantic.warning + '15', theme.colors.semantic.warning + '25'] as [string, string],
-    label: 'PRACTICE',
-  },
-  reflection: {
-    icon: <BookOpen size={20} color={theme.colors.semantic.success} />,
-    gradient: [theme.colors.semantic.success + '15', theme.colors.semantic.success + '25'] as [string, string],
-    label: 'REFLECT',
-  },
-  summary: {
-    icon: <Sparkles size={20} color={theme.colors.primary[600]} />,
-    gradient: [theme.colors.primary[50], theme.colors.primary[100]] as [string, string],
-    label: 'SUMMARY',
-  },
+  concept: { label: 'CONCEPT' },
+  example: { label: 'REAL EXAMPLE' },
+  practice: { label: 'PRACTICE' },
+  reflection: { label: 'REFLECT' },
+  summary: { label: 'SUMMARY' },
 };
 
 export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) {
   const [currentCard, setCurrentCard] = useState(0);
-
-  // Progressive disclosure state
   const [revealedSections, setRevealedSections] = useState<Record<number, number>>({});
-
-  // Section exercise state
   const [sectionExercises, setSectionExercises] = useState<Record<string, {
     answered: boolean;
     correct: boolean;
     userAnswer: number | string | null;
   }>>({});
 
-  // Animation values
   const cardScale = useSharedValue(1);
 
   const cardAnimatedStyle = useAnimatedStyle(() => ({
@@ -87,27 +57,22 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
   const currentCardData = content.cards[currentCard];
   const progress = ((currentCard + 1) / content.cards.length) * 100;
 
-  // Get card type with fallback
   const cardType: LearnCardType = currentCardData?.type || 'concept';
   const typeConfig = CARD_TYPE_CONFIG[cardType];
 
-  // Get sections - either from new sections field or legacy fields
   const getSections = useCallback((): LearnSection[] => {
     if (currentCardData?.sections && currentCardData.sections.length > 0) {
       return currentCardData.sections;
     }
 
-    // Convert legacy fields to sections for progressive disclosure
     const sections: LearnSection[] = [];
 
-    // Main content as first section
     sections.push({
       id: 'main',
       type: 'content',
       content: currentCardData?.content || '',
     });
 
-    // Add Why It Matters
     if (currentCardData?.whyItMatters) {
       sections.push({
         id: 'why',
@@ -117,7 +82,6 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
       });
     }
 
-    // Add Example if present
     if (currentCardData?.example) {
       sections.push({
         id: 'example',
@@ -127,7 +91,6 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
       });
     }
 
-    // Add Common Mistake
     if (currentCardData?.commonMistake) {
       sections.push({
         id: 'mistake',
@@ -137,7 +100,6 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
       });
     }
 
-    // Add Pro Tip
     if (currentCardData?.proTip) {
       sections.push({
         id: 'proTip',
@@ -147,7 +109,6 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
       });
     }
 
-    // Add Key Points
     if (currentCardData?.keyPoints && currentCardData.keyPoints.length > 0) {
       sections.push({
         id: 'keyPoints',
@@ -163,7 +124,6 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
   const sections = getSections();
   const revealedCount = revealedSections[currentCard] ?? 0;
 
-  // Handle section reveal
   const handleRevealSection = () => {
     setRevealedSections(prev => ({
       ...prev,
@@ -171,7 +131,6 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
     }));
   };
 
-  // Handle section exercise answer
   const handleSectionExerciseAnswer = (sectionId: string, answer: number | string) => {
     const section = sections.find(s => s.id === sectionId);
     if (!section?.exercise) return;
@@ -189,20 +148,17 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
   };
 
   const handleNext = () => {
-    // Animate card change
     cardScale.value = withSequence(
       withTiming(0.95, { duration: 150 }),
       withSpring(1, { damping: 15 })
     );
 
-    // If on last card, complete the lesson
     if (currentCard >= content.cards.length - 1) {
       onComplete();
       return;
     }
 
     setCurrentCard(currentCard + 1);
-    // Reset section reveal for new card
     setRevealedSections(prev => ({ ...prev, [currentCard + 1]: 0 }));
   };
 
@@ -216,25 +172,21 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
     }
   };
 
-  // Render a single section with progressive disclosure
   const renderSection = (section: LearnSection, index: number) => {
     const isRevealed = index <= revealedCount;
     const exerciseState = sectionExercises[section.id];
 
     if (!isRevealed) {
-      // Show "reveal more" indicator
       if (index === revealedCount + 1 && index < sections.length) {
         return (
           <TouchableOpacity
             key={section.id}
             style={styles.revealMoreButton}
             onPress={handleRevealSection}
+            activeOpacity={0.8}
           >
             <View style={styles.revealMoreContent}>
-              <ChevronDown size={16} color={theme.colors.primary[500]} />
-              <Text style={[styles.revealMoreText, { color: theme.colors.primary[500] }]}>
-                Learn more
-              </Text>
+              <Text style={styles.revealMoreText}>+ LEARN MORE</Text>
             </View>
           </TouchableOpacity>
         );
@@ -242,7 +194,6 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
       return null;
     }
 
-    // Render exercise section
     if (section.type === 'exercise' && section.exercise) {
       return (
         <Animated.View
@@ -251,16 +202,11 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
           style={styles.exerciseSection}
         >
           <View style={styles.exerciseHeader}>
-            <BookOpen size={18} color={theme.colors.semantic.warning} />
-            <Text style={[styles.exerciseTitle, { color: theme.colors.text.primary }]}>
-              {section.title || 'Practice'}
-            </Text>
+            <Text style={styles.exerciseTitle}>{section.title || 'PRACTICE'}</Text>
           </View>
 
           {section.exercise.prompt && (
-            <Text style={[styles.exercisePrompt, { color: theme.colors.text.secondary }]}>
-              {section.exercise.prompt}
-            </Text>
+            <Text style={styles.exercisePrompt}>{section.exercise.prompt}</Text>
           )}
 
           {section.exercise.type === 'select' && section.exercise.options && (
@@ -270,37 +216,28 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
                   key={optIndex}
                   style={[
                     styles.exerciseOption,
-                    {
-                      backgroundColor: exerciseState?.answered
-                        ? optIndex === section.exercise?.correctAnswer
-                          ? theme.colors.semantic.success + '20'
-                          : exerciseState?.userAnswer === optIndex
-                            ? theme.colors.semantic.error + '20'
-                            : theme.colors.surface.primary
-                        : theme.colors.surface.primary,
+                    exerciseState?.answered && {
+                      backgroundColor: optIndex === section.exercise?.correctAnswer
+                        ? theme.colors.semantic.success + '20'
+                        : exerciseState?.userAnswer === optIndex
+                          ? theme.colors.semantic.error + '20'
+                          : theme.colors.background,
                       borderColor: exerciseState?.answered
                         ? optIndex === section.exercise?.correctAnswer
                           ? theme.colors.semantic.success
                           : exerciseState?.userAnswer === optIndex
                             ? theme.colors.semantic.error
-                            : theme.colors.border.light
-                        : theme.colors.border.light,
+                            : theme.colors.text.primary
+                        : theme.colors.text.primary,
                     },
                   ]}
                   onPress={() => !exerciseState?.answered && handleSectionExerciseAnswer(section.id, optIndex)}
                   disabled={exerciseState?.answered}
+                  activeOpacity={0.8}
                 >
-                  <Text
-                    style={[
-                      styles.exerciseOptionText,
-                      { color: theme.colors.text.primary },
-                    ]}
-                  >
+                  <Text style={styles.exerciseOptionText}>
                     {String.fromCharCode(65 + optIndex)}. {option}
                   </Text>
-                  {exerciseState?.answered && optIndex === section.exercise?.correctAnswer && (
-                    <CheckCircle size={18} color={theme.colors.semantic.success} />
-                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -308,23 +245,19 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
 
           {exerciseState?.answered && section.exercise.explanation && (
             <Animated.View entering={FadeIn.duration(300)} style={styles.exerciseExplanation}>
-              <Text style={[styles.exerciseResult, {
-                color: exerciseState.correct
-                  ? theme.colors.semantic.success
-                  : theme.colors.semantic.error
-              }]}>
-                {exerciseState.correct ? '✓ Correct!' : '✗ Not quite'}
+              <Text style={[
+                styles.exerciseResult,
+                { color: exerciseState.correct ? theme.colors.semantic.success : theme.colors.semantic.error }
+              ]}>
+                {exerciseState.correct ? 'CORRECT' : 'INCORRECT'}
               </Text>
-              <Text style={[styles.explanationText, { color: theme.colors.text.secondary }]}>
-                {section.exercise.explanation}
-              </Text>
+              <Text style={styles.explanationText}>{section.exercise.explanation}</Text>
             </Animated.View>
           )}
         </Animated.View>
       );
     }
 
-    // Render example section with special styling
     if (section.type === 'example') {
       return (
         <Animated.View
@@ -333,19 +266,13 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
           style={styles.exampleSection}
         >
           <View style={styles.exampleHeader}>
-            <BookOpen size={18} color={theme.colors.semantic.info} />
-            <Text style={[styles.exampleTitle, { color: theme.colors.semantic.info }]}>
-              {section.title || 'Example'}
-            </Text>
+            <Text style={styles.exampleTitle}>{section.title || 'EXAMPLE'}</Text>
           </View>
-          <Text style={[styles.exampleContent, { color: theme.colors.text.secondary }]}>
-            {section.content}
-          </Text>
+          <Text style={styles.exampleContent}>{section.content}</Text>
         </Animated.View>
       );
     }
 
-    // Render content section
     return (
       <Animated.View
         key={section.id}
@@ -353,33 +280,23 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
         style={styles.contentSection}
       >
         {section.title && section.id !== 'main' && (
-          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-            {section.title}
-          </Text>
+          <Text style={styles.sectionTitle}>{section.title}</Text>
         )}
-        <Text style={[styles.sectionContent, { color: theme.colors.text.secondary }]}>
-          {section.content}
-        </Text>
+        <Text style={styles.sectionContent}>{section.content}</Text>
       </Animated.View>
     );
   };
 
-  // Render the main card content
   const renderCard = () => {
     return (
       <Animated.View style={[styles.card, cardAnimatedStyle]}>
-        {/* Card Type Badge */}
-        <View style={[styles.cardTypeBadge, { backgroundColor: typeConfig.gradient[0] }]}>
-          {typeConfig.icon}
-          <Text style={[styles.cardTypeLabel, { color: theme.colors.text.secondary }]}>
-            {typeConfig.label}
-          </Text>
+        {/* Card Type Badge - Swiss bordered */}
+        <View style={styles.cardTypeBadge}>
+          <Text style={styles.cardTypeLabel}>{typeConfig.label}</Text>
         </View>
 
         {/* Card Title */}
-        <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
-          {currentCardData.title}
-        </Text>
+        <Text style={styles.cardTitle}>{currentCardData.title}</Text>
 
         {/* Progressive Disclosure Sections */}
         <View style={styles.sectionsContainer}>
@@ -393,48 +310,29 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
           <TouchableOpacity
             style={styles.learnMoreButton}
             onPress={handleRevealSection}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.learnMoreText, { color: theme.colors.primary[500] }]}>
-              + Learn more about this
-            </Text>
+            <Text style={styles.learnMoreText}>+ LEARN MORE</Text>
           </TouchableOpacity>
         )}
       </Animated.View>
     );
   };
 
-  // Main learning view
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={styles.container}>
       {/* Progress Bar - Swiss Style */}
       <View style={styles.progressBarContainer}>
         <View style={styles.progressBarLabels}>
-          <Text style={[styles.progressLabel, { color: theme.colors.text.secondary }]}>
+          <Text style={styles.progressLabel}>
             {currentCard + 1} / {content.cards.length}
           </Text>
-          <Text style={[styles.progressPercent, { color: theme.colors.primary[500] }]}>
-            {Math.round(progress)}%
-          </Text>
+          <Text style={styles.progressPercent}>{Math.round(progress)}%</Text>
         </View>
-        <View style={[styles.progressBar, { backgroundColor: theme.colors.border.light }]}>
-          <Animated.View
-            style={[
-              styles.progressFill,
-              { backgroundColor: theme.colors.primary[500] },
-            ]}
-          />
+        <View style={styles.progressBarBg}>
+          <Animated.View style={[styles.progressFill, { width: `${progress}%` }]} />
         </View>
       </View>
-
-      {/* Header */}
-      <LinearGradient
-        colors={[theme.colors.primary[500], theme.colors.primary[600]]}
-        style={styles.headerGradient}
-      >
-        <Text style={styles.headerText}>
-          {content.title || 'Learn'}
-        </Text>
-      </LinearGradient>
 
       {/* Card Content */}
       <ScrollView
@@ -446,45 +344,43 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
       </ScrollView>
 
       {/* Navigation - Swiss Style */}
-      <View style={[styles.navigation, { borderTopColor: theme.colors.border.light }]}>
+      <View style={styles.navigation}>
         <TouchableOpacity
-          style={[
-            styles.navButton,
-            { opacity: currentCard === 0 ? 0.4 : 1 },
-          ]}
+          style={[styles.navButton, currentCard === 0 && styles.navButtonDisabled]}
           onPress={handlePrevious}
           disabled={currentCard === 0}
+          activeOpacity={0.8}
         >
-          <ChevronDown
-            size={20}
-            color={theme.colors.text.secondary}
-            style={{ transform: [{ rotate: '-90deg' }] }}
-          />
-          <Text style={[styles.navButtonText, { color: theme.colors.text.secondary }]}>
-            Previous
+          <Text style={[styles.navButtonText, currentCard === 0 && styles.navButtonTextDisabled]}>
+            PREVIOUS
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.navButtonNext]}
+          style={styles.navButtonNext}
           onPress={handleNext}
+          activeOpacity={0.8}
         >
-          <Text style={[styles.navButtonTextNext, { color: theme.colors.text.inverse }]}>
-            {currentCard === content.cards.length - 1 ? 'Complete' : 'Next'}
+          <Text style={styles.navButtonTextNext}>
+            {currentCard === content.cards.length - 1 ? 'COMPLETE' : 'NEXT'}
           </Text>
-          <ChevronRight size={20} color={theme.colors.text.inverse} />
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
+// ============================================
+// SWISS STYLE: Sharp edges, bold typography, no gradients
+// ============================================
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
   },
   progressBarContainer: {
-    paddingHorizontal: theme.spacing[5],
+    paddingHorizontal: theme.swiss.layout.screenPadding,
     paddingTop: theme.spacing[3],
   },
   progressBarLabels: {
@@ -493,68 +389,60 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing[2],
   },
   progressLabel: {
-    fontSize: theme.typography.label.sm.fontSize,
-    fontWeight: '500',
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
   },
   progressPercent: {
-    fontSize: theme.typography.label.sm.fontSize,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
   },
-  progressBar: {
+  progressBarBg: {
     height: 4,
-    borderRadius: 2,
+    backgroundColor: theme.colors.neutral[200],
+    borderRadius: 0,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
-  },
-  headerGradient: {
-    padding: theme.spacing[5],
-    paddingTop: theme.spacing[4],
-  },
-  headerText: {
-    fontSize: theme.typography.heading.h4.fontSize,
-    fontWeight: '700',
-    color: theme.colors.text.inverse,
-    textAlign: 'center',
-    letterSpacing: -0.5,
+    backgroundColor: theme.colors.text.primary,
+    borderRadius: 0,
   },
   cardsContainer: {
     flex: 1,
   },
   cardList: {
-    padding: theme.spacing[5],
+    padding: theme.swiss.layout.screenPadding,
     paddingBottom: 120,
   },
   card: {
-    backgroundColor: theme.colors.surface.primary,
-    borderRadius: theme.spacing.borderRadius.md,
-    padding: theme.spacing[5],
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
+    backgroundColor: theme.colors.background,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.swiss.layout.sectionGap,
   },
   cardTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[2],
-    alignSelf: 'flex-start',
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
     paddingVertical: theme.spacing[1],
     paddingHorizontal: theme.spacing[3],
-    borderRadius: theme.spacing.borderRadius.full,
+    alignSelf: 'flex-start',
     marginBottom: theme.spacing[4],
   },
   cardTypeLabel: {
-    fontSize: theme.typography.label.sm.fontSize,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   cardTitle: {
-    fontSize: theme.typography.heading.h3.fontSize,
-    fontWeight: '700',
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
     marginBottom: theme.spacing[4],
     letterSpacing: -0.5,
-    lineHeight: theme.typography.heading.h3.lineHeight,
+    lineHeight: 30,
   },
   sectionsContainer: {
     gap: theme.spacing[4],
@@ -563,61 +451,59 @@ const styles = StyleSheet.create({
     gap: theme.spacing[2],
   },
   sectionTitle: {
-    fontSize: theme.typography.label.md.fontSize,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
     marginTop: theme.spacing[2],
   },
   sectionContent: {
-    fontSize: theme.typography.body.lg.fontSize,
-    lineHeight: theme.typography.body.lg.lineHeight,
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
+    lineHeight: 24,
   },
   exampleSection: {
     marginTop: theme.spacing[3],
     padding: theme.spacing[4],
-    backgroundColor: theme.colors.semantic.info + '10',
-    borderRadius: theme.spacing.borderRadius.sm,
-    borderLeftWidth: 3,
-    borderLeftColor: theme.colors.semantic.info,
+    backgroundColor: theme.colors.surface.secondary,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.text.primary,
   },
   exampleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[2],
     marginBottom: theme.spacing[2],
   },
   exampleTitle: {
-    fontSize: theme.typography.label.md.fontSize,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   exampleContent: {
-    fontSize: theme.typography.body.md.fontSize,
-    lineHeight: theme.typography.body.md.lineHeight,
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
     fontStyle: 'italic',
+    lineHeight: 24,
   },
   exerciseSection: {
     marginTop: theme.spacing[4],
     padding: theme.spacing[4],
-    backgroundColor: theme.colors.semantic.warning + '10',
-    borderRadius: theme.spacing.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.semantic.warning + '30',
+    backgroundColor: theme.colors.surface.secondary,
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
   },
   exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[2],
     marginBottom: theme.spacing[3],
   },
   exerciseTitle: {
-    fontSize: theme.typography.label.md.fontSize,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   exercisePrompt: {
-    fontSize: theme.typography.body.md.fontSize,
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
     marginBottom: theme.spacing[3],
   },
   exerciseOptions: {
@@ -628,84 +514,102 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: theme.spacing[3],
-    borderRadius: theme.spacing.borderRadius.sm,
-    borderWidth: 1,
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.background,
   },
   exerciseOptionText: {
-    fontSize: theme.typography.body.md.fontSize,
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.primary,
     flex: 1,
   },
   exerciseExplanation: {
     marginTop: theme.spacing[4],
     padding: theme.spacing[3],
-    backgroundColor: theme.colors.surface.primary,
-    borderRadius: theme.spacing.borderRadius.sm,
+    backgroundColor: theme.colors.background,
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
   },
   exerciseResult: {
-    fontSize: theme.typography.body.lg.fontSize,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
     marginBottom: theme.spacing[2],
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   explanationText: {
-    fontSize: theme.typography.body.md.fontSize,
-    lineHeight: theme.typography.body.md.lineHeight,
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
+    lineHeight: 22,
   },
   revealMoreButton: {
     marginTop: theme.spacing[3],
     padding: theme.spacing[3],
-    borderRadius: theme.spacing.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.primary[200],
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
     borderStyle: 'dashed',
+    alignItems: 'center',
   },
   revealMoreContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing[2],
   },
   revealMoreText: {
-    fontSize: theme.typography.body.sm.fontSize,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   learnMoreButton: {
     marginTop: theme.spacing[4],
     alignSelf: 'center',
   },
   learnMoreText: {
-    fontSize: theme.typography.body.sm.fontSize,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   navigation: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: theme.spacing[5],
-    backgroundColor: theme.colors.surface.primary,
-    borderTopWidth: 1,
+    padding: theme.swiss.layout.screenPadding,
+    backgroundColor: theme.colors.background,
+    borderTopWidth: theme.swiss.border.heavy,
+    borderTopColor: theme.colors.text.primary,
   },
   navButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing[2],
     paddingVertical: theme.spacing[3],
     paddingHorizontal: theme.spacing[4],
   },
+  navButtonDisabled: {
+    opacity: 0.4,
+  },
   navButtonText: {
-    fontSize: theme.typography.body.md.fontSize,
-    fontWeight: '500',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  navButtonTextDisabled: {
+    color: theme.colors.text.secondary,
   },
   navButtonNext: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing[2],
-    backgroundColor: theme.colors.primary[500],
+    backgroundColor: theme.colors.text.primary,
     paddingVertical: theme.spacing[3],
     paddingHorizontal: theme.spacing[5],
-    borderRadius: theme.spacing.borderRadius.sm,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
   },
   navButtonTextNext: {
-    fontSize: theme.typography.body.md.fontSize,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
 });
