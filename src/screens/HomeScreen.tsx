@@ -9,9 +9,22 @@ import { Spacer, HomeScreenSkeleton } from '../components';
 import { useProgressStore } from '../stores/progressStore';
 import { useQuestionsStore } from '../stores/questionsStore';
 import { getPersonalizedQuestion } from '../services/questionService';
-import { Question } from '../types';
+import { Question, QuestionCategory, QUESTION_CATEGORIES } from '../types';
+import { ArrowRight } from 'lucide-react-native';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
+
+// Category labels
+const CATEGORY_LABELS: Record<QuestionCategory, string> = {
+  product_sense: 'Product Sense',
+  execution: 'Execution',
+  strategy: 'Strategy',
+  behavioral: 'Behavioral',
+  technical: 'Technical',
+  estimation: 'Estimation',
+  pricing: 'Pricing',
+  ab_testing: 'A/B Testing',
+};
 
 // SWISS DESIGN: Sharp, bold, minimal, high contrast
 // Using centralized theme tokens for consistency
@@ -208,7 +221,93 @@ export default function HomeScreen() {
         >
           <Text style={styles.altLinkText}>BROWSE →</Text>
         </TouchableOpacity>
+
+        {/* Category Progress Overview */}
+        <CategoryProgressSection onCategoryPress={(category) => navigation.navigate('CategoryBrowse', { category })} />
       </ScrollView>
+    </View>
+  );
+}
+
+// Category Progress Section - shows which categories have been practiced
+function CategoryProgressSection({ onCategoryPress }: { onCategoryPress: (cat: QuestionCategory) => void }) {
+  const { progress } = useProgressStore();
+  const { categoryStats } = useQuestionsStore();
+  
+  // Get category progress
+  const categoryProgress = React.useMemo(() => {
+    const categories: QuestionCategory[] = ['product_sense', 'execution', 'strategy', 'behavioral', 'technical', 'estimation', 'ab_testing'];
+    
+    const progressData = categories.map(cat => {
+      const completed = progress?.category_progress?.[cat] || 0;
+      const total = categoryStats[cat] || 0;
+      return {
+        category: cat,
+        completed,
+        total,
+        percent: total > 0 ? Math.round((completed / total) * 100) : 0,
+      };
+    });
+    
+    // Sort by least practiced (next to practice) to most practiced
+    progressData.sort((a, b) => a.completed - b.completed);
+    
+    // Mark first incomplete as "next"
+    const firstIncomplete = progressData.find(p => p.completed < p.total);
+    return { categories: progressData, nextCategory: firstIncomplete?.category };
+  }, [progress, categoryStats]);
+
+  return (
+    <View style={styles.categoryProgressSection}>
+      <Text style={styles.categoryProgressTitle}>CATEGORY PROGRESS</Text>
+      
+      {categoryProgress.categories.map((cat) => {
+        const isNext = cat.category === categoryProgress.nextCategory;
+        const hasProgress = cat.completed > 0;
+        
+        return (
+          <TouchableOpacity
+            key={cat.category}
+            style={[
+              styles.categoryProgressRow,
+              isNext && styles.categoryProgressRowNext,
+            ]}
+            onPress={() => onCategoryPress(cat.category)}
+          >
+            {/* NEXT badge */}
+            {isNext && (
+              <View style={styles.nextBadgeSmall}>
+                <Text style={styles.nextBadgeTextSmall}>NEXT</Text>
+              </View>
+            )}
+            
+            {/* Category name */}
+            <Text style={[
+              styles.categoryProgressLabel,
+              hasProgress && styles.categoryProgressLabelDone,
+            ]}>
+              {CATEGORY_LABELS[cat.category]}
+            </Text>
+            
+            {/* Progress */}
+            <View style={styles.categoryProgressMeta}>
+              <Text style={[
+                styles.categoryProgressCount,
+                hasProgress && styles.categoryProgressCountDone,
+              ]}>
+                {cat.completed}/{cat.total}
+              </Text>
+              {hasProgress && (
+                <View style={styles.categoryProgressBar}>
+                  <View style={[styles.categoryProgressFill, { width: `${cat.percent}%` }]} />
+                </View>
+              )}
+            </View>
+            
+            <ArrowRight size={16} color={theme.colors.text.secondary} />
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
@@ -392,5 +491,78 @@ const styles = StyleSheet.create({
     fontWeight: theme.swiss.fontWeight.semibold,
     color: theme.colors.text.primary,
     letterSpacing: theme.swiss.letterSpacing.xwide,
+  },
+
+  // ============================================
+  // CATEGORY PROGRESS SECTION
+  // ============================================
+  categoryProgressSection: {
+    marginTop: theme.spacing[6],
+    marginBottom: theme.spacing[10],
+  },
+  categoryProgressTitle: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    marginBottom: theme.spacing[4],
+  },
+  categoryProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: theme.spacing[3],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
+  },
+  categoryProgressRowNext: {
+    backgroundColor: theme.colors.neutral[50],
+    borderLeftWidth: 3,
+    borderLeftColor: theme.colors.text.primary,
+    paddingLeft: theme.spacing[2],
+    marginLeft: -theme.spacing[2],
+  },
+  nextBadgeSmall: {
+    backgroundColor: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[2],
+    paddingVertical: 2,
+    marginRight: theme.spacing[2],
+  },
+  nextBadgeTextSmall: {
+    fontSize: 10,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  categoryProgressLabel: {
+    flex: 1,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+  },
+  categoryProgressLabelDone: {
+    color: theme.colors.text.secondary,
+  },
+  categoryProgressMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: theme.spacing[2],
+    gap: theme.spacing[2],
+  },
+  categoryProgressCount: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+  },
+  categoryProgressCountDone: {
+    color: theme.colors.text.disabled,
+  },
+  categoryProgressBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: theme.colors.neutral[200],
+  },
+  categoryProgressFill: {
+    height: '100%',
+    backgroundColor: theme.colors.text.secondary,
   },
 });
