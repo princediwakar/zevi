@@ -33,7 +33,7 @@ export const QUESTION_CATEGORIES: QuestionCategory[] = [
 
 export type Difficulty = 1 | 2 | 3 | 4 | 5 | "beginner" | "intermediate" | "advanced";
 
-export type LessonType = 'learn' | 'drill' | 'pattern' | 'full_practice' | 'quiz';
+export type LessonType = 'learn' | 'drill' | 'pattern' | 'full_practice' | 'quiz' | 'practice';
 
 export type TargetRole = 'apm' | 'pm' | 'spm' | 'gpm';
 export type ExperienceLevel = 'new_grad' | 'career_switcher' | 'current_pm';
@@ -161,6 +161,7 @@ export interface LessonContent {
 }
 
 export interface LearnContent {
+  title?: string;
   cards: LearnCard[];
   check_question?: {
     question: string;
@@ -170,11 +171,38 @@ export interface LearnContent {
   };
 }
 
+export type LearnCardType = 'concept' | 'example' | 'practice' | 'reflection' | 'summary';
+
+// Progressive disclosure section
+export interface LearnSection {
+  id: string;
+  type: 'content' | 'exercise' | 'reflection' | 'example';
+  title?: string;
+  content: string;
+  // For exercises
+  exercise?: {
+    type: 'fill_blank' | 'match' | '排序' | 'select' | 'blank';
+    prompt?: string;
+    options?: string[];
+    correctAnswer: string | number | string[];
+    hint?: string;
+    explanation?: string;
+  };
+  // For examples
+  company?: string;
+  question?: string;
+  expertAnswer?: string;
+}
+
 export interface LearnCard {
+  id?: string;
+  type?: LearnCardType;
   title: string;
   content: string;
+  // Progressive disclosure - sections revealed one at a time
+  sections?: LearnSection[];
+  // Legacy fields - will be converted to sections if present
   image_url?: string;
-  // Rich content fields for enhanced learning
   whyItMatters?: string;
   proTip?: string;
   commonMistake?: string;
@@ -304,24 +332,6 @@ export interface UserProgress {
 }
 
 // Gamification
-export interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon_name: string;
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
-  xp_reward: number;
-  requirement: any;
-}
-
-export interface UserAchievement {
-  id: string;
-  user_id: string;
-  achievement_id: string;
-  unlocked_at: string;
-  is_new: boolean;
-}
-
 export interface Streak {
   user_id: string;
   current_streak: number;

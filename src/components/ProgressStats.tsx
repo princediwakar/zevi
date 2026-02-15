@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { theme } from '../theme';
 
 interface ProgressStatsProps {
   currentStreak: number;
@@ -47,13 +48,13 @@ export function ProgressStats({ currentStreak, totalCompleted, categoryBreakdown
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: theme.colors.surface.primary,
+    borderRadius: theme.spacing[4],
+    padding: theme.spacing[4],
+    marginBottom: theme.spacing[4],
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
+    borderColor: theme.colors.border.light,
+    shadowColor: theme.colors.text.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -61,7 +62,7 @@ const styles = StyleSheet.create({
   },
   mainStats: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: theme.spacing[4],
   },
   statCard: {
     flex: 1,
@@ -70,42 +71,42 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 4,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[1],
   },
   statLabel: {
     fontSize: 13,
-    color: '#6B7280',
+    color: theme.colors.text.secondary,
     fontWeight: '500',
   },
   divider: {
     width: 1,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 16,
+    backgroundColor: theme.colors.border.light,
+    marginHorizontal: theme.spacing[4],
   },
   categoryStats: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingTop: 12,
+    borderTopColor: theme.colors.border.light,
+    paddingTop: theme.spacing[3],
   },
   categoryTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 8,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing[2],
   },
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: theme.spacing[1] + 2,
   },
   categoryName: {
     fontSize: 14,
-    color: '#374151',
+    color: theme.colors.text.primary,
   },
   categoryCount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: theme.colors.primary[500],
   },
 });

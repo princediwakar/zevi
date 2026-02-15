@@ -20,10 +20,10 @@ export function StreakBadge({ streak, showLabel = true, size = 'md' }: StreakBad
   };
 
   const getStreakColor = () => {
-    if (streak >= 30) return '#FFD700'; // Gold
-    if (streak >= 14) return '#FF6B6B'; // Red
-    if (streak >= 7) return '#FF8C42'; // Orange
-    if (streak >= 3) return '#4ECDC4'; // Teal
+    if (streak >= 30) return theme.colors.streak.gold;
+    if (streak >= 14) return theme.colors.streak.red;
+    if (streak >= 7) return theme.colors.streak.orange;
+    if (streak >= 3) return theme.colors.streak.teal;
     return theme.colors.text.secondary;
   };
 
@@ -85,11 +85,12 @@ export function StreakBadge({ streak, showLabel = true, size = 'md' }: StreakBad
 
 // Milestone streak badges
 export function StreakMilestoneBadge({ streak }: { streak: number }) {
+  const { theme } = useTheme();
   const milestones = [
-    { days: 7, label: 'Week Warrior', icon: '⚡', color: '#FF8C42' },
-    { days: 14, label: 'Two Week Titan', icon: '🌟', color: '#FF6B6B' },
-    { days: 30, label: 'Monthly Master', icon: '🏆', color: '#FFD700' },
-    { days: 100, label: 'Century Streak', icon: '💎', color: '#9B59B6' },
+    { days: 7, label: 'Week Warrior', icon: '⚡', color: theme.colors.streak.orange },
+    { days: 14, label: 'Two Week Titan', icon: '🌟', color: theme.colors.streak.red },
+    { days: 30, label: 'Monthly Master', icon: '🏆', color: theme.colors.streak.gold },
+    { days: 100, label: 'Century Streak', icon: '💎', color: theme.colors.streak.purple },
   ];
 
   const achievedMilestone = milestones
@@ -114,7 +115,7 @@ export function StreakMilestoneBadge({ streak }: { streak: number }) {
         <Text style={[styles.milestoneLabel, { color: achievedMilestone.color }]}>
           {achievedMilestone.label}
         </Text>
-        <Text style={styles.milestoneDays}>
+        <Text style={[styles.milestoneDays, { color: theme.colors.text.secondary }]}>
           {streak} day streak
         </Text>
       </View>
@@ -156,7 +157,6 @@ const styles = StyleSheet.create({
   },
   milestoneDays: {
     fontSize: 12,
-    color: '#666',
     marginTop: 2,
   },
 });

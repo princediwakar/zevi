@@ -5,18 +5,16 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-  withSequence,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AchievementDef } from '../config/achievements';
+import { theme } from '../theme';
 
 interface CelebrationModalProps {
   visible: boolean;
-  type: 'achievement' | 'milestone' | 'level_up' | 'streak' | 'readiness';
+  type: 'milestone' | 'level_up' | 'streak' | 'readiness';
   title: string;
   message: string;
   icon?: string;
-  achievement?: AchievementDef;
   onClose: () => void;
 }
 
@@ -28,7 +26,6 @@ export function CelebrationModal({
   title,
   message,
   icon,
-  achievement,
   onClose,
 }: CelebrationModalProps) {
   const scaleAnim = useSharedValue(0);
@@ -36,7 +33,6 @@ export function CelebrationModal({
 
   useEffect(() => {
     if (visible) {
-      // Entrance animation
       scaleAnim.value = withSpring(1, {
         damping: 15,
         stiffness: 150,
@@ -60,25 +56,21 @@ export function CelebrationModal({
 
   const getGradientColors = (): readonly [string, string, ...string[]] => {
     switch (type) {
-      case 'achievement':
-        return ['#FFD700', '#FFA500'];
       case 'milestone':
-        return ['#9B59B6', '#3498DB'];
+        return theme.colors.celebration.milestone as readonly [string, string];
       case 'level_up':
-        return ['#2ECC71', '#27AE60'];
+        return theme.colors.celebration.level_up as readonly [string, string];
       case 'streak':
-        return ['#E74C3C', '#C0392B'];
+        return theme.colors.celebration.streak as readonly [string, string];
       case 'readiness':
-        return ['#1ABC9C', '#16A085'];
+        return theme.colors.celebration.readiness as readonly [string, string];
       default:
-        return ['#667EEA', '#764BA2'];
+        return theme.colors.celebration.default as readonly [string, string];
     }
   };
 
   const getDefaultIcon = () => {
     switch (type) {
-      case 'achievement':
-        return '🏆';
       case 'milestone':
         return '🎯';
       case 'level_up':
@@ -111,38 +103,23 @@ export function CelebrationModal({
             containerStyle
           ]}
         >
-          {/* Background gradient */}
           <LinearGradient
             colors={getGradientColors()}
             style={styles.gradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            {/* Content */}
             <View style={styles.content}>
-              {/* Icon */}
               <View style={styles.iconContainer}>
                 <Text style={styles.icon}>
-                  {icon || achievement?.icon || getDefaultIcon()}
+                  {icon || getDefaultIcon()}
                 </Text>
               </View>
 
-              {/* Title */}
               <Text style={styles.title}>{title}</Text>
               
-              {/* Achievement badge */}
-              {achievement && (
-                <View style={styles.achievementBadge}>
-                  <Text style={styles.achievementTier}>
-                    {achievement.tier.toUpperCase()}
-                  </Text>
-                </View>
-              )}
-
-              {/* Message */}
               <Text style={styles.message}>{message}</Text>
 
-              {/* Close button */}
               <TouchableOpacity
                 onPress={onClose}
                 style={styles.button}
@@ -154,28 +131,6 @@ export function CelebrationModal({
         </Animated.View>
       </Animated.View>
     </Modal>
-  );
-}
-
-
-interface AchievementUnlockModalProps {
-  visible: boolean;
-  achievement: AchievementDef | null;
-  onClose: () => void;
-}
-
-export function AchievementUnlockModal({ visible, achievement, onClose }: AchievementUnlockModalProps) {
-  if (!achievement) return null;
-
-  return (
-    <CelebrationModal
-      visible={visible}
-      type="achievement"
-      title={`Achievement Unlocked!`}
-      message={achievement.description}
-      achievement={achievement}
-      onClose={onClose}
-    />
   );
 }
 
@@ -248,21 +203,6 @@ const styles = StyleSheet.create({
     padding: 32,
     alignItems: 'center',
   },
-  confettiContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '100%',
-    overflow: 'hidden',
-  },
-  confetti: {
-    position: 'absolute',
-    top: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-  },
   content: {
     alignItems: 'center',
     zIndex: 10,
@@ -288,19 +228,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
-  },
-  achievementBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 16,
-  },
-  achievementTier: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 2,
   },
   message: {
     fontSize: 16,

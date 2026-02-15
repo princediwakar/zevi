@@ -175,7 +175,7 @@ export default function TextPracticeScreen() {
                       <Row style={styles.hintHeader}>
                       <LabelSM>FRAMEWORK HINT</LabelSM>
                       <TouchableOpacity onPress={() => setShowHint(false)}>
-                          <LabelSM color="primary">HIDE</LabelSM>
+                          <LabelSM style={{ color: theme.colors.primary[500] }}>HIDE</LabelSM>
                       </TouchableOpacity>
                       </Row>
                       <BodyLG style={styles.hintText}>

@@ -110,7 +110,7 @@ export default function QuestionDetailScreen() {
     return (
       <Container variant="screen" padding="lg" safeArea>
         <View style={styles.centerContainer}>
-          <H3 color="error">QUESTION NOT FOUND</H3>
+          <H3 style={{ color: theme.colors.semantic.error }}>QUESTION NOT FOUND</H3>
           <Spacer size={theme.spacing[5]} />
           <GhostButton onPress={() => navigation.goBack()}>GO BACK</GhostButton>
         </View>
@@ -212,7 +212,7 @@ export default function QuestionDetailScreen() {
                     <Row style={styles.hintHeader}>
                       <LabelSM>FRAMEWORK HINT</LabelSM>
                       <TouchableOpacity onPress={() => setShowHint(false)}>
-                          <LabelSM color="primary">HIDE</LabelSM>
+                          <LabelSM style={{ color: theme.colors.primary[500] }}>HIDE</LabelSM>
                       </TouchableOpacity>
                     </Row>
                     <BodyLG style={styles.hintText}>

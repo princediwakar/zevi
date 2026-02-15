@@ -1,4 +1,4 @@
--- Seed Learning Paths
+-- Seed Learning Paths with Rich Content
 DO $$
 DECLARE
     v_path_id UUID;
@@ -19,32 +19,32 @@ BEGIN
         VALUES (v_path_id, 'Introduction to PM Interviews', 'Understand what interviewers are looking for.', 1, 30)
         RETURNING id INTO v_unit_id;
 
-        INSERT INTO public.lessons (unit_id, name, type, order_index) VALUES 
-        (v_unit_id, 'What is Product Sense?', 'learn', 1),
-        (v_unit_id, 'The PM Mindset', 'learn', 2),
-        (v_unit_id, 'Common Pitfalls', 'quiz', 3);
+        INSERT INTO public.lessons (unit_id, name, type, order_index, content, estimated_minutes, xp_reward) VALUES 
+        (v_unit_id, 'What is Product Sense?', 'learn', 1, '{"type": "learn", "title": "What is Product Sense?", "description": "Learn the fundamentals of product sense", "learn_content": {"cards": [{"title": "What is Product Sense?", "content": "Product sense is your ability to understand user needs, identify opportunities, and design solutions that create value. In PM interviews, you demonstrate this through product design questions."}, {"title": "Why It Matters", "content": "Interviewers want to see you can think like a PM - identifying problems, prioritizing solutions, and making data-driven decisions."}, {"title": "Key Components", "content": "1) User understanding 2) Problem identification 3) Solution design 4) Metric definition 5) Trade-off analysis"}, {"title": "Common Mistakes", "content": "1) Jumping to solutions without clarification 2) Ignoring constraints 3) Not defining success metrics 4) Missing trade-offs"}, {"title": "The Framework Approach", "content": "Use structured frameworks like CIRCLES, REDI, or PAM to organize your thinking and ensure comprehensive answers."}]}}', 10, 10),
+        (v_unit_id, 'The PM Mindset', 'learn', 2, '{"type": "learn", "title": "The PM Mindset", "description": "Think like a product manager", "learn_content": {"cards": [{"title": "What is a PM Mindset?", "content": "A product manager balances user needs, business goals, and technical feasibility."}, {"title": "User-Centric Thinking", "content": "Always start with understanding the user. Who are they? What problem do they have?"}, {"title": "Data-Driven Decisions", "content": "Use data to validate assumptions and measure success."}, {"title": "Prioritization Skills", "content": "You cannot do everything. Learn to say no and prioritize impact."}]}}', 10, 10),
+        (v_unit_id, 'Common Pitfalls', 'quiz', 3, '{"type": "quiz", "title": "Product Sense Quiz", "description": "Test your knowledge", "quiz_content": {"questions": [{"text": "What is product sense?", "options": ["Understanding user needs", "Writing code", "Designing UI", "Marketing products"], "correct_answer": 0, "explanation": "Product sense is about understanding user needs and designing solutions."}, {"text": "Which is NOT a component of product sense?", "options": ["User understanding", "Technical coding", "Problem identification", "Metric definition"], "correct_answer": 1, "explanation": "Technical coding is a skill, not a component of product sense."}], "passing_score": 1}}', 5, 10);
 
         -- Unit 1.2: CIRCLES Framework
         INSERT INTO public.units (learning_path_id, name, description, order_index, estimated_minutes)
         VALUES (v_path_id, 'The CIRCLES Framework', 'A structured approach to design questions.', 2, 45)
         RETURNING id INTO v_unit_id;
 
-        INSERT INTO public.lessons (unit_id, name, type, order_index) VALUES 
-        (v_unit_id, 'Intro to CIRCLES', 'learn', 1),
-        (v_unit_id, 'Comprehend the Situation', 'practice', 2),
-        (v_unit_id, 'Identify the Customer', 'practice', 3),
-        (v_unit_id, 'Report Needs', 'practice', 4),
-        (v_unit_id, 'Cut Through Prioritization', 'quiz', 5);
+        INSERT INTO public.lessons (unit_id, name, type, order_index, content, estimated_minutes, xp_reward) VALUES 
+        (v_unit_id, 'Intro to CIRCLES', 'learn', 1, '{"type": "learn", "title": "Intro to CIRCLES", "description": "Learn the CIRCLES framework", "learn_content": {"cards": [{"title": "What is CIRCLES?", "content": "CIRCLES is a framework for answering product design questions: Comprehend, Identify, Report, Cut, List, Evaluate, Summarize."}, {"title": "C - Comprehend", "content": "Understand the question. Ask clarifying questions about users, constraints, and goals. Example: Who is the user? What problem are we solving?"}, {"title": "I - Identify", "content": "Identify the target user and their needs. Segment users into groups based on behavior, demographics, or needs."}, {"title": "R - Report", "content": "Report back the key findings. Summarize user segments and their top pain points."}, {"title": "C - Cut", "content": "Cut through prioritization. Decide which user segment and problem to focus on based on impact and feasibility."}, {"title": "L - List", "content": "List solutions. Brainstorm multiple solutions for the chosen problem."}, {"title": "E - Evaluate", "content": "Evaluate trade-offs. Analyze pros and cons of each solution."}, {"title": "S - Summarize", "content": "Summarize your recommendation. Present your top solution with success metrics."}]}}', 15, 10),
+        (v_unit_id, 'Comprehend the Situation', 'practice', 2, '{"type": "full_practice", "title": "Comprehend Practice", "description": "Practice comprehending the situation", "full_practice_content": {"question": "Design a coffee ordering app for Starbucks", "framework_name": "CIRCLES", "framework_steps": ["Comprehend", "Identify", "Report", "Cut", "List", "Evaluate", "Summarize"], "mode": "outline", "expert_outline": {"Comprehend": ["Who is the target user?", "What problem are we solving?", "What are the constraints?"], "Identify": ["Regular customers", "Mobile-order users", "New customers"], "Report": ["Long wait times", "Mobile ordering complexity", "Payment issues"], "Cut": ["Focus on mobile-order users experiencing long waits"], "List": ["Mobile ordering with predictive suggestions", "In-store pickup optimization", "Loyalty integration"], "Evaluate": ["Impact on wait times", "Implementation complexity", "Cost"], "Summarize": ["Recommendation: Mobile ordering with predictive suggestions", "Success metrics: Order completion rate, Wait time reduction"]}}}', 15, 15),
+        (v_unit_id, 'Identify the Customer', 'practice', 3, '{"type": "full_practice", "title": "Customer Identification", "description": "Practice identifying customers", "full_practice_content": {"question": "Design a fitness app for seniors", "framework_name": "CIRCLES", "framework_steps": ["Identify"], "mode": "outline", "expert_outline": {"Identify": ["Health-conscious seniors (65+)", "Tech-savvy seniors", "Sedentary seniors looking to start", "Active seniors wanting to track"]}}}', 15, 15),
+        (v_unit_id, 'Report Needs', 'practice', 4, '{"type": "full_practice", "title": "Report User Needs", "description": "Practice reporting user needs", "full_practice_content": {"question": "Report the top pain points for food delivery users", "framework_name": "CIRCLES", "framework_steps": ["Report"], "mode": "outline", "expert_outline": {"Report": ["Delivery time too long", "Food arriving cold", "Wrong items delivered", "App crashes", "Poor customer support"]}}}', 15, 15),
+        (v_unit_id, 'Cut Through Prioritization', 'quiz', 5, '{"type": "quiz", "title": "CIRCLES Quiz", "description": "Test your CIRCLES knowledge", "quiz_content": {"questions": [{"text": "What does the C in CIRCLES stand for?", "options": ["Create", "Comprehend", "Cut", "Customer"], "correct_answer": 1, "explanation": "C stands for Comprehend - understanding the question first."}, {"text": "When should you use CIRCLES?", "options": ["Only for technical questions", "For product design questions", "Only for behavioral questions", "Never"], "correct_answer": 1, "explanation": "CIRCLES is specifically designed for product design questions."}], "passing_score": 1}}', 5, 10);
 
         -- Unit 1.3: Clarifying the Problem
         INSERT INTO public.units (learning_path_id, name, description, order_index, estimated_minutes)
         VALUES (v_path_id, 'Clarifying the Problem', 'Asking the right questions upfront.', 3, 40)
         RETURNING id INTO v_unit_id;
 
-        INSERT INTO public.lessons (unit_id, name, type, order_index) VALUES 
-        (v_unit_id, 'Why Clarify?', 'learn', 1),
-        (v_unit_id, 'Practice: Ambiguous Prompts', 'practice', 2),
-        (v_unit_id, 'Defining Success', 'practice', 3);
+        INSERT INTO public.lessons (unit_id, name, type, order_index, content, estimated_minutes, xp_reward) VALUES 
+        (v_unit_id, 'Why Clarify?', 'learn', 1, '{"type": "learn", "title": "Why Clarify?", "description": "Learn why clarification matters", "learn_content": {"cards": [{"title": "The Importance of Clarification", "content": "Never assume you understand the problem. Clarifying questions show you think critically."}, {"title": "What to Clarify", "content": "1) Who is the user? 2) What specific problem? 3) Constraints? 4) Success metrics? 5) Timeline?"}, {"title": "Good Clarifying Questions", "content": "What does success look like? Who are we solving for? What constraints exist? What have you tried before?"}, {"title": "Common Mistakes", "content": "1) Not asking any questions 2) Asking too many questions 3) Not listening to answers 4) Making assumptions"}]}}', 10, 10),
+        (v_unit_id, 'Practice: Ambiguous Prompts', 'practice', 2, '{"type": "full_practice", "title": "Ambiguous Prompts Practice", "description": "Practice with ambiguous questions", "full_practice_content": {"question": "Design a better shopping cart", "framework_name": "CIRCLES", "framework_steps": ["Comprehend"], "mode": "outline", "expert_outline": {"Comprehend": ["What type of shopping? (online, in-store, marketplace)", "For what type of users?", "What does 'better' mean? (faster, more features, easier)", "What platform? (web, mobile, both)", "What industry? (general, grocery, fashion)"]}}}', 15, 15),
+        (v_unit_id, 'Defining Success', 'practice', 3, '{"type": "full_practice", "title": "Define Success", "description": "Learn to define success metrics", "full_practice_content": {"question": "How would you define success for a new food delivery feature?", "framework_name": "CIRCLES", "framework_steps": ["Summarize"], "mode": "outline", "expert_outline": {"Summarize": ["Success metrics: Order completion rate (+15%)", "User retention (+10%)", "Customer satisfaction score (4.5+)", "Delivery time (-20%)", "Revenue per order (+10%)"]}}}', 15, 15);
 
 
         -- ==========================================
@@ -59,20 +59,20 @@ BEGIN
         VALUES (v_path_id, 'Understanding Metrics', 'Key metrics for product success.', 1, 40)
         RETURNING id INTO v_unit_id;
 
-        INSERT INTO public.lessons (unit_id, name, type, order_index) VALUES 
-        (v_unit_id, 'Metric Types', 'learn', 1),
-        (v_unit_id, 'Practice: Selecting Metrics', 'practice', 2),
-        (v_unit_id, 'North Star Metric', 'quiz', 3);
+        INSERT INTO public.lessons (unit_id, name, type, order_index, content, estimated_minutes, xp_reward) VALUES 
+        (v_unit_id, 'Metric Types', 'learn', 1, '{"type": "learn", "title": "Metric Types", "description": "Learn different types of metrics", "learn_content": {"cards": [{"title": "Leading vs Lagging", "content": "Leading indicators predict future outcomes. Lagging indicators measure results. You need both!"}, {"title": "North Star Metric", "content": "The single metric that best captures the value you deliver to customers. Example: Airbnb - Booking leads"}, {"title": "Vanity vs Actionable", "content": "Vanity metrics look good but cannot be acted upon. Actionable metrics drive decisions."}, {"title": "Metric Frameworks", "content": "HEART: Happiness, Engagement, Adoption, Retention, Task success. AARRR: Acquisition, Activation, Retention, Referral, Revenue."}]}}', 15, 10),
+        (v_unit_id, 'Practice: Selecting Metrics', 'practice', 2, '{"type": "full_practice", "title": "Selecting Metrics Practice", "description": "Practice selecting the right metrics", "full_practice_content": {"question": "What metrics would you track for a new Instagram Reels feature?", "framework_name": "METRICS", "framework_steps": ["Metrics Selection"], "mode": "outline", "expert_outline": {"Engagement": ["Watch time", "Completion rate", "Shares", "Comments"], "Growth": ["New users trying Reels", "Creator adoption", "Reach"], "Revenue": ["Ad impressions in Reels", "CPM rates", "Brand partnership deals"]}}}', 15, 15),
+        (v_unit_id, 'North Star Metric', 'quiz', 3, '{"type": "quiz", "title": "Metrics Quiz", "description": "Test your metrics knowledge", "quiz_content": {"questions": [{"text": "What is a North Star Metric?", "options": ["The most vanity metric", "The single metric capturing customer value", "The revenue metric", "The growth metric"], "correct_answer": 1, "explanation": "The North Star Metric is the single metric that best captures the value delivered to customers."}, {"text": "What is AARRR?", "options": ["A coding language", "Pirate metrics framework", "A product design method", "A testing framework"], "correct_answer": 1, "explanation": "AARRR stands for Acquisition, Activation, Retention, Referral, Revenue - also known as Pirate Metrics."}], "passing_score": 1}}', 5, 10);
 
         -- Unit 2.2: Root Cause Analysis
         INSERT INTO public.units (learning_path_id, name, description, order_index, estimated_minutes)
         VALUES (v_path_id, 'Root Cause Analysis', 'Debugging product issues systematically.', 2, 50)
         RETURNING id INTO v_unit_id;
 
-        INSERT INTO public.lessons (unit_id, name, type, order_index) VALUES 
-        (v_unit_id, 'The 5 Whys', 'learn', 1),
-        (v_unit_id, 'Investigating Drops', 'practice', 2),
-        (v_unit_id, 'Internal vs External Factors', 'quiz', 3);
+        INSERT INTO public.lessons (unit_id, name, type, order_index, content, estimated_minutes, xp_reward) VALUES 
+        (v_unit_id, 'The 5 Whys', 'learn', 1, '{"type": "learn", "title": "The 5 Whys", "description": "Learn root cause analysis", "learn_content": {"cards": [{"title": "What is 5 Whys?", "content": "A technique to find the root cause of a problem by asking why 5 times."}, {"title": "When to Use", "content": "When you see a metric drop and need to understand why. When users complain and you need deeper insight."}, {"title": "Example Walkthrough", "content": "Why did conversion drop? -> Traffic source changed. Why? -> Marketing campaign ended. Why? -> Budget cuts. Why? -> Q4 priorities. Why? -> Leadership focus shifted. Root cause: Leadership priorities changed."}]}}', 10, 10),
+        (v_unit_id, 'Investigating Drops', 'practice', 2, '{"type": "full_practice", "title": "Investigating Drops", "description": "Practice root cause analysis", "full_practice_content": {"question": "Daily active users dropped 20% this week. Use 5 Whys to find the root cause.", "framework_name": "5 Whys", "framework_steps": ["Investigation"], "mode": "outline", "expert_outline": {"Why 1": "DAU dropped 20%", "Why 2": "New user acquisition flat -> Lead source changed", "Why 3": "Main acquisition channel increased prices", "Why 4": "Q4 budget reallocated", "Why 5": "Company prioritized retention over acquisition", "Root Cause": "Company priority shift causing acquisition budget cut"}}', 15, 15),
+        (v_unit_id, 'Internal vs External Factors', 'quiz', 3, '{"type": "quiz", "title": "Root Cause Quiz", "description": "Test your RCA knowledge", "quiz_content": {"questions": [{"text": "When using 5 Whys, when should you stop?", "options": ["After exactly 5 whys", "When you find the actionable root cause", "Never", "When you run out of whys"], "correct_answer": 1, "explanation": "Stop when you find an actionable root cause - sometimes it's less than 5, sometimes more."}], "passing_score": 1}}', 5, 10);
 
     END IF;
 END $$;

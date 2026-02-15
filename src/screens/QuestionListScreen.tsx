@@ -13,13 +13,8 @@ import type { RootStackParamList } from '../navigation/types';
 import { QuestionCard } from '../components/QuestionCard';
 import { useQuestionsStore } from '../stores/questionsStore';
 import { QuestionCategory, Difficulty } from '../types';
-import { Container, H2, BodyLG, BodyMD, TextInput, PrimaryButton, GhostButton, Row, Spacer, LabelSM } from '../components/ui';
+import { Container, H2, BodyLG, BodyMD, TextInput, PrimaryButton, Row, LabelSM } from '../components/ui';
 import { theme } from '../theme';
-
-// Simple Filter Bar internal component for now if reusable one is complex
-// Or we can create a dedicated one in components folder.
-// Let's create a inline simple one for filtering difficulty if Category is locked,
-// or both if generic list.
 
 type QuestionListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'QuestionList'>;
 type QuestionListScreenRouteProp = RouteProp<RootStackParamList, 'QuestionList'>;
@@ -45,7 +40,6 @@ export default function QuestionListScreen() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | undefined>();
   const [isSearching, setIsSearching] = useState(false);
 
-  // Initial load
   useEffect(() => {
     loadQuestions();
   }, [selectedCategory, selectedDifficulty]);
@@ -88,7 +82,6 @@ export default function QuestionListScreen() {
 
   return (
     <Container variant="screen" padding="none" safeArea>
-        {/* Header Section */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
              <H2>{selectedCategory ? selectedCategory.replace('_', ' ').toUpperCase() : 'QUESTIONS'}</H2>
@@ -114,7 +107,6 @@ export default function QuestionListScreen() {
           />
         </View>
 
-        {/* Filters - Simple Row for Difficulty */}
         {!isSearching && (
             <View style={styles.filterRow}>
                 {(['beginner', 'intermediate', 'advanced'] as Difficulty[]).map((diff) => (
@@ -206,10 +198,10 @@ const styles = StyleSheet.create({
       paddingHorizontal: theme.spacing[6],
       gap: theme.spacing[2],
   },
+  // Swiss Style: sharp corners (no borderRadius)
   filterChip: {
       paddingVertical: theme.spacing[2],
       paddingHorizontal: theme.spacing[4],
-      borderRadius: 999, // Pill shape
       borderWidth: 1,
       borderColor: theme.colors.border.medium,
   },

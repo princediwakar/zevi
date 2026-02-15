@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { OnboardingStepProps } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { theme } from '../../../theme';
 
 const LEVELS = [
   { 
@@ -110,147 +111,148 @@ export default function ExperienceStep({ onNext, onBack, data, updateData }: Onb
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    paddingHorizontal: theme.spacing[6],
+    paddingVertical: theme.spacing[4],
+    borderBottomWidth: theme.spacing.borderWidth.thin,
+    borderBottomColor: theme.colors.border.light,
   },
   backButton: {
-    padding: 8,
-    marginLeft: -8,
+    padding: theme.spacing[2],
+    marginLeft: -theme.spacing[2],
   },
   backIcon: {
     fontSize: 24,
-    color: '#1E293B',
+    color: theme.colors.text.primary,
   },
   progressBarContainer: {
     flex: 1,
     height: 8,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 4,
-    marginLeft: 16,
+    backgroundColor: theme.colors.neutral[200],
+    borderRadius: theme.spacing.borderRadius.sm,
+    marginLeft: theme.spacing[4],
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#2563EB',
-    borderRadius: 4,
+    backgroundColor: theme.colors.primary[500],
+    borderRadius: theme.spacing.borderRadius.sm,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingHorizontal: theme.spacing[6],
+    paddingTop: theme.spacing[6],
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 8,
+    fontSize: theme.typography.heading.h2.fontSize,
+    fontWeight: theme.typography.heading.h2.fontWeight,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[2],
   },
   subtitle: {
-    fontSize: 16,
-    color: '#64748B',
-    marginBottom: 32,
+    fontSize: theme.typography.body.lg.fontSize,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing[8],
   },
   levelsContainer: {
-    gap: 16,
+    gap: theme.spacing[4],
   },
   levelCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 2,
+    padding: theme.spacing[5],
+    borderRadius: theme.spacing.borderRadius.lg,
+    borderWidth: theme.spacing.borderWidth.medium,
   },
   levelCardSelected: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
+    borderColor: theme.colors.primary[500],
+    backgroundColor: theme.colors.primary[50],
   },
   levelCardUnselected: {
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.border.light,
+    backgroundColor: theme.colors.background,
   },
   levelIcon: {
     fontSize: 36,
-    marginRight: 16,
+    marginRight: theme.spacing[4],
   },
   levelInfo: {
     flex: 1,
   },
   levelTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: theme.typography.heading.h4.fontSize,
+    fontWeight: theme.typography.heading.h4.fontWeight,
   },
   levelTitleSelected: {
-    color: '#1D4ED8',
+    color: theme.colors.primary[600],
   },
   levelTitleUnselected: {
-    color: '#0F172A',
+    color: theme.colors.text.primary,
   },
   levelSubtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    marginTop: 4,
+    fontSize: theme.typography.body.md.fontSize,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing[1],
   },
   radioOuter: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: theme.spacing.borderWidth.medium,
     justifyContent: 'center',
     alignItems: 'center',
   },
   radioOuterSelected: {
-    borderColor: '#2563EB',
-    backgroundColor: '#2563EB',
+    borderColor: theme.colors.primary[500],
+    backgroundColor: theme.colors.primary[500],
   },
   radioOuterUnselected: {
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.neutral[300],
+    backgroundColor: theme.colors.background,
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.text.inverse,
   },
   footer: {
-    padding: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    padding: theme.spacing[6],
+    borderTopWidth: theme.spacing.borderWidth.thin,
+    borderTopColor: theme.colors.border.light,
   },
   continueButton: {
     width: '100%',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: theme.spacing[4],
+    borderRadius: theme.spacing.borderRadius.lg,
     alignItems: 'center',
   },
   continueButtonEnabled: {
-    backgroundColor: '#2563EB',
-    shadowColor: '#2563EB',
+    backgroundColor: theme.colors.primary[500],
+    shadowColor: theme.colors.primary[500],
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
   continueButtonDisabled: {
-    backgroundColor: '#E2E8F0',
+    backgroundColor: theme.colors.neutral[200],
   },
   continueButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: theme.typography.heading.h4.fontSize,
+    fontWeight: theme.typography.heading.h4.fontWeight,
   },
   continueButtonTextEnabled: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
   },
   continueButtonTextDisabled: {
-    color: '#94A3B8',
+    color: theme.colors.text.disabled,
   },
 });
+

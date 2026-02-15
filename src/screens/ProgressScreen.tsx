@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Dimensions, RefreshControl, Alert } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useProgressStore } from '../stores/progressStore';
 import { useAuth } from '../hooks/useAuth';
 import { 
@@ -13,21 +13,12 @@ import {
   LabelSM, 
   Card, 
   Grid, 
-  GhostButton,
   Row,
-  Column,
   Spacer
 } from '../components/ui';
 import { theme } from '../theme';
-import { QUESTION_CATEGORIES, QuestionCategory } from '../types';
-import { getUnlockedAchievements } from '../config/achievements';
+import { QUESTION_CATEGORIES } from '../types';
 import { FRAMEWORKS } from '../data/frameworks';
-
-const getCategoryColor = (count: number) => {
-    if (count >= 10) return theme.colors.semantic.success;
-    if (count >= 5) return theme.colors.semantic.warning;
-    return theme.colors.primary[500];
-};
 
 const getMasteryColor = (score: number) => {
     if (score >= 80) return theme.colors.semantic.success;
@@ -42,7 +33,6 @@ const getMasteryLabel = (score: number) => {
 };
 
 const ActivityHeatmap = ({ activityData }: { activityData: string[] }) => {
-    // Get last 7 days
     const last7Days = Array.from({ length: 7 }, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - (6 - i));
@@ -78,43 +68,6 @@ const ActivityHeatmap = ({ activityData }: { activityData: string[] }) => {
     );
 };
 
-// Progress bar component with label
-const MasteryProgressBar = ({ 
-    label, 
-    score, 
-    color,
-    showLabel = true 
-}: { 
-    label: string; 
-    score: number; 
-    color?: string;
-    showLabel?: boolean;
-}) => {
-    const progressColor = color || getMasteryColor(score);
-    
-    return (
-        <View style={styles.masteryItem}>
-            <View style={styles.masteryHeader}>
-                <BodyMD style={styles.masteryLabel}>{label}</BodyMD>
-                {showLabel && (
-                    <View style={styles.masteryScoreContainer}>
-                        <LabelSM style={{ color: progressColor, fontWeight: '600' }}>{score}%</LabelSM>
-                        <LabelSM color="secondary" style={styles.masteryStatus}>{getMasteryLabel(score)}</LabelSM>
-                    </View>
-                )}
-            </View>
-            <View style={styles.masteryBarBg}>
-                <View 
-                    style={[
-                        styles.masteryBarFill, 
-                        { width: `${score}%`, backgroundColor: progressColor }
-                    ]} 
-                />
-            </View>
-        </View>
-    );
-};
-
 // Framework mastery section
 const FrameworkMasterySection = ({ 
     frameworkMastery 
@@ -123,7 +76,6 @@ const FrameworkMasterySection = ({
 }) => {
     const frameworks = Object.entries(FRAMEWORKS).filter(([_, fw]) => fw.steps.length > 0);
     
-    // Sort frameworks by mastery score (highest first)
     const sortedFrameworks = frameworks.sort((a, b) => {
         const scoreA = frameworkMastery[a[0]] || 0;
         const scoreB = frameworkMastery[b[0]] || 0;
@@ -241,10 +193,8 @@ const CategoryReadinessSection = ({
         ab_testing: { name: 'A/B Testing', color: theme.colors.semantic.error, icon: '🧪' },
     };
 
-    // Calculate readiness for each category (normalized to 0-100 based on questions completed)
     const getCategoryReadiness = (category: string) => {
         const count = categoryProgress[category] || 0;
-        // Assume 10 questions = 100% for a category
         return Math.min(Math.round((count / 10) * 100), 100);
     };
 
@@ -301,7 +251,6 @@ export default function ProgressScreen() {
   const { 
     progress,
     loading,
-    error,
     history,
     activityData,
     fetchProgress, 
@@ -348,7 +297,6 @@ export default function ProgressScreen() {
   const totalCompleted = progress?.total_questions_completed || 0;
   const displayReadiness = readinessScore || progress?.readiness_score || 0;
 
-  // Calculate days to reach 80% readiness
   const calculateDaysToReadiness = () => {
     const questionsToGo = Math.max(0, 50 - totalCompleted);
     const questionsPerDay = currentStreak > 0 ? Math.max(1, currentStreak) : 1;
@@ -480,25 +428,6 @@ export default function ProgressScreen() {
         {/* Category Readiness Section */}
         <CategoryReadinessSection categoryProgress={categoryStats} />
 
-        {/* Achievements */}
-        <View style={styles.section}>
-            <LabelSM color="secondary" style={styles.sectionTitle}>ACHIEVEMENTS</LabelSM>
-            {getUnlockedAchievements(progress).length > 0 ? (
-                <Grid columns={3} gap={4}>
-                   {getUnlockedAchievements(progress).map(achievement => (
-                       <Card key={achievement.id} variant="outline" padding={4} style={{ alignItems: 'center' }}>
-                           <H2 style={{ marginBottom: 8 }}>{achievement.icon}</H2>
-                           <LabelSM align="center" style={{ fontWeight: '600', marginBottom: 4 }}>{achievement.title}</LabelSM>
-                       </Card>
-                   ))}
-                </Grid>
-            ) : (
-                <Card variant="outline" padding={5}>
-                    <BodyMD color="secondary" align="center">Keep practicing to unlock achievements!</BodyMD>
-                </Card>
-            )}
-        </View>
-
         {/* Recent Activity */}
         <View style={styles.section}>
             <LabelSM color="secondary" style={styles.sectionTitle}>RECENT ACTIVITY</LabelSM>
@@ -526,7 +455,7 @@ export default function ProgressScreen() {
                                     {(session as any).session_type?.toUpperCase() || session.mode?.toUpperCase() || 'PRACTICE'}
                                 </LabelSM>
                                 {session.ai_feedback && (
-                                    <LabelSM color="primary">
+                                    <LabelSM style={{ color: theme.colors.primary[500] }}>
                                         SCORE: {session.ai_feedback.score}/10
                                     </LabelSM>
                                 )}
@@ -550,11 +479,6 @@ const styles = StyleSheet.create({
   content: {
     padding: theme.spacing[6],
     paddingBottom: 100,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: theme.spacing[6],
-    paddingLeft: 0,
   },
   title: {
     marginBottom: theme.spacing[6],

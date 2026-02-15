@@ -1,11 +1,20 @@
+require('dotenv').config();
 const { createClient } = require("@supabase/supabase-js");
 
-const supabaseUrl = "https://mgpcdgeptcjvplrjptur.supabase.co";
-const supabaseKey = "sb_publishable_G14cyU4IOWN12RgYQFVbIg_D_0vKWfd";
-const serviceRoleKey = "YOUR_SUPABASE_SERVICE_ROLE_KEY_HERE";
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://mgpcdgeptcjvplrjptur.supabase.co';
+const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY || 'YOUR_SUPABASE_ANON_KEY_HERE';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'YOUR_SUPABASE_SERVICE_ROLE_KEY_HERE';
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Error: Missing Supabase configuration.');
+  console.error('Please set EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or EXPO_PUBLIC_SUPABASE_KEY)');
+  process.exit(1);
+}
 
 async function verifyRPCs() {
-  const supabase = createClient(supabaseUrl, supabaseKey); // Anon is enough if RPC is public, otherwise SR
+  // Use service role key if available, otherwise use anon key
+  const key = serviceRoleKey !== 'YOUR_SUPABASE_SERVICE_ROLE_KEY_HERE' ? serviceRoleKey : supabaseKey;
+  const supabase = createClient(supabaseUrl, key);
 
   console.log("Verifying RPCs...");
 

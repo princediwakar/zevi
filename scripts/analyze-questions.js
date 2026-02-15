@@ -1,7 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = 'https://mgpcdgeptcjvplrjptur.supabase.co';
-const supabaseKey = 'sb_publishable_G14cyU4IOWN12RgYQFVbIg_D_0vKWfd';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://mgpcdgeptcjvplrjptur.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Error: Missing Supabase configuration.');
+  console.error('Please set EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or EXPO_PUBLIC_SUPABASE_KEY) environment variables.');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -83,7 +89,7 @@ async function analyzeQuestions() {
   const { data: withMCQ } = await supabase
     .from('questions')
     .select('mcq_version')
-    .not('mcq_version', 'eq', null);
+    .not('mcq_version', 'is', null);
   
   console.log(`\n--- MCQ VERSIONS ---`);
   console.log(`  Questions with MCQ: ${withMCQ?.length || 0} (${((withMCQ?.length || 0) / total * 100).toFixed(1)}%)`);
@@ -92,7 +98,7 @@ async function analyzeQuestions() {
   const { data: withAnswers } = await supabase
     .from('questions')
     .select('expert_answer')
-    .not('expert_answer', 'eq', null);
+    .not('expert_answer', 'is', null);
   
   console.log(`\n--- EXPERT ANSWERS ---`);
   console.log(`  Questions with Expert Answer: ${withAnswers?.length || 0} (${((withAnswers?.length || 0) / total * 100).toFixed(1)}%)`);

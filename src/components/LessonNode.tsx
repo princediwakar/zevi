@@ -112,7 +112,7 @@ export const LessonNode = ({ status, type, position, onPress, index }: LessonNod
                  }} />
             </View>
 
-            <Text style={{ fontSize: 28, color: status === 'locked' ? '#94a3b8' : 'white' }}>
+            <Text style={{ fontSize: 28, color: status === 'locked' ? theme.colors.text.disabled : theme.colors.text.inverse }}>
                 {getIcon()}
             </Text>
             
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
       borderWidth: 2,
       borderColor: theme.colors.primary[500],
       elevation: 4,
-      shadowColor: '#000',
+      shadowColor: theme.colors.text.primary,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,

@@ -2,6 +2,9 @@ import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { OnboardingStepProps } from '../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { theme } from '../../../theme';
+
+
 
 export default function PathRevealStep({ onNext, data }: OnboardingStepProps) {
   
@@ -44,41 +47,43 @@ export default function PathRevealStep({ onNext, data }: OnboardingStepProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: theme.spacing[8],
   },
   iconContainer: {
     width: 96,
     height: 96,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: theme.colors.primary[50],
     borderRadius: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: theme.spacing[10],
   },
   emoji: {
     fontSize: 40,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: theme.typography.heading.h2.fontSize,
+    fontWeight: theme.typography.heading.h2.fontWeight,
+    color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: theme.spacing[4],
   },
   statusContainer: {
     width: '100%',
     alignItems: 'center',
-    gap: 16,
+    gap: theme.spacing[4],
   },
   statusText: {
-    fontSize: 14,
-    color: '#64748B',
+    fontSize: theme.typography.body.md.fontSize,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   loader: {
-    marginTop: 40,
+    marginTop: theme.spacing[10],
   },
 });
+
+

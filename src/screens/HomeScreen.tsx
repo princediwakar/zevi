@@ -42,8 +42,8 @@ export default function HomeScreen() {
       await fetchPath();
       await fetchProgress(userId, isGuest);
       await fetchQuestions({});
-      await fetchCategoryStats(); // Fetch category counts
-      await fetchWeakAreas(userId, isGuest); // Fetch weak areas
+      await fetchCategoryStats();
+      await fetchWeakAreas(userId, isGuest);
     }
   }, [userId, isGuest, fetchPath, fetchProgress, fetchQuestions, fetchCategoryStats, fetchWeakAreas]);
 
@@ -61,12 +61,10 @@ export default function HomeScreen() {
 
   const isLoading = pathLoading || (progressLoading && !progress);
 
-  // User stats
   const streak = progress?.current_streak || 0;
   const totalQuestions = progress?.total_questions_completed || 0;
   const readiness = readinessScore || progress?.readiness_score || 0;
 
-  // Check if user is new (cold start)
   const isNewUser = totalQuestions === 0;
 
   const getCategoryMastery = (category: QuestionCategory): number => {
@@ -83,25 +81,21 @@ export default function HomeScreen() {
     navigation.navigate('QuestionList', { category });
   };
 
-  const handleDailyQuiz = () => navigation.navigate('QuickQuiz', {});
-  const handleRandomPractice = () => navigation.navigate('QuickQuiz', {});
+  const handleDailyQuiz = () => navigation.navigate('QuickQuiz', { questionCount: 5 });
+  const handleRandomPractice = () => navigation.navigate('QuickQuiz', { questionCount: 1 });
   
-  // Navigate to the first weak area category, or product_sense if no weak areas
   const handleReviewMistakes = () => {
     if (incorrectQuestions.length > 0) {
-      // Navigate to a specific question they got wrong
       const firstWrong = incorrectQuestions[0];
       if (firstWrong?.question_id) {
         navigation.navigate('QuestionDetail', { questionId: firstWrong.question_id });
         return;
       }
     }
-    // Fallback: navigate to first weak area or product_sense
     const targetCategory = weakAreas.length > 0 ? weakAreas[0].category : 'product_sense';
     navigation.navigate('QuestionList', { category: targetCategory });
   };
   
-  // Navigate to weakest category for focused practice
   const handleWeakAreas = () => {
     if (weakAreas.length > 0) {
       navigation.navigate('QuestionList', { category: weakAreas[0].category });
@@ -121,7 +115,6 @@ export default function HomeScreen() {
   }
 
   const sections = [
-    // New User Welcome - Only show for users with no progress
     ...(isNewUser ? [{
       title: 'Welcome',
       data: ['welcome'],
@@ -141,34 +134,6 @@ export default function HomeScreen() {
             <Text style={styles.trySampleButtonText}>Try a Sample Question →</Text>
           </TouchableOpacity>
         </View>
-      ),
-    }] : []),
-    // Continue Learning - Promoted from footer to top (only show if user has progress)
-    ...(!isNewUser && units.length > 0 && units[0].lessons?.length > 0 ? [{
-      title: 'Continue Learning',
-      data: ['continue_learning'],
-      renderItem: () => (
-        <TouchableOpacity 
-          style={styles.continueCardPromoted} 
-          onPress={handleStartPath}
-          activeOpacity={0.8}
-        >
-          <Row style={styles.continueRow}>
-            <View style={styles.continueIconContainer}>
-              <Text style={styles.continueIcon}>📖</Text>
-            </View>
-            <Column style={styles.continueInfo}>
-              <Text style={styles.continueLabelPromoted}>CONTINUE LEARNING</Text>
-              <Text style={styles.continuePathPromoted}>
-                {path?.name || 'Your Learning Path'}
-              </Text>
-              <Text style={styles.continueLesson}>
-                Next: {units[0].lessons[0].name}
-              </Text>
-            </Column>
-            <Text style={styles.continueArrow}>→</Text>
-          </Row>
-        </TouchableOpacity>
       ),
     }] : []),
     {
@@ -231,7 +196,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Row style={styles.headerRow}>
           <Column>
@@ -262,20 +226,6 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        ListFooterComponent={
-          <View style={styles.footer}>
-            {units.length > 0 && units[0].lessons?.length > 0 && (
-              <View style={styles.continueCard} onTouchEnd={handleStartPath}>
-                <Text style={styles.continueLabel}>CONTINUE LEARNING</Text>
-                <Row style={styles.continueContent}>
-                  <Text style={styles.continuePath}>{path?.name || 'Your Learning Path'}</Text>
-                  <Text style={styles.continueArrow}>→</Text>
-                </Row>
-              </View>
-            )}
-            <Spacer size={100} />
-          </View>
-        }
       />
     </View>
   );
@@ -296,7 +246,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary[500],
     paddingTop: theme.spacing[8],
     paddingBottom: theme.spacing[6],
-    paddingHorizontal: theme.spacing[4],
+    paddingHorizontal: theme.spacing[6],
   },
   headerRow: {
     justifyContent: 'space-between',
@@ -317,8 +267,8 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: 'row',
-    paddingHorizontal: theme.spacing[4],
-    gap: theme.spacing[2],
+    paddingHorizontal: theme.spacing[6],
+    gap: theme.spacing[3],
     marginBottom: theme.spacing[4],
   },
   statBox: {
@@ -343,7 +293,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sectionHeader: {
-    paddingHorizontal: theme.spacing[4],
+    paddingHorizontal: theme.spacing[6],
     paddingVertical: theme.spacing[3],
     borderTopWidth: 1,
     borderTopColor: theme.colors.border.light,
@@ -356,10 +306,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   trackCardWrapper: {
-    paddingHorizontal: theme.spacing[4],
+    paddingHorizontal: theme.spacing[6],
   },
   footer: {
-    paddingHorizontal: theme.spacing[4],
+    paddingHorizontal: theme.spacing[6],
     marginTop: theme.spacing[4],
   },
   continueCard: {
@@ -394,15 +344,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: theme.colors.text.inverse,
   },
-  // New user welcome card styles
+  // New user welcome card - Swiss Style: sharp corners
   welcomeCard: {
-    marginHorizontal: theme.spacing[4],
+    marginHorizontal: theme.spacing[6],
     marginBottom: theme.spacing[4],
     padding: theme.spacing[5],
     backgroundColor: theme.colors.primary[50],
     borderWidth: 1,
     borderColor: theme.colors.primary[200],
-    borderRadius: 12,
   },
   welcomeTitle: {
     fontSize: 18,
@@ -420,7 +369,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary[500],
     paddingVertical: theme.spacing[3],
     paddingHorizontal: theme.spacing[4],
-    borderRadius: 8,
     alignSelf: 'flex-start',
   },
   trySampleButtonText: {
@@ -428,15 +376,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.text.inverse,
   },
-  // Promoted Continue Learning card styles
-  continueCardPromoted: {
-    marginHorizontal: theme.spacing[4],
-    marginBottom: theme.spacing[4],
-    padding: theme.spacing[4],
-    backgroundColor: theme.colors.primary[500],
-    borderWidth: 1,
-    borderColor: theme.colors.primary[600],
-  },
+
   continueRow: {
     alignItems: 'center',
   },
@@ -444,7 +384,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: theme.spacing[3],

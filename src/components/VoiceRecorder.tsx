@@ -9,6 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { theme } from '../theme';
 import { 
   useAudioRecorder, 
   useAudioRecorderState, 
@@ -34,7 +35,6 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   maxDuration = 300, // 5 minutes
   mode = 'practice',
 }) => {
-  const { theme } = useTheme();
   const { user } = useUserStore();
   const [isRecording, setIsRecording] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'dashed',
     borderRadius: 12,
-    borderColor: '#E4E4E7',
+    borderColor: theme.colors.border.light,
     marginTop: 16,
   },
   placeholderText: {

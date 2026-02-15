@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { QuestionCategory, Difficulty } from '../types';
+import { theme } from '../theme';
 
 interface FilterBarProps {
   selectedCategory?: QuestionCategory;
@@ -121,64 +122,64 @@ export function FilterBar({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: theme.colors.border.light,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    paddingHorizontal: theme.spacing[4],
+    paddingVertical: theme.spacing[3],
+    gap: theme.spacing[3],
   },
   clearButton: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: theme.spacing[2],
     borderRadius: 20,
-    backgroundColor: '#EF4444',
-    marginRight: 8,
+    backgroundColor: theme.colors.semantic.error,
+    marginRight: theme.spacing[2],
   },
   clearButtonText: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
     fontSize: 13,
     fontWeight: '600',
   },
   section: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing[2],
   },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
-    marginRight: 4,
+    color: theme.colors.text.secondary,
+    marginRight: theme.spacing[1],
   },
   chip: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: theme.spacing[2],
     minHeight: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.colors.surface.secondary,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.colors.border.light,
     justifyContent: 'center',
   },
   chipActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+    backgroundColor: theme.colors.primary[500],
+    borderColor: theme.colors.primary[500],
   },
   chipText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#6B7280',
+    color: theme.colors.text.secondary,
   },
   chipTextActive: {
-    color: '#FFFFFF',
+    color: theme.colors.text.inverse,
   },
   divider: {
     width: 1,
     height: 24,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 8,
+    backgroundColor: theme.colors.border.light,
+    marginHorizontal: theme.spacing[2],
   },
 });

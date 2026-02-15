@@ -5,8 +5,15 @@ import { createClient } from '@supabase/supabase-js';
 // Make sure these are set in your .env file:
 // - EXPO_PUBLIC_SUPABASE_URL
 // - EXPO_PUBLIC_SUPABASE_KEY
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://mgpcdgeptcjvplrjptur.supabase.co';
-const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY;
+
+if (!supabaseUrl) {
+  throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL environment variable');
+}
+if (!supabaseKey) {
+  throw new Error('Missing EXPO_PUBLIC_SUPABASE_KEY environment variable');
+}
 
 // Secure storage adapter for Supabase auth using expo-secure-store
 const secureStorage = {

@@ -110,7 +110,7 @@ export default function QuizResultsScreen() {
             <View style={styles.feedbackSection}>
               {feedback.strengths.map((point, i) => (
                 <View key={`str-${i}`} style={styles.feedbackPoint}>
-                  <LabelSM color="success">✓</LabelSM>
+                  <LabelSM style={{ color: theme.colors.semantic.success }}>✓</LabelSM>
                   <BodyMD>{point}</BodyMD>
                 </View>
               ))}
@@ -121,7 +121,7 @@ export default function QuizResultsScreen() {
             <View style={styles.feedbackSection}>
               {feedback.improvements.map((point, i) => (
                 <View key={`imp-${i}`} style={styles.feedbackPoint}>
-                  <LabelSM color="warning">⚠</LabelSM>
+                  <LabelSM style={{ color: theme.colors.semantic.warning }}>⚠</LabelSM>
                   <BodyMD>{point}</BodyMD>
                 </View>
               ))}
@@ -132,7 +132,7 @@ export default function QuizResultsScreen() {
             <Card variant="filled" padding={5} style={styles.expertCard}>
                {feedback.expertHighlights.map((point, i) => (
                 <View key={`exp-${i}`} style={styles.feedbackPoint}>
-                  <LabelSM color="primary">★</LabelSM>
+                  <LabelSM style={{ color: theme.colors.primary[500] }}>★</LabelSM>
                   <BodyMD>{point}</BodyMD>
                 </View>
               ))}

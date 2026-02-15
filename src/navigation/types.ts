@@ -5,7 +5,7 @@ export type RootStackParamList = {
   Welcome: undefined;
   Auth: undefined;
   Onboarding: undefined;
-  QuickQuiz: { questions?: Question[]; lessonId?: string; sourceQuestionId?: string } | undefined;
+  QuickQuiz: { questions?: Question[]; lessonId?: string; sourceQuestionId?: string; questionCount?: number } | undefined;
   QuizResults: { sourceQuestionId?: string } | undefined;
   Main: undefined;
   CategoryBrowse: undefined;

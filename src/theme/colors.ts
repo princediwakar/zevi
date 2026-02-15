@@ -53,6 +53,36 @@ export const colors = {
     info: '#3B82F6', // Blue for informational
   },
 
+  // Streak colors (for gamification)
+  streak: {
+    gold: '#FFD700',
+    red: '#FF6B6B',
+    orange: '#FF8C42',
+    teal: '#4ECDC4',
+    purple: '#9B59B6',
+  },
+
+  // Category colors
+  category: {
+    product_sense: '#3B82F6',
+    execution: '#8B5CF6',
+    strategy: '#EC4899',
+    behavioral: '#10B981',
+    estimation: '#F59E0B',
+    technical: '#6366F1',
+    pricing: '#14B8A6',
+    ab_testing: '#F43F5E',
+  },
+
+  // Celebration gradient colors
+  celebration: {
+    milestone: ['#9B59B6', '#3498DB'],
+    level_up: ['#2ECC71', '#27AE60'],
+    streak: ['#E74C3C', '#C0392B'],
+    readiness: ['#1ABC9C', '#16A085'],
+    default: ['#667EEA', '#764BA2'],
+  },
+
   // Surface colors
   surface: {
     primary: '#FFFFFF', // White surfaces

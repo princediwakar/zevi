@@ -8,7 +8,7 @@ interface UnitHeaderProps {
   backgroundColor?: string;
 }
 
-export const UnitHeader = ({ title, description, backgroundColor = '#3B82F6' }: UnitHeaderProps) => {
+export const UnitHeader = ({ title, description, backgroundColor = theme.colors.primary[500] }: UnitHeaderProps) => {
   return (
     <View style={[styles.container, { backgroundColor }]}>
       <View style={styles.content}>
@@ -21,13 +21,13 @@ export const UnitHeader = ({ title, description, backgroundColor = '#3B82F6' }: 
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    paddingTop: 24,
-    marginBottom: 24,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    marginHorizontal: 16,
-    marginTop: 16,
+    padding: theme.spacing[4],
+    paddingTop: theme.spacing[6],
+    marginBottom: theme.spacing[6],
+    borderTopLeftRadius: theme.spacing[4],
+    borderTopRightRadius: theme.spacing[4],
+    marginHorizontal: theme.spacing[4],
+    marginTop: theme.spacing[4],
   },
   content: {
     flexDirection: 'column',
@@ -35,14 +35,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '800', // Extra bold
-    color: 'white',
-    marginBottom: 4,
+    color: theme.colors.text.inverse,
+    marginBottom: theme.spacing[1],
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   description: {
     fontSize: 15,
-    color: 'rgba(255,255,255,0.9)',
+    color: theme.colors.text.inverse + 'E6', // 90% opacity
     fontWeight: '500',
   }
 });

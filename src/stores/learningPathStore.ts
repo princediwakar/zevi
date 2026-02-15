@@ -25,31 +25,32 @@ export const useLearningPathStore = create<LearningPathState>((set, get) => ({
   fetchPath: async (slugOrId) => {
     set({ loading: true, error: null });
     try {
-      // 1. Fetch Path
-      let query = supabase.from('learning_paths').select('*');
+      // 1. Fetch ALL Paths (not just one)
+      let pathsQuery = supabase.from('learning_paths').select('*');
       
       if (slugOrId) {
         // Simple check if it looks like a UUID or slug
         if (slugOrId.includes('-')) {
-             query = query.eq('id', slugOrId);
+             pathsQuery = pathsQuery.eq('id', slugOrId);
         } else {
-             query = query.eq('slug', slugOrId);
+             pathsQuery = pathsQuery.eq('slug', slugOrId);
         }
-      } else {
-        // Fallback: fetch the first one
-        query = query.limit(1);
       }
 
-      const { data: pathData, error: pathError } = await query.single();
+      const { data: pathsData, error: pathsError } = await pathsQuery;
       
-      if (pathError) throw pathError;
-      if (!pathData) throw new Error('No learning path found');
+      if (pathsError) throw pathsError;
+      if (!pathsData || pathsData.length === 0) throw new Error('No learning path found');
 
-      // 2. Fetch Units
+      // Use the first path as the main path (for backwards compatibility)
+      const pathData = pathsData[0];
+
+      // 2. Fetch Units for all paths
+      const pathIds = pathsData.map(p => p.id);
       const { data: unitsData, error: unitsError } = await supabase
         .from('units')
         .select('*')
-        .eq('learning_path_id', pathData.id)
+        .in('learning_path_id', pathIds)
         .order('order_index', { ascending: true });
 
       if (unitsError) throw unitsError;
@@ -69,11 +70,15 @@ export const useLearningPathStore = create<LearningPathState>((set, get) => ({
 
       if (lessonsError) throw lessonsError;
 
-      // 4. Combine
-      const unitsWithLessons = unitsData.map(unit => ({
-        ...unit,
-        lessons: lessonsData?.filter(l => l.unit_id === unit.id) || []
-      }));
+      // 4. Combine units with their path info
+      const unitsWithLessons = unitsData.map(unit => {
+        const path = pathsData.find(p => p.id === unit.learning_path_id);
+        return {
+          ...unit,
+          pathCategory: path?.category || 'product_sense',
+          lessons: lessonsData?.filter(l => l.unit_id === unit.id) || []
+        };
+      });
 
       set({ path: pathData, units: unitsWithLessons, loading: false });
 

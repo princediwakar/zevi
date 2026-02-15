@@ -19,8 +19,9 @@ const LESSON_TYPE_LABELS: Record<LessonType, { label: string; emoji: string; des
   learn: { label: 'Learn', emoji: '📖', description: 'Learn the framework concepts' },
   drill: { label: 'Drill', emoji: '🎯', description: 'Practice specific skills' },
   pattern: { label: 'Pattern', emoji: '📝', description: 'Practice with outlines' },
-  full_practice: { label: 'Full Practice', emoji: '🚀', description: 'Complete interview practice' },
+  full_practice: { label: 'Practice', emoji: '🚀', description: 'Complete interview practice' },
   quiz: { label: 'Quiz', emoji: '✅', description: 'Test your knowledge' },
+  practice: { label: 'Practice', emoji: '✍️', description: 'Practice skills' },
 };
 
 export default function LessonScreen() {
@@ -165,6 +166,9 @@ export default function LessonScreen() {
 
   const lessonTypeInfo = LESSON_TYPE_LABELS[lesson.type] || { label: 'Lesson', emoji: '📚', description: '' };
 
+  // Check if lesson is already completed
+  const isAlreadyCompleted = progress?.completed_lessons?.includes(lesson.id) || false;
+
   // Render fallback content for missing lesson content
   const renderFallbackContent = () => {
     const fallbacks: Record<LessonType, React.ReactNode> = {
@@ -233,6 +237,17 @@ export default function LessonScreen() {
           </Text>
         </View>
       ),
+      practice: (
+        <View style={styles.fallbackContainer}>
+          <Text style={styles.fallbackEmoji}>✍️</Text>
+          <Text style={[styles.fallbackTitle, { color: theme.colors.text.primary }]}>
+            Practice Coming Soon
+          </Text>
+          <Text style={[styles.fallbackDescription, { color: theme.colors.text.secondary }]}>
+            Practice exercises for this skill are being prepared.
+          </Text>
+        </View>
+      ),
     };
     
     return fallbacks[lesson.type] || (
@@ -254,10 +269,66 @@ export default function LessonScreen() {
     return true;
   };
 
+  // Handle simple mark complete
+  const handleMarkComplete = async () => {
+    if (!lesson) return;
+    
+    // If already completed, just go back
+    if (isAlreadyCompleted) {
+      navigation.goBack();
+      return;
+    }
+    
+    // Mark as complete
+    setEarnedXp(lesson.xp_reward || 10);
+    setShowCompletionModal(true);
+    
+    if (lesson && userId) {
+      try {
+        const category = (lesson as any).category || 'product_sense';
+        let mode: 'mcq' | 'text' | 'guided' | 'mock' = 'guided';
+        if (lesson.type === 'full_practice' || lesson.type === 'pattern') {
+          mode = 'text';
+        }
+        
+        await updateAfterCompletion(userId, mode, category, isGuest);
+        await useProgressStore.getState().fetchProgress(userId, isGuest);
+      } catch (error) {
+        console.error('Error marking complete:', error);
+      }
+    }
+  };
+
   // Render lesson based on type
   const renderLesson = () => {
+    // Always show mark complete button at bottom
+    const renderMarkCompleteButton = () => (
+      <View style={styles.markCompleteContainer}>
+        <TouchableOpacity
+          style={[
+            styles.markCompleteButton,
+            isAlreadyCompleted && styles.markCompleteButtonCompleted
+          ]}
+          onPress={handleMarkComplete}
+          activeOpacity={0.7}
+        >
+          <Text style={[
+            styles.markCompleteText,
+            isAlreadyCompleted && styles.markCompleteTextCompleted
+          ]}>
+            {isAlreadyCompleted ? '✓ Completed' : 'Mark as Complete'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+
     if (!hasContent()) {
-      return renderFallbackContent();
+      return (
+        <View style={styles.fallbackWrapper}>
+          {renderFallbackContent()}
+          {renderMarkCompleteButton()}
+        </View>
+      );
     }
 
     switch (lesson.type) {
@@ -301,14 +372,20 @@ export default function LessonScreen() {
             onError={handleLessonError}
           />
         );
+      case 'practice':
+        // Treat 'practice' type the same as 'full_practice' - use FullPracticeLesson
+        if (lesson.content.full_practice_content) {
+          return (
+            <FullPracticeLesson
+              content={lesson.content.full_practice_content!}
+              onComplete={(xp, answerData) => handleLessonComplete(xp)}
+              onError={handleLessonError}
+            />
+          );
+        }
+        return renderFallbackContent();
       default:
-        return (
-          <View style={styles.fallbackContainer}>
-            <Text style={[styles.fallbackTitle, { color: theme.colors.text.primary }]}>
-              Unsupported lesson type
-            </Text>
-          </View>
-        );
+        return renderFallbackContent();
     }
   };
 
@@ -653,5 +730,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: 50,
+  },
+  // Mark Complete Button
+  fallbackWrapper: {
+    flex: 1,
+  },
+  markCompleteContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  markCompleteButton: {
+    backgroundColor: '#2563EB',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  markCompleteButtonCompleted: {
+    backgroundColor: '#10B981',
+  },
+  markCompleteText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  markCompleteTextCompleted: {
+    color: '#FFFFFF',
   },
 });

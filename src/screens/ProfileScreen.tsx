@@ -21,7 +21,6 @@ import { useProgressStore } from '../stores/progressStore';
 import {
   Container,
   DisplayLG,
-  H1,
   H2,
   H3,
   H4,
@@ -32,19 +31,13 @@ import {
   Card,
   Grid,
   Button,
-  GhostButton,
-  OutlineButton,
   Row,
   Column,
   Spacer,
-  Badge,
 } from '../components/ui';
 
 // Theme
 import { theme } from '../theme';
-
-// Config
-import { getUnlockedAchievements, getNextAchievement, getAchievementProgress } from '../config/achievements';
 import { SubscriptionTier } from '../types';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
@@ -116,62 +109,6 @@ const SubscriptionBadge = ({ tier }: { tier: SubscriptionTier }) => {
         {isPremium ? '⭐ PREMIUM' : 'FREE'}
       </BodySM>
     </View>
-  );
-};
-
-// Achievement preview component
-const AchievementPreview = ({ progress }: { progress: any }) => {
-  const unlocked = getUnlockedAchievements(progress);
-  const nextAchievement = getNextAchievement(progress);
-  const achievementProgress = getAchievementProgress(progress);
-
-  return (
-    <Card variant="outline" padding={5} style={styles.achievementCard}>
-      <Row style={styles.achievementHeader}>
-        <View>
-          <BodyLG style={{ fontWeight: '600' }}>Achievements</BodyLG>
-          <BodySM color="secondary">{unlocked.length} unlocked</BodySM>
-        </View>
-        <View style={styles.achievementProgress}>
-          <H4 style={{ color: theme.colors.primary[500] }}>{achievementProgress}%</H4>
-        </View>
-      </Row>
-
-      {unlocked.length > 0 && (
-        <>
-          <Spacer size={theme.spacing[4]} />
-          <Row style={styles.recentAchievements}>
-            {unlocked.slice(0, 4).map((achievement) => (
-              <View key={achievement.id} style={styles.achievementItem}>
-                <View style={styles.achievementIcon}>
-                  <H3>{achievement.icon}</H3>
-                </View>
-                <LabelSM align="center" style={{ fontSize: 10 }}>
-                  {achievement.title}
-                </LabelSM>
-              </View>
-            ))}
-          </Row>
-        </>
-      )}
-
-      {nextAchievement && (
-        <>
-          <Spacer size={theme.spacing[4]} />
-          <View style={styles.nextAchievement}>
-            <BodySM color="secondary">Next: {nextAchievement.title}</BodySM>
-            <View style={styles.progressBarBg}>
-              <View
-                style={[
-                  styles.progressBarFill,
-                  { width: `${achievementProgress}%` },
-                ]}
-              />
-            </View>
-          </View>
-        </>
-      )}
-    </Card>
   );
 };
 
@@ -249,8 +186,6 @@ export default function ProfileScreen() {
             try {
               await signOut();
               resetUser();
-              // Navigate to Welcome screen after clearing data
-              // Use setTimeout to ensure auth state has fully updated
               setTimeout(() => {
                 navigation.reset({
                   index: 0,
@@ -268,7 +203,6 @@ export default function ProfileScreen() {
   };
 
   const handleUpgrade = () => {
-    // TODO: Navigate to upgrade screen
     Alert.alert('Coming Soon', 'Premium upgrade will be available soon!');
   };
 
@@ -373,10 +307,6 @@ export default function ProfileScreen() {
             />
           </Grid>
         </View>
-
-        {/* Achievements */}
-        <Spacer size={theme.spacing[6]} />
-        <AchievementPreview progress={progress} />
 
         {/* Premium CTA (for free users) */}
         {user.subscription_tier === 'free' && (
@@ -578,73 +508,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing[3],
     paddingVertical: theme.spacing[1],
     borderRadius: 4,
-  },
-
-  // Hearts
-  heartsCard: {
-    backgroundColor: theme.colors.surface.primary,
-  },
-  heartsRow: {
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  heartsContainer: {
-    gap: theme.spacing[1],
-  },
-  heart: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-
-  // Achievements
-  achievementCard: {
-    backgroundColor: theme.colors.surface.primary,
-  },
-  achievementHeader: {
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  achievementProgress: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: theme.colors.primary[100],
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recentAchievements: {
-    justifyContent: 'space-around',
-  },
-  achievementItem: {
-    alignItems: 'center',
-    width: 70,
-  },
-  achievementIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: theme.colors.surface.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: theme.spacing[2],
-  },
-  nextAchievement: {
-    paddingTop: theme.spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
-  },
-  progressBarBg: {
-    height: 6,
-    backgroundColor: theme.colors.neutral[200],
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginTop: theme.spacing[2],
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: theme.colors.primary[500],
-    borderRadius: 3,
   },
 
   // Premium

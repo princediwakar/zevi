@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,105 +10,35 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { theme } from '../theme';
-import { FRAMEWORKS, FrameworkDefinition } from '../data/frameworks';
-import { QuestionCategory, LessonType } from '../types';
+import { QuestionCategory } from '../types';
 import { useProgressStore } from '../stores/progressStore';
 import { useLearningPathStore } from '../stores/learningPathStore';
-import { useAuth } from '../hooks/useAuth';
-import { Spacer, H1, H2, H3, BodyMD, BodySM, LabelSM, Card, Row, Column } from '../components';
+import { Spacer, H1, H2, BodyMD, BodySM, Card, Row, Column } from '../components';
+import { CheckCircle, ArrowRight } from 'lucide-react-native';
 
 type CategoryDetailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CategoryDetail'>;
 type CategoryDetailRouteProp = RouteProp<RootStackParamList, 'CategoryDetail'>;
 
-// Category info mapping - Using Swiss-style theme colors
-const CATEGORY_INFO: Record<QuestionCategory, { label: string; icon: string; color: string; description: string; whenToUse: string }> = {
-  product_sense: { 
-    label: 'Product Sense', 
-    icon: '💡', 
-    color: theme.colors.primary[500], 
-    description: 'Design, improve, and add features to products',
-    whenToUse: 'Use for questions about designing new products, improving existing products, or adding new features.'
-  },
-  execution: { 
-    label: 'Execution', 
-    icon: '⚡', 
-    color: theme.colors.primary[600], 
-    description: 'Metrics, prioritization, and roadmap planning',
-    whenToUse: 'Use for questions about defining metrics, prioritizing features, or planning roadmaps.'
-  },
-  strategy: { 
-    label: 'Strategy', 
-    icon: '🎯', 
-    color: theme.colors.primary[700], 
-    description: 'Business strategy and market analysis',
-    whenToUse: 'Use for questions about competitive analysis, market entry, or business strategy.'
-  },
-  behavioral: { 
-    label: 'Behavioral', 
-    icon: '👤', 
-    color: theme.colors.semantic.success, 
-    description: 'Leadership, teamwork, and conflicts',
-    whenToUse: 'Use for "Tell me about a time..." questions about leadership, conflict, or teamwork.'
-  },
-  technical: { 
-    label: 'Technical', 
-    icon: '🔧', 
-    color: theme.colors.primary[400], 
-    description: 'Technical PM questions and system design',
-    whenToUse: 'Use for questions about technical architecture, system design, or technical trade-offs.'
-  },
-  estimation: { 
-    label: 'Estimation', 
-    icon: '📊', 
-    color: theme.colors.semantic.warning, 
-    description: 'Fermi estimates and guesstimates',
-    whenToUse: 'Use for "How many..." or "Estimate the size of..." type questions.'
-  },
-  pricing: { 
-    label: 'Pricing', 
-    icon: '💰', 
-    color: theme.colors.neutral[500], 
-    description: 'Pricing strategies and models',
-    whenToUse: 'Use for questions about pricing strategies, value-based pricing, or monetization.'
-  },
-  ab_testing: { 
-    label: 'A/B Testing', 
-    icon: '🧪', 
-    color: theme.colors.semantic.error, 
-    description: 'Experiment design and analysis',
-    whenToUse: 'Use for questions about designing experiments, statistical significance, or test results.'
-  },
+// Swiss design category info
+const CATEGORY_INFO: Record<QuestionCategory, { label: string; icon: string; color: string; description: string }> = {
+  product_sense: { label: 'Product Sense', icon: '💡', color: '#2563EB', description: 'Design, improve, and add features to products' },
+  execution: { label: 'Execution', icon: '⚡', color: '#7C3AED', description: 'Metrics, prioritization, and roadmap planning' },
+  strategy: { label: 'Strategy', icon: '🎯', color: '#059669', description: 'Business strategy and market analysis' },
+  behavioral: { label: 'Behavioral', icon: '👤', color: '#F59E0B', description: 'Leadership, teamwork, and conflicts' },
+  technical: { label: 'Technical', icon: '🔧', color: '#EC4899', description: 'Technical PM questions and system design' },
+  estimation: { label: 'Estimation', icon: '📊', color: '#14B8A6', description: 'Fermi estimates and guesstimates' },
+  pricing: { label: 'Pricing', icon: '💰', color: '#64748B', description: 'Pricing strategies and models' },
+  ab_testing: { label: 'A/B Testing', icon: '🧪', color: '#EF4444', description: 'Experiment design and analysis' },
 };
 
-// Get frameworks that belong to a category
-const getFrameworksByCategory = (category: QuestionCategory): FrameworkDefinition[] => {
-  return Object.values(FRAMEWORKS).filter(
-    (fw) => fw.category === category || fw.applicable_categories?.includes(category)
-  );
-};
-
-// Get lesson type icon
-const getLessonTypeIcon = (type: LessonType): string => {
-  switch (type) {
-    case 'learn': return '📖';
-    case 'drill': return '🎯';
-    case 'pattern': return '📝';
-    case 'full_practice': return '✍️';
-    case 'quiz': return '❓';
-    default: return '📚';
-  }
-};
-
-// Get lesson type label
-const getLessonTypeLabel = (type: LessonType): string => {
-  switch (type) {
-    case 'learn': return 'Learn';
-    case 'drill': return 'Drill';
-    case 'pattern': return 'Pattern';
-    case 'full_practice': return 'Practice';
-    case 'quiz': return 'Quiz';
-    default: return 'Lesson';
-  }
+// Lesson type configs
+const LESSON_TYPE_CONFIG: Record<string, { label: string; icon: string; bgColor: string }> = {
+  learn: { label: 'Learn', icon: '📖', bgColor: '#E0E7FF' },
+  drill: { label: 'Drill', icon: '🎯', bgColor: '#EDE9FE' },
+  pattern: { label: 'Pattern', icon: '📝', bgColor: '#D1FAE5' },
+  full_practice: { label: 'Practice', icon: '🚀', bgColor: '#D1FAE5' },
+  quiz: { label: 'Quiz', icon: '✅', bgColor: '#FEF3C7' },
+  practice: { label: 'Practice', icon: '✍️', bgColor: '#D1FAE5' },
 };
 
 export default function CategoryDetailScreen() {
@@ -116,45 +46,41 @@ export default function CategoryDetailScreen() {
   const route = useRoute<CategoryDetailRouteProp>();
   const { category } = route.params;
   const { progress } = useProgressStore();
-  const { units, fetchPath } = useLearningPathStore();
-  const { user, isGuest, guestId } = useAuth();
+  const { units } = useLearningPathStore();
 
   const categoryKey = category as QuestionCategory;
   const info = CATEGORY_INFO[categoryKey];
-  const frameworks = getFrameworksByCategory(categoryKey);
 
-  // Get learn lessons for this category from the learning path
-  const learnLessons = React.useMemo(() => {
+  // Get lessons for this category
+  const categoryLessons = React.useMemo(() => {
+    const completedIds = new Set(progress?.completed_lessons || []);
     const lessons: any[] = [];
+    
     units.forEach(unit => {
-      if (unit.lessons) {
-        unit.lessons.forEach(lesson => {
-          // Match lessons to this category based on category
-          if ((lesson as any).category === categoryKey || 
-              (lesson as any).framework_category === categoryKey) {
-            lessons.push(lesson);
-          }
+      const unitCategory = (unit as any).pathCategory || (unit as any).category;
+      if (unitCategory === categoryKey) {
+        (unit.lessons || []).forEach((lesson: any) => {
+          lessons.push({
+            ...lesson,
+            unitName: unit.name,
+            isCompleted: completedIds.has(lesson.id),
+          });
         });
       }
     });
+    
     return lessons;
-  }, [units, categoryKey]);
+  }, [units, categoryKey, progress]);
 
-  // Get framework mastery from progress
-  const getFrameworkMastery = (frameworkName: string): number => {
-    return progress?.framework_mastery?.[frameworkName.toLowerCase()] || 0;
-  };
-
-  const handleFrameworkPress = (frameworkName: string) => {
-    navigation.navigate('FrameworkDetail', { frameworkName });
-  };
-
-  const handlePracticePress = () => {
-    navigation.navigate('QuestionList', { category });
-  };
+  const completedCount = categoryLessons.filter(l => l.isCompleted).length;
+  const progressPercent = categoryLessons.length > 0 ? Math.round((completedCount / categoryLessons.length) * 100) : 0;
 
   const handleLessonPress = (lessonId: string) => {
     navigation.navigate('LessonScreen', { lessonId });
+  };
+
+  const getLessonTypeConfig = (type: string) => {
+    return LESSON_TYPE_CONFIG[type] || LESSON_TYPE_CONFIG.learn;
   };
 
   if (!info) {
@@ -172,9 +98,18 @@ export default function CategoryDetailScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
+        
         <Text style={styles.categoryIcon}>{info.icon}</Text>
-        <H1 style={styles.categoryTitle}>{info.label}</H1>
-        <BodyMD style={styles.categoryDescription}>{info.description}</BodyMD>
+        <Text style={styles.categoryTitle}>{info.label}</Text>
+        <Text style={styles.categoryDescription}>{info.description}</Text>
+        
+        {/* Progress */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: '#FFFFFF' }]} />
+          </View>
+          <Text style={styles.progressText}>{completedCount}/{categoryLessons.length} completed</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -182,112 +117,51 @@ export default function CategoryDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* When to Use This Category */}
-        <View style={styles.section}>
-          <H2 style={styles.sectionTitle}>WHEN TO USE</H2>
-          <Card variant="outline" style={styles.whenToUseCard}>
-            <Text style={styles.whenToUseText}>{info.whenToUse}</Text>
-          </Card>
-        </View>
-
-        {/* Learn Concepts Section */}
-        {learnLessons.length > 0 && (
-          <View style={styles.section}>
-            <H2 style={styles.sectionTitle}>LEARN CONCEPTS</H2>
-            <Text style={styles.sectionSubtitle}>
-              Master the fundamentals with structured lessons
-            </Text>
-
-            {learnLessons.slice(0, 6).map((lesson: any) => {
-              const isCompleted = progress?.completed_lessons?.includes(lesson.id);
-              return (
-                <TouchableOpacity
-                  key={lesson.id}
-                  style={styles.lessonCard}
-                  onPress={() => handleLessonPress(lesson.id)}
-                  activeOpacity={0.8}
-                >
-                  <Row style={styles.lessonRow}>
-                    <View style={[styles.lessonIcon, { backgroundColor: info.color + '20' }]}>
-                      <Text style={styles.lessonIconText}>{getLessonTypeIcon(lesson.type)}</Text>
-                    </View>
-                    <Column style={styles.lessonInfo}>
-                      <Text style={styles.lessonName}>{lesson.name}</Text>
-                      <BodySM color="secondary">
-                        {getLessonTypeLabel(lesson.type)} • {lesson.estimated_minutes || 10} min
-                      </BodySM>
-                    </Column>
-                    {isCompleted && (
-                      <View style={styles.completedBadge}>
-                        <Text style={styles.completedBadgeText}>✓</Text>
-                      </View>
-                    )}
-                    <Text style={styles.lessonArrow}>→</Text>
-                  </Row>
-                </TouchableOpacity>
-              );
-            })}
+        {/* Lessons Section */}
+        <Text style={styles.sectionTitle}>LESSONS</Text>
+        
+        {categoryLessons.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No lessons in this category yet</Text>
           </View>
-        )}
-
-        {/* Frameworks in This Category */}
-        <View style={styles.section}>
-          <H2 style={styles.sectionTitle}>FRAMEWORKS</H2>
-          <Text style={styles.sectionSubtitle}>
-            {frameworks.length} framework{frameworks.length !== 1 ? 's' : ''} available
-          </Text>
-
-          {frameworks.map((framework) => {
-            const mastery = getFrameworkMastery(framework.name);
+        ) : (
+          categoryLessons.map((lesson, index) => {
+            const typeConfig = getLessonTypeConfig(lesson.type || 'learn');
+            
             return (
               <TouchableOpacity
-                key={framework.name}
-                style={styles.frameworkCard}
-                onPress={() => handleFrameworkPress(framework.name)}
-                activeOpacity={0.8}
+                key={lesson.id}
+                style={styles.lessonCard}
+                onPress={() => handleLessonPress(lesson.id)}
+                activeOpacity={0.7}
               >
-                <Row style={styles.frameworkRow}>
-                  <View style={[styles.frameworkIcon, { backgroundColor: framework.color }]}>
-                    <Text style={styles.frameworkIconText}>{framework.name.charAt(0)}</Text>
+                {/* Type Badge */}
+                <View style={[styles.typeBadge, { backgroundColor: typeConfig.bgColor }]}>
+                  <Text style={styles.typeIcon}>{typeConfig.icon}</Text>
+                </View>
+                
+                {/* Lesson Info */}
+                <View style={styles.lessonInfo}>
+                  <Text style={[styles.lessonName, lesson.isCompleted && styles.lessonNameCompleted]}>
+                    {lesson.name}
+                  </Text>
+                  <View style={styles.lessonMeta}>
+                    <Text style={styles.lessonType}>{typeConfig.label}</Text>
+                    <Text style={styles.metaDivider}>·</Text>
+                    <Text style={styles.lessonDuration}>{lesson.estimated_minutes || 10} min</Text>
                   </View>
-                  <Column style={styles.frameworkInfo}>
-                    <Text style={styles.frameworkName}>{framework.name}</Text>
-                    <BodySM color="secondary" numberOfLines={2}>
-                      {framework.description}
-                    </BodySM>
-                  </Column>
-                  <View style={styles.frameworkMastery}>
-                    <Text style={[styles.masteryPercent, { color: framework.color }]}>
-                      {mastery}%
-                    </Text>
-                  </View>
-                </Row>
-                {mastery > 0 && (
-                  <View style={styles.masteryBar}>
-                    <View
-                      style={[
-                        styles.masteryFill,
-                        { width: `${mastery}%`, backgroundColor: framework.color },
-                      ]}
-                    />
-                  </View>
+                </View>
+                
+                {/* Status */}
+                {lesson.isCompleted ? (
+                  <CheckCircle size={20} color="#10B981" />
+                ) : (
+                  <ArrowRight size={20} color="#9CA3AF" />
                 )}
               </TouchableOpacity>
             );
-          })}
-        </View>
-
-        {/* Practice Questions Button */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={[styles.practiceButton, { backgroundColor: info.color }]}
-            onPress={handlePracticePress}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.practiceButtonText}>Practice Questions</Text>
-            <Text style={styles.practiceButtonArrow}>→</Text>
-          </TouchableOpacity>
-        </View>
+          })
+        )}
 
         <Spacer size={100} />
       </ScrollView>
@@ -298,18 +172,18 @@ export default function CategoryDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     paddingTop: theme.spacing[8],
     paddingBottom: theme.spacing[6],
-    paddingHorizontal: theme.spacing[4],
+    paddingHorizontal: theme.spacing[6],
   },
   backButton: {
     marginBottom: theme.spacing[4],
   },
   backText: {
-    color: theme.colors.text.inverse,
+    color: 'rgba(255,255,255,0.9)',
     fontSize: 16,
     fontWeight: '500',
   },
@@ -318,151 +192,102 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing[2],
   },
   categoryTitle: {
-    color: theme.colors.text.inverse,
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '700',
     marginBottom: theme.spacing[2],
   },
   categoryDescription: {
-    color: theme.colors.text.inverse,
-    opacity: 0.9,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    marginBottom: theme.spacing[4],
+  },
+  progressContainer: {
+    marginTop: theme.spacing[2],
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 2,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  progressText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    marginTop: 4,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingTop: theme.spacing[4],
-  },
-  section: {
-    marginBottom: theme.spacing[6],
-    paddingHorizontal: theme.spacing[4],
+    padding: theme.spacing[6],
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: theme.colors.text.secondary,
-    letterSpacing: 1,
-    marginBottom: theme.spacing[2],
+    color: '#6B7280',
+    letterSpacing: 0.5,
+    marginBottom: theme.spacing[4],
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing[3],
-  },
-  whenToUseCard: {
-    padding: theme.spacing[4],
-  },
-  whenToUseText: {
-    fontSize: 15,
-    color: theme.colors.text.primary,
-    lineHeight: 22,
-  },
-  // Lesson card styles
   lessonCard: {
-    marginBottom: theme.spacing[3],
-    padding: theme.spacing[4],
-    backgroundColor: theme.colors.surface.primary,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-  },
-  lessonRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: theme.spacing[4],
+    marginBottom: theme.spacing[3],
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  lessonIcon: {
-    width: 44,
-    height: 44,
+  typeBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: theme.spacing[3],
-    borderRadius: theme.spacing.borderRadius.sm,
   },
-  lessonIconText: {
-    fontSize: 20,
+  typeIcon: {
+    fontSize: 18,
   },
   lessonInfo: {
     flex: 1,
+    marginLeft: 12,
   },
   lessonName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing[1],
+    fontWeight: '500',
+    color: '#000000',
   },
-  completedBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: theme.colors.semantic.success,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing[2],
+  lessonNameCompleted: {
+    color: '#9CA3AF',
   },
-  completedBadgeText: {
-    color: theme.colors.text.inverse,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  lessonArrow: {
-    fontSize: 18,
-    color: theme.colors.text.secondary,
-  },
-  frameworkCard: {
-    marginBottom: theme.spacing[3],
-    padding: theme.spacing[4],
-    backgroundColor: theme.colors.surface.primary,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-  },
-  frameworkRow: {
-    alignItems: 'center',
-  },
-  frameworkIcon: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing[3],
-  },
-  frameworkIconText: {
-    color: theme.colors.text.inverse,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  frameworkInfo: {
-    flex: 1,
-  },
-  frameworkName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing[1],
-  },
-  frameworkMastery: {
-    alignItems: 'flex-end',
-  },
-  masteryPercent: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  masteryBar: {
-    height: 4,
-    backgroundColor: theme.colors.border.light,
-    marginTop: theme.spacing[3],
-  },
-  masteryFill: {
-    height: '100%',
-  },
-  practiceButton: {
+  lessonMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: theme.spacing[4],
+    marginTop: 4,
   },
-  practiceButtonText: {
-    color: theme.colors.text.inverse,
-    fontSize: 16,
-    fontWeight: '600',
+  lessonType: {
+    fontSize: 12,
+    color: '#6B7280',
   },
-  practiceButtonArrow: {
-    color: theme.colors.text.inverse,
-    fontSize: 20,
+  metaDivider: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginHorizontal: 6,
+  },
+  lessonDuration: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  emptyState: {
+    padding: theme.spacing[8],
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#9CA3AF',
   },
 });

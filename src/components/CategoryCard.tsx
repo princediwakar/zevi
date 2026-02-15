@@ -12,14 +12,14 @@ interface CategoryCardProps {
 }
 
 const CATEGORY_INFO: Record<QuestionCategory, { label: string; icon: string; color: string }> = {
-  product_sense: { label: 'Product Sense', icon: '💡', color: '#3B82F6' },
-  execution: { label: 'Execution', icon: '⚡', color: '#8B5CF6' },
-  strategy: { label: 'Strategy', icon: '🎯', color: '#EC4899' },
-  behavioral: { label: 'Behavioral', icon: '👥', color: '#10B981' },
-  estimation: { label: 'Estimation', icon: '📊', color: '#F59E0B' },
-  technical: { label: 'Technical', icon: '⚙️', color: '#6366F1' },
-  pricing: { label: 'Pricing', icon: '💰', color: '#14B8A6' },
-  ab_testing: { label: 'A/B Testing', icon: '🧪', color: '#F43F5E' },
+  product_sense: { label: 'Product Sense', icon: '💡', color: theme.colors.category.product_sense },
+  execution: { label: 'Execution', icon: '⚡', color: theme.colors.category.execution },
+  strategy: { label: 'Strategy', icon: '🎯', color: theme.colors.category.strategy },
+  behavioral: { label: 'Behavioral', icon: '👥', color: theme.colors.category.behavioral },
+  estimation: { label: 'Estimation', icon: '📊', color: theme.colors.category.estimation },
+  technical: { label: 'Technical', icon: '⚙️', color: theme.colors.category.technical },
+  pricing: { label: 'Pricing', icon: '💰', color: theme.colors.category.pricing },
+  ab_testing: { label: 'A/B Testing', icon: '🧪', color: theme.colors.category.ab_testing },
 };
 
 export function CategoryCard({ category, questionCount, userProgress = 0, onPress }: CategoryCardProps) {

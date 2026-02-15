@@ -1,5 +1,18 @@
+require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient('https://mgpcdgeptcjvplrjptur.supabase.co', 'sb_publishable_G14cyU4IOWN12RgYQFVbIg_D_0vKWfd');
+
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://mgpcdgeptcjvplrjptur.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                    process.env.EXPO_PUBLIC_SUPABASE_KEY ||
+                    process.env.SUPABASE_SECRET_API_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Error: Missing Supabase configuration.');
+  console.error('Please set EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or EXPO_PUBLIC_SUPABASE_KEY)');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // India-based product questions
 const indiaQuestions = [

@@ -12,40 +12,42 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { theme } from '../theme';
-import { FRAMEWORKS, FrameworkDefinition } from '../data/frameworks';
-import { QuestionCategory, QUESTION_CATEGORIES, FrameworkName } from '../types';
+import { FRAMEWORKS } from '../data/frameworks';
+import { QuestionCategory, QUESTION_CATEGORIES } from '../types';
 import { useProgressStore } from '../stores/progressStore';
 import { useLearningPathStore } from '../stores/learningPathStore';
 import { useAuth } from '../hooks/useAuth';
-import { Spacer, H1, H2, H3, BodyMD, BodySM, LabelSM, Card, Row, Column } from '../components';
+import { Spacer, H1, H2, BodySM } from '../components';
+import { CheckCircle, ArrowRight } from 'lucide-react-native';
 
 type LearnScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LearnScreen'>;
 
-// Category info mapping - Using Swiss-style theme colors
-const CATEGORY_INFO: Record<QuestionCategory, { label: string; icon: string; color: string; description: string }> = {
-  product_sense: { label: 'Product Sense', icon: '💡', color: theme.colors.primary[500], description: 'Design, improve, and add features to products' },
-  execution: { label: 'Execution', icon: '⚡', color: theme.colors.primary[600], description: 'Metrics, prioritization, and roadmap planning' },
-  strategy: { label: 'Strategy', icon: '🎯', color: theme.colors.primary[700], description: 'Business strategy and market analysis' },
-  behavioral: { label: 'Behavioral', icon: '👤', color: theme.colors.semantic.success, description: 'Leadership, teamwork, and conflicts' },
-  technical: { label: 'Technical', icon: '🔧', color: theme.colors.primary[400], description: 'Technical PM questions and system design' },
-  estimation: { label: 'Estimation', icon: '📊', color: theme.colors.semantic.warning, description: 'Fermi estimates and guesstimates' },
-  pricing: { label: 'Pricing', icon: '💰', color: theme.colors.neutral[500], description: 'Pricing strategies and models' },
-  ab_testing: { label: 'A/B Testing', icon: '🧪', color: theme.colors.semantic.error, description: 'Experiment design and analysis' },
+// Swiss design: minimal, high contrast
+const CATEGORY_INFO: Record<QuestionCategory, { label: string; icon: string; color: string }> = {
+  product_sense: { label: 'Product Sense', icon: '💡', color: '#2563EB' },
+  execution: { label: 'Execution', icon: '⚡', color: '#7C3AED' },
+  strategy: { label: 'Strategy', icon: '🎯', color: '#059669' },
+  behavioral: { label: 'Behavioral', icon: '👤', color: '#F59E0B' },
+  technical: { label: 'Technical', icon: '🔧', color: '#EC4899' },
+  estimation: { label: 'Estimation', icon: '📊', color: '#14B8A6' },
+  pricing: { label: 'Pricing', icon: '💰', color: '#64748B' },
+  ab_testing: { label: 'A/B Testing', icon: '🧪', color: '#EF4444' },
 };
 
-// Get frameworks that belong to a category
-const getFrameworksByCategory = (category: QuestionCategory): FrameworkDefinition[] => {
-  return Object.values(FRAMEWORKS).filter(
-    (fw) => fw.category === category || fw.applicable_categories?.includes(category)
-  );
-};
+interface CategoryWithProgress {
+  category: QuestionCategory;
+  label: string;
+  icon: string;
+  color: string;
+  completed: number;
+  total: number;
+}
 
 export default function LearnScreen() {
   const navigation = useNavigation<LearnScreenNavigationProp>();
   const { user, isGuest, guestId } = useAuth();
-  const { progress, fetchProgress, readinessScore, weakAreas, fetchWeakAreas } = useProgressStore();
-  const { path, units, fetchPath } = useLearningPathStore();
-  const [searchQuery, setSearchQuery] = useState('');
+  const { progress, fetchProgress, readinessScore, fetchWeakAreas } = useProgressStore();
+  const { units, fetchPath } = useLearningPathStore();
   const [refreshing, setRefreshing] = useState(false);
 
   const userId = user?.id || guestId;
@@ -61,7 +63,6 @@ export default function LearnScreen() {
     }, [userId, isGuest, fetchPath, fetchProgress, fetchWeakAreas])
   );
 
-  // Refresh handler
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
@@ -72,151 +73,87 @@ export default function LearnScreen() {
     setRefreshing(false);
   }, [userId, isGuest, fetchPath, fetchProgress, fetchWeakAreas]);
 
-  // Get all frameworks as an array
-  const frameworks = Object.values(FRAMEWORKS);
-
-  // Filter frameworks by search
-  const filteredFrameworks = frameworks.filter(
-    (fw) =>
-      fw.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fw.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Filter categories by search
-  const filteredCategories = QUESTION_CATEGORIES.filter(
-    (cat) =>
-      CATEGORY_INFO[cat].label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Get framework mastery from progress
-  const getFrameworkMastery = (frameworkName: string): number => {
-    return progress?.framework_mastery?.[frameworkName.toLowerCase()] || 0;
-  };
-
-  // Get category mastery from progress
-  const getCategoryMastery = (category: string): number => {
-    return progress?.category_progress?.[category] || 0;
-  };
-
-  // Get framework count for a category
-  const getFrameworkCount = (category: QuestionCategory): number => {
-    return getFrameworksByCategory(category).length;
-  };
-
-  // Calculate total lessons in path
-  const totalLessons = useMemo(() => {
-    return units.reduce((sum, unit) => sum + (unit.lessons?.length || 0), 0);
-  }, [units]);
-
-  // Calculate completed lessons
-  const completedLessons = useMemo(() => {
-    return progress?.completed_lessons?.length || 0;
-  }, [progress]);
-
-  // Get recommended category based on weak areas
-  const recommendedCategory = useMemo((): QuestionCategory | null => {
-    if (weakAreas && weakAreas.length > 0) {
-      return weakAreas[0].category as QuestionCategory;
-    }
-    // Default to product_sense for new users
-    return 'product_sense';
-  }, [weakAreas]);
-
-  // Get the next recommended lesson (first incomplete lesson in weak area)
-  const recommendedLesson = useMemo(() => {
-    if (!units || units.length === 0) return null;
+  // Group units by category and calculate progress
+  const categoriesWithProgress = useMemo((): CategoryWithProgress[] => {
+    const completedLessonIds = new Set(progress?.completed_lessons || []);
     
-    // If we have weak areas, prioritize those
-    if (weakAreas && weakAreas.length > 0) {
-      const targetCategory = weakAreas[0].category;
-      for (const unit of units) {
-        if (unit.lessons) {
-          for (const lesson of unit.lessons) {
-            // Check if this lesson belongs to weak category and is not completed
-            if ((lesson as any).category === targetCategory && 
-                !progress?.completed_lessons?.includes(lesson.id)) {
-              return lesson;
-            }
-          }
-        }
-      }
-    }
+    // Count lessons by category
+    const categoryMap = new Map<QuestionCategory, { completed: number; total: number }>();
     
-    // Fallback: return first incomplete lesson
-    for (const unit of units) {
-      if (unit.lessons) {
-        for (const lesson of unit.lessons) {
-          if (!progress?.completed_lessons?.includes(lesson.id)) {
-            return lesson;
-          }
-        }
-      }
-    }
-    return null;
-  }, [units, weakAreas, progress]);
+    QUESTION_CATEGORIES.forEach(cat => {
+      categoryMap.set(cat, { completed: 0, total: 0 });
+    });
+    
+    units.forEach(unit => {
+      const category = (unit as any).pathCategory || 'product_sense';
+      const catData = categoryMap.get(category) || { completed: 0, total: 0 };
+      catData.total += (unit.lessons?.length || 0);
+      catData.completed += (unit.lessons?.filter((l: any) => completedLessonIds.has(l.id)).length || 0);
+      categoryMap.set(category, catData);
+    });
+    
+    return QUESTION_CATEGORIES.map(cat => {
+      const data = categoryMap.get(cat) || { completed: 0, total: 0 };
+      const info = CATEGORY_INFO[cat];
+      return {
+        category: cat,
+        label: info.label,
+        icon: info.icon,
+        color: info.color,
+        completed: data.completed,
+        total: data.total,
+      };
+    });
+  }, [units, progress]);
 
-  // Current readiness score
-  const currentReadiness = readinessScore || progress?.readiness_score || 0;
+  // Calculate overall stats
+  const totalLessons = categoriesWithProgress.reduce((sum, c) => sum + c.total, 0);
+  const totalCompleted = categoriesWithProgress.reduce((sum, c) => sum + c.completed, 0);
+  const progressPercent = totalLessons > 0 ? Math.round((totalCompleted / totalLessons) * 100) : 0;
 
-  // Get total estimated time remaining
-  const estimatedTimeRemaining = useMemo(() => {
-    const remainingLessons = totalLessons - completedLessons;
-    const avgMinutesPerLesson = 10; // Average lesson time
-    return remainingLessons * avgMinutesPerLesson;
-  }, [totalLessons, completedLessons]);
-
-  const handleFrameworkPress = (frameworkName: string) => {
-    navigation.navigate('FrameworkDetail', { frameworkName });
-  };
-
-  const handleCategoryPress = (category: string) => {
+  const handleCategoryPress = (category: QuestionCategory) => {
     navigation.navigate('CategoryDetail', { category });
   };
 
-  const handleContinueLearning = () => {
-    // Prioritize recommended lesson if available
-    const lessonToStart = recommendedLesson || (units.length > 0 && units[0].lessons?.length > 0 ? units[0].lessons[0] : null);
-    if (lessonToStart) {
-      navigation.navigate('LessonScreen', { lessonId: lessonToStart.id });
-    }
-  };
-
-  const handleStartRecommended = () => {
-    if (recommendedLesson) {
-      navigation.navigate('LessonScreen', { lessonId: recommendedLesson.id });
-    }
-  };
+  const currentReadiness = readinessScore || progress?.readiness_score || 0;
 
   return (
     <View style={styles.container}>
-      {/* Header with readiness score */}
+      {/* Header */}
       <View style={styles.header}>
         <H1 style={styles.title}>LEARN</H1>
         <BodySM color="secondary" style={styles.headerSubtitle}>
-          Master frameworks for PM interviews
+          {totalCompleted}/{totalLessons} lessons completed
         </BodySM>
         
-        {/* Readiness Score Banner */}
-        {currentReadiness > 0 && (
-          <View style={styles.readinessBanner}>
-            <View style={styles.readinessInfo}>
-              <Text style={styles.readinessLabel}>Interview Ready</Text>
-              <Text style={styles.readinessValue}>{currentReadiness}%</Text>
-            </View>
-            <View style={styles.readinessBar}>
-              <View 
-                style={[
-                  styles.readinessFill, 
-                  { 
-                    width: `${currentReadiness}%`,
-                    backgroundColor: currentReadiness >= 80 ? theme.colors.semantic.success : 
-                                   currentReadiness >= 50 ? theme.colors.semantic.warning : theme.colors.primary[500]
-                  }
-                ]} 
-              />
-            </View>
+        {/* Progress bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
           </View>
-        )}
+          <Text style={styles.progressText}>{progressPercent}%</Text>
+        </View>
+
+        {/* Stats row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statIcon}>🔥</Text>
+            <Text style={styles.statValue}>{progress?.current_streak || 0}</Text>
+            <Text style={styles.statLabel}>streak</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statIcon}>⭐</Text>
+            <Text style={styles.statValue}>{totalCompleted * 10}</Text>
+            <Text style={styles.statLabel}>XP</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statIcon}>🎯</Text>
+            <Text style={styles.statValue}>{currentReadiness}%</Text>
+            <Text style={styles.statLabel}>ready</Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView
@@ -227,212 +164,58 @@ export default function LearnScreen() {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh}
-            tintColor={theme.colors.primary[500]}
+            tintColor="#2563EB"
           />
         }
       >
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search frameworks or categories..."
-            placeholderTextColor={theme.colors.text.disabled}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-
-        {/* Personalized Recommendation Card */}
-        {recommendedCategory && currentReadiness < 100 && (
-          <View style={styles.section}>
-            <H2 style={styles.sectionTitle}>RECOMMENDED FOR YOU</H2>
+        {/* Categories with Progress */}
+        <Text style={styles.sectionTitle}>YOUR LEARNING PATHS</Text>
+        
+        {categoriesWithProgress.map((cat) => {
+          const catProgress = cat.total > 0 ? Math.round((cat.completed / cat.total) * 100) : 0;
+          const hasLessons = cat.total > 0;
+          
+          return (
             <TouchableOpacity
-              style={[styles.recommendedCard, { borderLeftColor: CATEGORY_INFO[recommendedCategory].color }]}
-              onPress={handleStartRecommended}
-              activeOpacity={0.8}
+              key={cat.category}
+              style={styles.categoryCard}
+              onPress={() => handleCategoryPress(cat.category)}
+              activeOpacity={0.7}
             >
-              <View style={styles.recommendedContent}>
-                <View style={styles.recommendedHeader}>
-                  <Text style={styles.recommendedBadge}>Based on your weak areas</Text>
-                </View>
-                <Text style={styles.recommendedTitle}>
-                  {CATEGORY_INFO[recommendedCategory].icon} {CATEGORY_INFO[recommendedCategory].label}
-                </Text>
-                <Text style={styles.recommendedDescription}>
-                  Focus on {CATEGORY_INFO[recommendedCategory].description.toLowerCase()}
-                </Text>
-                {weakAreas.length > 0 && weakAreas[0].successRate && (
-                  <Text style={styles.recommendedContext}>
-                    Your success rate: {Math.round(weakAreas[0].successRate)}% in this area
-                  </Text>
-                )}
+              {/* Left: Icon */}
+              <View style={[styles.categoryIcon, { backgroundColor: cat.color + '15' }]}>
+                <Text style={styles.categoryIconText}>{cat.icon}</Text>
               </View>
-              <View style={styles.recommendedAction}>
-                <Text style={styles.recommendedArrow}>Start →</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
 
-        {/* Continue Learning Section - Enhanced */}
-        {(units.length > 0 && units[0].lessons?.length > 0) && (
-          <View style={styles.section}>
-            <H2 style={styles.sectionTitle}>CONTINUE LEARNING</H2>
-            <TouchableOpacity
-              style={styles.continueCard}
-              onPress={handleContinueLearning}
-              activeOpacity={0.8}
-            >
-              <Row style={styles.continueHeader}>
-                <View style={styles.continueIconContainer}>
-                  <Text style={styles.continueIcon}>📖</Text>
-                </View>
-                <Column style={styles.continueInfo}>
-                  <LabelSM color="secondary">{path?.name || 'Your Learning Path'}</LabelSM>
-                  <Text style={styles.continueTitle}>
-                    {recommendedLesson?.name || units[0].lessons[0].name}
-                  </Text>
-                  {/* Progress context */}
-                  <View style={styles.progressContext}>
-                    <Text style={styles.progressText}>
-                      {completedLessons} of {totalLessons} lessons completed
-                    </Text>
-                    <Text style={styles.timeText}>
-                      ~{estimatedTimeRemaining} min remaining
-                    </Text>
-                  </View>
-                </Column>
-                <Text style={styles.continueArrow}>→</Text>
-              </Row>
-              {/* Progress bar */}
-              <View style={styles.pathProgressBar}>
-                <View 
-                  style={[
-                    styles.pathProgressFill, 
-                    { width: `${totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0}%` }
-                  ]} 
-                />
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Frameworks Section */}
-        <View style={styles.section}>
-          <Row style={styles.sectionHeader}>
-            <H2 style={styles.sectionTitle}>FRAMEWORKS</H2>
-            <TouchableOpacity onPress={() => {/* Could navigate to full frameworks list */}}>
-              <LabelSM color="primary">See All →</LabelSM>
-            </TouchableOpacity>
-          </Row>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.frameworksScroll}
-          >
-            {filteredFrameworks.map((framework) => {
-              const mastery = getFrameworkMastery(framework.name);
-              return (
-                <TouchableOpacity
-                  key={framework.name}
-                  style={styles.frameworkCard}
-                  onPress={() => handleFrameworkPress(framework.name)}
-                  activeOpacity={0.8}
-                >
-                  <View style={[styles.frameworkIcon, { backgroundColor: framework.color }]}>
-                    <Text style={styles.frameworkIconText}>{framework.name.charAt(0)}</Text>
-                  </View>
-                  <Text style={styles.frameworkName}>{framework.name}</Text>
-                  <Text style={styles.frameworkDescription} numberOfLines={2}>
-                    {framework.description}
-                  </Text>
-                  <View style={styles.masteryContainer}>
-                    <View style={styles.masteryBar}>
-                      <View
+              {/* Center: Info */}
+              <View style={styles.categoryInfo}>
+                <Text style={styles.categoryLabel}>{cat.label}</Text>
+                {hasLessons ? (
+                  <View style={styles.categoryProgressRow}>
+                    <View style={styles.categoryProgressBar}>
+                      <View 
                         style={[
-                          styles.masteryFill,
-                          { width: `${mastery}%`, backgroundColor: framework.color },
-                        ]}
+                          styles.categoryProgressFill, 
+                          { width: `${catProgress}%`, backgroundColor: cat.color }
+                        ]} 
                       />
                     </View>
-                    <Text style={styles.masteryText}>{mastery}%</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* By Category Section */}
-        <View style={styles.section}>
-          <Row style={styles.sectionHeader}>
-            <H2 style={styles.sectionTitle}>BY CATEGORY</H2>
-            <LabelSM color="secondary">{filteredCategories.length}</LabelSM>
-          </Row>
-
-          {filteredCategories.slice(0, 6).map((category) => {
-            const info = CATEGORY_INFO[category];
-            const mastery = getCategoryMastery(category);
-            const frameworkCount = getFrameworkCount(category);
-
-            // Check if this is a weak area
-            const isWeakArea = weakAreas?.some(w => w.category === category);
-            
-            // Calculate concepts mastered (approximation)
-            const conceptsMastered = Math.round((mastery / 100) * frameworkCount);
-
-            return (
-              <TouchableOpacity
-                key={category}
-                style={[
-                  styles.categoryCard,
-                  isWeakArea && styles.categoryCardHighlight
-                ]}
-                onPress={() => handleCategoryPress(category)}
-                activeOpacity={0.8}
-              >
-                <Row style={styles.categoryRow}>
-                  <View style={[styles.categoryIcon, { backgroundColor: info.color + '20' }]}>
-                    <Text style={styles.categoryIconText}>{info.icon}</Text>
-                  </View>
-                  <Column style={styles.categoryInfo}>
-                    <Row style={styles.categoryNameRow}>
-                      <Text style={styles.categoryName}>{info.label}</Text>
-                      {isWeakArea && (
-                        <View style={[styles.weakBadge, { backgroundColor: theme.colors.semantic.error + '20' }]}>
-                          <Text style={[styles.weakBadgeText, { color: theme.colors.semantic.error }]}>
-                            Needs work
-                          </Text>
-                        </View>
-                      )}
-                    </Row>
-                    <BodySM color="secondary">
-                      {frameworkCount} framework{frameworkCount !== 1 ? 's' : ''} • {conceptsMastered}/{frameworkCount} mastered
-                    </BodySM>
-                  </Column>
-                  <View style={styles.categoryMastery}>
-                    <Text style={[styles.masteryPercent, { color: info.color }]}>
-                      {mastery}%
+                    <Text style={styles.categoryProgressText}>
+                      {cat.completed}/{cat.total}
                     </Text>
                   </View>
-                </Row>
-                <View style={styles.categoryProgressBarContainer}>
-                  <View style={styles.categoryProgressBar}>
-                    <View
-                      style={[
-                        styles.categoryProgressFill,
-                        { width: `${mastery}%`, backgroundColor: info.color },
-                      ]}
-                    />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                ) : (
+                  <Text style={styles.categoryEmpty}>No lessons yet</Text>
+                )}
+              </View>
 
-        <Spacer size={100} />
+              {/* Right: Arrow */}
+              <ArrowRight size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+          );
+        })}
+
+        <Spacer size={40} />
       </ScrollView>
     </View>
   );
@@ -441,322 +224,143 @@ export default function LearnScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     paddingTop: theme.spacing[8],
-    paddingBottom: theme.spacing[4],
-    paddingHorizontal: theme.spacing[4],
-    backgroundColor: theme.colors.primary[500],
+    paddingBottom: theme.spacing[5],
+    paddingHorizontal: theme.spacing[6],
+    backgroundColor: '#2563EB',
   },
   title: {
-    color: theme.colors.text.inverse,
-    marginBottom: theme.spacing[1],
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -1,
   },
   headerSubtitle: {
-    opacity: 0.9,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 4,
   },
-  // Readiness banner styles - Swiss-style: using theme with opacity
-  readinessBanner: {
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: theme.spacing[4],
-    backgroundColor: theme.colors.primary[500] + '26', // 15% opacity
-    borderRadius: theme.spacing.borderRadius.md,
+    gap: 12,
+  },
+  progressBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 3,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 3,
+  },
+  progressText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    width: 40,
+    textAlign: 'right',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    marginTop: theme.spacing[4],
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 8,
     padding: theme.spacing[3],
   },
-  readinessInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  statItem: {
+    flex: 1,
     alignItems: 'center',
-    marginBottom: theme.spacing[2],
   },
-  readinessLabel: {
-    color: theme.colors.text.inverse,
-    fontSize: 13,
-    fontWeight: '500',
-    opacity: 0.9,
-  },
-  readinessValue: {
-    color: theme.colors.text.inverse,
+  statIcon: {
     fontSize: 18,
+  },
+  statValue: {
+    color: '#FFFFFF',
+    fontSize: 20,
     fontWeight: '700',
+    marginTop: 2,
   },
-  readinessBar: {
-    height: 6,
-    backgroundColor: theme.colors.text.inverse + '33', // 20% opacity
-    borderRadius: 3,
+  statLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+    marginTop: 2,
   },
-  readinessFill: {
-    height: '100%',
-    borderRadius: 3,
+  statDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  //
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingTop: theme.spacing[4],
-  },
-  searchContainer: {
-    paddingHorizontal: theme.spacing[4],
-    marginBottom: theme.spacing[4],
-  },
-  searchInput: {
-    backgroundColor: theme.colors.surface.primary,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-    paddingHorizontal: theme.spacing[4],
-    paddingVertical: theme.spacing[3],
-    fontSize: 16,
-    color: theme.colors.text.primary,
-  },
-  section: {
-    marginBottom: theme.spacing[6],
-  },
-  sectionHeader: {
-    paddingHorizontal: theme.spacing[4],
-    marginBottom: theme.spacing[3],
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    padding: theme.spacing[6],
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: theme.colors.text.secondary,
-    letterSpacing: 1,
-  },
-  // Recommended card styles
-  recommendedCard: {
-    marginHorizontal: theme.spacing[4],
-    backgroundColor: theme.colors.surface.primary,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderLeftWidth: 4,
-    borderColor: theme.colors.border.light,
-    overflow: 'hidden',
-  },
-  recommendedContent: {
-    padding: theme.spacing[4],
-  },
-  recommendedHeader: {
-    marginBottom: theme.spacing[2],
-  },
-  recommendedBadge: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.colors.primary[600],
-    backgroundColor: theme.colors.primary[50],
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  recommendedTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing[1],
-  },
-  recommendedDescription: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    lineHeight: 20,
-  },
-  recommendedContext: {
-    fontSize: 12,
-    color: theme.colors.semantic.error,
-    marginTop: theme.spacing[2],
-    fontWeight: '500',
-  },
-  recommendedAction: {
-    backgroundColor: theme.colors.primary[50],
-    padding: theme.spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
-  },
-  recommendedArrow: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.primary[600],
-    textAlign: 'right',
-  },
-  //
-  frameworksScroll: {
-    paddingHorizontal: theme.spacing[4],
-    gap: theme.spacing[3],
-  },
-  frameworkCard: {
-    width: 160,
-    backgroundColor: theme.colors.surface.primary,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-    padding: theme.spacing[4],
-  },
-  frameworkIcon: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing[3],
-  },
-  frameworkIconText: {
-    color: theme.colors.text.inverse,
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  frameworkName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing[1],
-  },
-  frameworkDescription: {
-    fontSize: 12,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing[3],
-    lineHeight: 16,
-  },
-  masteryContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[2],
-  },
-  masteryBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: theme.colors.border.light,
-  },
-  masteryFill: {
-    height: '100%',
-  },
-  masteryText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: theme.colors.text.secondary,
-    minWidth: 35,
+    color: '#6B7280',
+    letterSpacing: 0.5,
+    marginBottom: theme.spacing[4],
   },
   categoryCard: {
-    marginHorizontal: theme.spacing[4],
-    marginBottom: theme.spacing[2],
-    padding: theme.spacing[4],
-    backgroundColor: theme.colors.surface.primary,
-    borderWidth: 1,
-    borderColor: theme.colors.border.light,
-  },
-  categoryCardHighlight: {
-    borderColor: theme.colors.semantic.error,
-    backgroundColor: theme.colors.semantic.error + '05',
-  },
-  categoryRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: theme.spacing[4],
+    marginBottom: theme.spacing[3],
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   categoryIcon: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: theme.spacing[3],
   },
   categoryIconText: {
-    fontSize: 20,
+    fontSize: 24,
   },
   categoryInfo: {
     flex: 1,
+    marginLeft: theme.spacing[4],
   },
-  categoryNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[2],
-  },
-  categoryName: {
+  categoryLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#000000',
+    marginBottom: 8,
   },
-  weakBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  weakBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  categoryMastery: {
-    alignItems: 'flex-end',
-  },
-  masteryPercent: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  categoryProgressBarContainer: {
-    marginTop: theme.spacing[3],
+  categoryProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   categoryProgressBar: {
+    flex: 1,
     height: 4,
-    backgroundColor: theme.colors.border.light,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
   },
   categoryProgressFill: {
     height: '100%',
+    borderRadius: 2,
   },
-  // Continue learning enhanced styles
-  continueCard: {
-    marginHorizontal: theme.spacing[4],
-    padding: theme.spacing[4],
-    backgroundColor: theme.colors.primary[500],
-    borderWidth: 1,
-    borderColor: theme.colors.primary[600],
-  },
-  continueHeader: {
-    alignItems: 'center',
-  },
-  continueIconContainer: {
-    width: 48,
-    height: 48,
-    backgroundColor: theme.colors.text.inverse + '33', // 20% opacity
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing[3],
-  },
-  continueIcon: {
-    fontSize: 24,
-  },
-  continueInfo: {
-    flex: 1,
-  },
-  continueTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text.inverse,
-    marginTop: theme.spacing[1],
-  },
-  progressContext: {
-    marginTop: theme.spacing[2],
-  },
-  progressText: {
+  categoryProgressText: {
     fontSize: 12,
-    color: theme.colors.text.inverse,
-    opacity: 0.8,
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  timeText: {
-    fontSize: 11,
-    color: theme.colors.text.inverse,
-    opacity: 0.6,
-    marginTop: 2,
-  },
-  continueArrow: {
-    fontSize: 20,
-    color: theme.colors.text.inverse,
-  },
-  pathProgressBar: {
-    height: 4,
-    backgroundColor: theme.colors.text.inverse + '4D', // 30% opacity
-    borderRadius: 2,
-    marginTop: theme.spacing[3],
-  },
-  pathProgressFill: {
-    height: '100%',
-    backgroundColor: theme.colors.text.inverse,
-    borderRadius: 2,
+  categoryEmpty: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
   },
 });

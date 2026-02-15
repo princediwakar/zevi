@@ -24,6 +24,7 @@ export default function QuickQuizScreen() {
   const route = useRoute<QuickQuizRouteProp>();
   const initialQuestions = route.params?.questions;
   const sourceQuestionId = route.params?.sourceQuestionId;
+  const questionCount = route.params?.questionCount ?? 5; // Default to 5 for sprint mode
   const { user, guestId } = useAuth();
 
   const { getRandomMCQQuestion, getRecommendedQuestions } = useQuestionsStore();
@@ -83,7 +84,7 @@ export default function QuickQuizScreen() {
       // Try personalized first, with robust fallback
       try {
         if (userId) {
-          queue = await getRecommendedQuestions(userId, isGuest, 3);
+          queue = await getRecommendedQuestions(userId, isGuest, questionCount);
         }
       } catch (error) {
         console.error('Error getting personalized questions:', error);
@@ -94,16 +95,16 @@ export default function QuickQuizScreen() {
         // Get MCQ questions from sample data
         const mcqQuestions = sampleQuestions.filter(q => q.mcq_version?.enabled);
         
-        // Shuffle and pick 3
+        // Shuffle and pick questionCount
         const shuffled = [...mcqQuestions].sort(() => Math.random() - 0.5);
-        queue = shuffled.slice(0, 3);
+        queue = shuffled.slice(0, questionCount);
       }
     }
 
     // Final check: ensure we have questions
     if (queue.length === 0) {
       const mcqQuestions = sampleQuestions.filter(q => q.mcq_version?.enabled);
-      queue = mcqQuestions.slice(0, 3);
+      queue = mcqQuestions.slice(0, questionCount);
     }
 
     if (queue.length > 0) {
@@ -115,7 +116,7 @@ export default function QuickQuizScreen() {
         // Try with sample questions directly
         try {
           const mcqQuestions = sampleQuestions.filter(q => q.mcq_version?.enabled);
-          await startQuiz(mcqQuestions.slice(0, 3), 'guest', true);
+          await startQuiz(mcqQuestions.slice(0, questionCount), 'guest', true);
         } catch (e) {
           console.error('Fatal error starting quiz:', e);
         }
