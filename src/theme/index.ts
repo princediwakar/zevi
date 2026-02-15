@@ -26,8 +26,8 @@ import { spacing } from './spacing';
 export const swiss = {
   // Layout constants
   layout: {
-    headerHeight: 120, // Includes safe area + header bar
-    headerPaddingTop: 60, // Safe area for notch
+    headerHeight: 100, // Includes safe area + header bar
+    headerPaddingTop: 50, // Safe area for notch
     headerPaddingBottom: 16,
     screenPadding: 24,
     sectionGap: 32,

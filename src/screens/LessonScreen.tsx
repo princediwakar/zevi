@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignSelf: 'flex-start',
-    marginBottom: theme.spacing[4],
+    marginBottom: theme.spacing[2],
   },
   backButtonText: {
     fontSize: theme.swiss.fontSize.label,
@@ -441,13 +441,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   codeBox: {
-    width: 72,
-    height: 72,
+    width: 48,
+    height: 48,
     borderWidth: theme.swiss.border.standard,
     borderColor: theme.colors.text.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: theme.spacing[4],
+    marginBottom: theme.spacing[2],
   },
   codeText: {
     fontSize: theme.swiss.fontSize.title,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: theme.spacing[4],
+    marginBottom: theme.spacing[2],
   },
   metaRow: {
     flexDirection: 'row',
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     fontSize: theme.swiss.fontSize.heading,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing[4],
+    marginBottom: theme.spacing[2],
   },
   errorDescription: {
     fontSize: theme.swiss.fontSize.body,
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     fontSize: theme.swiss.fontSize.heading,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing[4],
+    marginBottom: theme.spacing[2],
   },
   fallbackDescription: {
     fontSize: theme.swiss.fontSize.body,
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
     fontSize: theme.swiss.fontSize.small,
     fontWeight: theme.swiss.fontWeight.semibold,
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing[4],
+    marginBottom: theme.spacing[2],
     letterSpacing: theme.swiss.letterSpacing.wide,
   },
   fallbackPreviewText: {

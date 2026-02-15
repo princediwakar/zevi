@@ -270,8 +270,8 @@ const styles = StyleSheet.create({
   
   // Header - Swiss bordered
   header: {
-    padding: theme.swiss.layout.screenPadding,
-    paddingTop: theme.swiss.layout.headerPaddingTop,
+    padding: theme.spacing[3],
+    paddingTop: theme.spacing[3],
     borderBottomWidth: theme.swiss.border.standard,
     borderBottomColor: theme.colors.text.primary,
   },
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   
   // Progress Container
   progressContainer: {
-    padding: theme.swiss.layout.screenPadding,
+    padding: theme.spacing[3],
     borderBottomWidth: theme.swiss.border.standard,
     borderBottomColor: theme.colors.text.primary,
   },
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   // Content
   content: {
     flex: 1,
-    padding: theme.swiss.layout.screenPadding,
+    padding: theme.spacing[3],
   },
   
   // Question
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   // Navigation - Swiss bordered
   navigation: {
     flexDirection: 'row',
-    padding: theme.swiss.layout.screenPadding,
+    padding: theme.spacing[3],
     gap: theme.spacing[3],
     borderTopWidth: theme.swiss.border.heavy,
     borderTopColor: theme.colors.text.primary,
