@@ -52,7 +52,6 @@ function LearnStackNavigator() {
       <LearnStack.Screen name="CategoryDetail" component={CategoryDetailScreen} />
       <LearnStack.Screen name="FrameworkDetail" component={FrameworkDetailScreen} />
       <LearnStack.Screen name="LessonScreen" component={LessonScreen} />
-      <LearnStack.Screen name="QuickQuiz" component={QuickQuizScreen} />
     </LearnStack.Navigator>
   );
 }
