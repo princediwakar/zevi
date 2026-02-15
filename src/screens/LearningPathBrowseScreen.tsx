@@ -13,6 +13,8 @@ import { theme } from '../theme';
 import { QuestionCategory, QUESTION_CATEGORIES } from '../types';
 import { Spacer } from '../components';
 import { ArrowRight } from 'lucide-react-native';
+import { useProgressStore } from '../stores/progressStore';
+import { useLearningPathStore } from '../stores/learningPathStore';
 
 type LearningPathBrowseNavigationProp = NativeStackNavigationProp<RootStackParamList, 'LearningPathBrowse'>;
 
@@ -30,6 +32,27 @@ const CATEGORY_INFO: Record<QuestionCategory, { label: string; code: string; des
 
 export default function LearningPathBrowseScreen() {
   const navigation = useNavigation<LearningPathBrowseNavigationProp>();
+  const { progress } = useProgressStore();
+  const { units } = useLearningPathStore();
+
+  // Calculate progress for each category
+  const getCategoryProgress = (category: QuestionCategory) => {
+    const completedIds = new Set(progress?.completed_lessons || []);
+    let total = 0;
+    let completed = 0;
+    
+    units.forEach(unit => {
+      const unitCategory = (unit as any).pathCategory || (unit as any).category;
+      if (unitCategory === category) {
+        (unit.lessons || []).forEach((lesson: any) => {
+          total++;
+          if (completedIds.has(lesson.id)) completed++;
+        });
+      }
+    });
+    
+    return { completed, total };
+  };
 
   const handleCategoryPress = (category: QuestionCategory) => {
     navigation.navigate('CategoryDetail', { category });
@@ -54,19 +77,14 @@ export default function LearningPathBrowseScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Heavy separator */}
-        <View style={styles.separator} />
 
-        {/* Introduction */}
-        <Text style={styles.introText}>
-          Choose a learning path to start your journey
-        </Text>
 
-        <View style={styles.separator} />
 
         {/* Learning Paths as stark rows */}
         {QUESTION_CATEGORIES.map((category, index) => {
           const info = CATEGORY_INFO[category];
+          const { completed, total } = getCategoryProgress(category);
+          const hasProgress = completed > 0;
           
           return (
             <TouchableOpacity
@@ -76,17 +94,26 @@ export default function LearningPathBrowseScreen() {
               activeOpacity={0.7}
             >
               {/* Number indicator */}
-              <View style={styles.numberContainer}>
-                <Text style={styles.numberText}>
+              <View style={[styles.numberContainer, hasProgress && styles.numberContainerDone]}>
+                <Text style={[styles.numberText, hasProgress && styles.numberTextDone]}>
                   {String(index + 1).padStart(2, '0')}
                 </Text>
               </View>
               
               {/* Path Info */}
               <View style={styles.pathInfo}>
-                <Text style={styles.pathLabel}>{info.label}</Text>
+                <Text style={[styles.pathLabel, hasProgress && styles.pathLabelDone]}>{info.label}</Text>
                 <Text style={styles.pathDescription}>{info.description}</Text>
               </View>
+              
+              {/* Progress count - subtle */}
+              {total > 0 && (
+                <View style={[styles.progressBadge, hasProgress && styles.progressBadgeDone]}>
+                  <Text style={[styles.progressText, hasProgress && styles.progressTextDone]}>
+                    {completed}/{total}
+                  </Text>
+                </View>
+              )}
               
               {/* Arrow */}
               <ArrowRight size={24} color={theme.colors.text.primary} />
@@ -180,10 +207,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: theme.spacing[4],
   },
+  numberContainerDone: {
+    borderColor: theme.colors.neutral[300],
+  },
   numberText: {
     fontSize: theme.swiss.fontSize.body,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
+  },
+  numberTextDone: {
+    color: theme.colors.text.disabled,
   },
   pathInfo: {
     flex: 1,
@@ -196,10 +229,31 @@ const styles = StyleSheet.create({
     letterSpacing: theme.swiss.letterSpacing.normal,
     marginBottom: theme.spacing[1],
   },
+  pathLabelDone: {
+    color: theme.colors.text.secondary,
+  },
   pathDescription: {
     fontSize: theme.swiss.fontSize.small,
     fontWeight: theme.swiss.fontWeight.medium,
     color: theme.colors.text.secondary,
     letterSpacing: theme.swiss.letterSpacing.normal,
+  },
+  
+  // Progress badge - subtle
+  progressBadge: {
+    paddingHorizontal: theme.spacing[2],
+    paddingVertical: theme.spacing[1],
+    marginRight: theme.spacing[2],
+  },
+  progressBadgeDone: {
+    backgroundColor: theme.colors.neutral[100],
+  },
+  progressText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+  },
+  progressTextDone: {
+    color: theme.colors.text.secondary,
   },
 });

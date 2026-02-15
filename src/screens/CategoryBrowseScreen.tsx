@@ -85,8 +85,6 @@ export default function CategoryBrowseScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.text.primary} />
         }
       >
-        {/* Heavy separator */}
-        <View style={styles.separator} />
 
         {/* Categories as stark rows */}
         {categories.map((category) => {

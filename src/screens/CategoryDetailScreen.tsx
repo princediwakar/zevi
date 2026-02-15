@@ -33,12 +33,12 @@ const CATEGORY_INFO: Record<QuestionCategory, { label: string; code: string; col
 
 // Lesson type configs - Swiss muted colors
 const LESSON_TYPE_CONFIG: Record<string, { label: string; code: string; bgColor: string }> = {
-  learn: { label: 'LEARN', code: 'LRN', bgColor: theme.colors.neutral[200] },
-  drill: { label: 'DRILL', code: 'DRL', bgColor: theme.colors.neutral[300] },
-  pattern: { label: 'PATTERN', code: 'PAT', bgColor: theme.colors.neutral[200] },
-  full_practice: { label: 'PRACTICE', code: 'PRX', bgColor: theme.colors.neutral[200] },
+  learn: { label: 'LEARN', code: 'LR', bgColor: theme.colors.neutral[200] },
+  drill: { label: 'DRILL', code: 'DR', bgColor: theme.colors.neutral[300] },
+  pattern: { label: 'PATTERN', code: 'PA', bgColor: theme.colors.neutral[200] },
+  full_practice: { label: 'PRACTICE', code: 'PR', bgColor: theme.colors.neutral[200] },
   quiz: { label: 'QUIZ', code: 'QZ', bgColor: theme.colors.neutral[300] },
-  practice: { label: 'PRACTICE', code: 'PRX', bgColor: theme.colors.neutral[200] },
+  practice: { label: 'PRACTICE', code: 'PR', bgColor: theme.colors.neutral[200] },
 };
 
 export default function CategoryDetailScreen() {
@@ -51,7 +51,7 @@ export default function CategoryDetailScreen() {
   const categoryKey = category as QuestionCategory;
   const info = CATEGORY_INFO[categoryKey];
 
-  // Get lessons for this category
+  // Get lessons for this category with status
   const categoryLessons = React.useMemo(() => {
     const completedIds = new Set(progress?.completed_lessons || []);
     const lessons: any[] = [];
@@ -69,11 +69,20 @@ export default function CategoryDetailScreen() {
       }
     });
     
-    return lessons;
+    // Find the first uncompleted lesson (the "next" one)
+    const firstIncompleteIndex = lessons.findIndex((l: any) => !l.isCompleted);
+    
+    // Mark each lesson with its status
+    return lessons.map((lesson: any, index: number) => ({
+      ...lesson,
+      isNext: index === firstIncompleteIndex,
+      isPending: index > firstIncompleteIndex,
+    }));
   }, [units, categoryKey, progress]);
 
   const completedCount = categoryLessons.filter(l => l.isCompleted).length;
   const progressPercent = categoryLessons.length > 0 ? Math.round((completedCount / categoryLessons.length) * 100) : 0;
+  const nextLesson = categoryLessons.find((l: any) => l.isNext);
 
   const handleLessonPress = (lessonId: string) => {
     navigation.navigate('LessonScreen', { lessonId });
@@ -122,45 +131,108 @@ export default function CategoryDetailScreen() {
         {/* Lessons Section */}
         <Text style={styles.sectionTitle}>LESSONS</Text>
         
+        {/* Show NEXT lesson prominently if exists */}
+        {nextLesson && !nextLesson.isCompleted && (
+          <TouchableOpacity
+            style={[styles.lessonCard, styles.lessonCardNext]}
+            onPress={() => handleLessonPress(nextLesson.id)}
+            activeOpacity={0.7}
+          >
+            {/* NEXT badge */}
+            <View style={styles.nextBadge}>
+              <Text style={styles.nextBadgeText}>NEXT</Text>
+            </View>
+            
+            {/* Type Badge - Swiss Style */}
+            <View style={[styles.typeBadge, { backgroundColor: theme.colors.text.primary, borderColor: theme.colors.text.primary, borderWidth: theme.swiss.border.standard }]}>
+              <Text style={[styles.typeCode, { color: theme.colors.text.inverse }]}>{getLessonTypeConfig(nextLesson.type || 'learn').code}</Text>
+            </View>
+            
+            {/* Lesson Info */}
+            <View style={styles.lessonInfo}>
+              <Text style={styles.lessonNameNext}>
+                {nextLesson.name}
+              </Text>
+              <View style={styles.lessonMeta}>
+                <Text style={styles.lessonTypeNext}>{getLessonTypeConfig(nextLesson.type || 'learn').label}</Text>
+                <Text style={styles.metaDivider}>·</Text>
+                <Text style={styles.lessonDurationNext}>{nextLesson.estimated_minutes || 10} MIN</Text>
+              </View>
+            </View>
+            
+            {/* Arrow */}
+            <ArrowRight size={24} color={theme.colors.text.primary} />
+          </TouchableOpacity>
+        )}
+
         {categoryLessons.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No lessons in this category yet</Text>
           </View>
         ) : (
           categoryLessons.map((lesson, index) => {
+            // Skip the "next" lesson as we show it above
+            if (lesson.isNext) return null;
+            
             const typeConfig = getLessonTypeConfig(lesson.type || 'learn');
             
             return (
               <TouchableOpacity
                 key={lesson.id}
-                style={styles.lessonCard}
+                style={[
+                  styles.lessonCard,
+                  lesson.isCompleted && styles.lessonCardCompleted,
+                  lesson.isPending && styles.lessonCardPending,
+                ]}
                 onPress={() => handleLessonPress(lesson.id)}
                 activeOpacity={0.7}
               >
                 {/* Type Badge - Swiss Style */}
-                <View style={[styles.typeBadge, { backgroundColor: typeConfig.bgColor, borderColor: theme.colors.text.primary, borderWidth: theme.swiss.border.standard }]}>
-                  <Text style={[styles.typeCode, { color: theme.colors.text.primary }]}>{typeConfig.code}</Text>
+                <View style={[
+                  styles.typeBadge, 
+                  { 
+                    backgroundColor: lesson.isCompleted ? theme.colors.neutral[200] : typeConfig.bgColor,
+                    borderColor: lesson.isCompleted ? theme.colors.text.disabled : theme.colors.text.primary, 
+                    borderWidth: theme.swiss.border.standard 
+                  }
+                ]}>
+                  <Text style={[
+                    styles.typeCode, 
+                    { color: lesson.isCompleted ? theme.colors.text.disabled : theme.colors.text.primary }
+                  ]}>{typeConfig.code}</Text>
                 </View>
                 
                 {/* Lesson Info */}
                 <View style={styles.lessonInfo}>
-                  <Text style={[styles.lessonName, lesson.isCompleted && styles.lessonNameCompleted]}>
+                  <Text style={[
+                    styles.lessonName, 
+                    lesson.isCompleted && styles.lessonNameCompleted,
+                    lesson.isPending && styles.lessonNamePending,
+                  ]}>
                     {lesson.name}
                   </Text>
                   <View style={styles.lessonMeta}>
-                    <Text style={styles.lessonType}>{typeConfig.label}</Text>
+                    <Text style={[
+                      styles.lessonType,
+                      lesson.isCompleted && styles.lessonMetaCompleted,
+                      lesson.isPending && styles.lessonMetaPending,
+                    ]}>{typeConfig.label}</Text>
                     <Text style={styles.metaDivider}>·</Text>
-                    <Text style={styles.lessonDuration}>{lesson.estimated_minutes || 10} MIN</Text>
+                    <Text style={[
+                      styles.lessonDuration,
+                      lesson.isCompleted && styles.lessonMetaCompleted,
+                      lesson.isPending && styles.lessonMetaPending,
+                    ]}>{lesson.estimated_minutes || 10} MIN</Text>
                   </View>
                 </View>
                 
                 {/* Status - Swiss sharp */}
                 {lesson.isCompleted ? (
-                  <View style={styles.statusComplete}>
+                  <View style={[styles.statusComplete, styles.statusCompleteGray]}>
                     <Text style={styles.statusCode}>✓</Text>
                   </View>
                 ) : (
-                  <ArrowRight size={20} color={theme.colors.text.secondary} />
+                  <View style={styles.statusDot} />
                 )}
               </TouchableOpacity>
             );
@@ -266,6 +338,42 @@ const styles = StyleSheet.create({
     padding: theme.spacing[4],
     marginBottom: theme.spacing[3],
   },
+  
+  // NEXT lesson - highlighted/active
+  lessonCardNext: {
+    borderWidth: theme.swiss.border.heavy,
+    borderColor: theme.colors.text.primary,
+    backgroundColor: theme.colors.background,
+  },
+  
+  // Completed lessons - grayed
+  lessonCardCompleted: {
+    backgroundColor: theme.colors.neutral[50],
+    borderColor: theme.colors.neutral[200],
+  },
+  
+  // Pending lessons - subtle
+  lessonCardPending: {
+    opacity: 0.6,
+  },
+  
+  // NEXT badge
+  nextBadge: {
+    position: 'absolute',
+    top: -10,
+    left: theme.spacing[4],
+    backgroundColor: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[2],
+    paddingVertical: 2,
+    zIndex: 1,
+  },
+  nextBadgeText: {
+    fontSize: theme.swiss.fontSize.small - 2,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  
   typeBadge: {
     width: 48,
     height: 48,
@@ -276,19 +384,33 @@ const styles = StyleSheet.create({
     fontSize: theme.swiss.fontSize.label + 2,
     fontWeight: theme.swiss.fontWeight.bold,
   },
+  
+  // Status - completed (green check)
   statusComplete: {
     width: 28,
     height: 28,
     backgroundColor: theme.colors.semantic.success,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 0, // Sharp!
+    borderRadius: 0,
+  },
+  statusCompleteGray: {
+    backgroundColor: theme.colors.neutral[300],
   },
   statusCode: {
     color: theme.colors.text.inverse,
     fontSize: theme.swiss.fontSize.label + 2,
     fontWeight: theme.swiss.fontWeight.bold,
   },
+  
+  // Status - pending dot
+  statusDot: {
+    width: 12,
+    height: 12,
+    backgroundColor: theme.colors.neutral[300],
+    borderRadius: 0,
+  },
+  
   lessonInfo: {
     flex: 1,
     marginLeft: theme.spacing[3],
@@ -301,6 +423,15 @@ const styles = StyleSheet.create({
   lessonNameCompleted: {
     color: theme.colors.text.disabled,
   },
+  lessonNamePending: {
+    color: theme.colors.text.secondary,
+  },
+  // NEXT lesson text styles
+  lessonNameNext: {
+    fontSize: theme.typography.body.lg.fontSize + 2,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+  },
   lessonMeta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -310,6 +441,18 @@ const styles = StyleSheet.create({
     fontSize: theme.swiss.fontSize.small,
     color: theme.colors.text.secondary,
   },
+  lessonMetaCompleted: {
+    color: theme.colors.text.disabled,
+  },
+  lessonMetaPending: {
+    color: theme.colors.text.secondary,
+  },
+  // NEXT lesson meta
+  lessonTypeNext: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+  },
   metaDivider: {
     fontSize: theme.swiss.fontSize.small,
     color: theme.colors.text.disabled,
@@ -318,6 +461,11 @@ const styles = StyleSheet.create({
   lessonDuration: {
     fontSize: theme.swiss.fontSize.small,
     color: theme.colors.text.secondary,
+  },
+  lessonDurationNext: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
   },
   emptyState: {
     padding: theme.swiss.layout.sectionGap + theme.spacing[4],

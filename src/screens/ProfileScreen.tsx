@@ -220,40 +220,6 @@ export default function ProfileScreen() {
         {/* Heavy separator */}
         <View style={styles.separator} />
 
-        {/* Stats Grid */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>STATS</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statBox}>
-              <View style={styles.statCodeBox}>
-                <Text style={styles.statCodeText}>XP</Text>
-              </View>
-              <Text style={styles.statValue}>{userXP.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>TOTAL XP</Text>
-            </View>
-            <View style={styles.statBox}>
-              <View style={styles.statCodeBox}>
-                <Text style={styles.statCodeText}>ST</Text>
-              </View>
-              <Text style={styles.statValue}>{userStreak}</Text>
-              <Text style={styles.statLabel}>DAY STREAK</Text>
-            </View>
-            <View style={styles.statBox}>
-              <View style={styles.statCodeBox}>
-                <Text style={styles.statCodeText}>Q</Text>
-              </View>
-              <Text style={styles.statValue}>{questionsCompleted}</Text>
-              <Text style={styles.statLabel}>QUESTIONS</Text>
-            </View>
-            <View style={styles.statBox}>
-              <View style={styles.statCodeBox}>
-                <Text style={styles.statCodeText}>LV</Text>
-              </View>
-              <Text style={styles.statValue}>{userLevel}</Text>
-              <Text style={styles.statLabel}>LEVEL</Text>
-            </View>
-          </View>
-        </View>
 
         {/* Heavy separator */}
         <View style={styles.separator} />
