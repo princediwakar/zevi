@@ -27,11 +27,13 @@ const CATEGORY_INFO: Record<QuestionCategory, { label: string; color: string }> 
 export default function CategoryBrowseScreen() {
   const navigation = useNavigation<CategoryBrowseScreenNavigationProp>();
   const { categoryStats, fetchCategoryStats } = useQuestionsStore();
-  const { getCategoryProgress } = useProgressStore();
-  const { user } = useAuth();
+  const { progress, fetchProgress, getCategoryProgress } = useProgressStore();
+  const { user, isGuest, guestId } = useAuth();
   
   const [refreshing, setRefreshing] = useState(false);
   const [userProgress, setUserProgress] = useState<Record<string, number>>({});
+
+  const userId = user?.id || guestId;
 
   useEffect(() => {
     loadData();
@@ -39,9 +41,10 @@ export default function CategoryBrowseScreen() {
 
   const loadData = async () => {
     await fetchCategoryStats();
-    if (user) {
-      const progress = await getCategoryProgress(user.id);
-      setUserProgress(progress);
+    if (userId) {
+      await fetchProgress(userId, isGuest);
+      const catProgress = await getCategoryProgress(userId, isGuest);
+      setUserProgress(catProgress);
     }
   };
 

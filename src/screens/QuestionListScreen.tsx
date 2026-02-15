@@ -36,8 +36,8 @@ export default function QuestionListScreen() {
     searchQuestions,
   } = useQuestionsStore();
   
-  const { progress } = useProgressStore();
-  const { user } = useAuth();
+  const { progress, fetchProgress, getCategoryProgress } = useProgressStore();
+  const { user, isGuest, guestId } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<QuestionCategory | undefined>(
@@ -45,14 +45,22 @@ export default function QuestionListScreen() {
   );
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | undefined>();
   const [isSearching, setIsSearching] = useState(false);
+  const [categoryProgress, setCategoryProgress] = useState<{completed: number, total: number}>({ completed: 0, total: 0 });
 
-  // Get category progress for header
-  const categoryProgress = React.useMemo(() => {
-    if (!selectedCategory || !progress) return { completed: 0, total: 0 };
-    const completed = progress.category_progress?.[selectedCategory] || 0;
-    const total = questions.length;
-    return { completed, total };
-  }, [selectedCategory, progress, questions.length]);
+  const userId = user?.id || guestId;
+
+  // Load progress when category changes
+  React.useEffect(() => {
+    async function loadProgress() {
+      if (userId && selectedCategory) {
+        await fetchProgress(userId, isGuest);
+        const catProgress = await getCategoryProgress(userId, isGuest);
+        const completed = catProgress[selectedCategory] || 0;
+        setCategoryProgress({ completed, total: questions.length });
+      }
+    }
+    loadProgress();
+  }, [userId, selectedCategory, questions.length]);
 
   useEffect(() => {
     loadQuestions();
