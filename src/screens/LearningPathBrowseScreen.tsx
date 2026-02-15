@@ -121,7 +121,6 @@ export default function LearningPathBrowseScreen() {
           );
         })}
 
-        <View style={styles.separator} />
 
         <Spacer size={100} />
       </ScrollView>

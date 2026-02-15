@@ -6,7 +6,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { useQuestionsStore } from '../stores/questionsStore';
 import { useProgressStore } from '../stores/progressStore';
 import { useAuth } from '../hooks/useAuth';
-import { QuestionCategory } from '../types';
+import { QuestionCategory, QUESTION_CATEGORIES } from '../types';
 import { theme } from '../theme';
 
 type CategoryBrowseScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CategoryBrowse'>;
@@ -116,7 +116,6 @@ export default function CategoryBrowseScreen() {
           );
         })}
 
-        <View style={styles.separator} />
       </ScrollView>
     </View>
   );

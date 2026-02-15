@@ -135,8 +135,6 @@ export default function LearnScreen() {
           />
         }
       >
-        {/* Heavy separator */}
-        <View style={styles.separator} />
 
         {/* ============================================ */}
         {/* ALL DONE STATE */}
@@ -208,14 +206,13 @@ export default function LearnScreen() {
           </View>
         )}
 
-        <View style={styles.separator} />
 
         {/* Bottom browse link */}
         <TouchableOpacity 
           style={styles.browseLink}
           onPress={handleBrowseCategories}
         >
-          <Text style={styles.browseLinkText}>BROWSE →</Text>
+          <Text style={styles.browseLinkText}>BROWSE LESSONS→</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
