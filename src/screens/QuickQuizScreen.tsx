@@ -210,10 +210,10 @@ export default function QuickQuizScreen() {
 
             if (showCorrect) {
               backgroundColor = theme.colors.semantic.success + '20';
-              borderColor = theme.colors.semantic.success;
+              borderColor = theme.colors.semantic.success as any;
             } else if (showIncorrect) {
               backgroundColor = theme.colors.semantic.error + '20';
-              borderColor = theme.colors.semantic.error;
+              borderColor = theme.colors.semantic.error as any;
             } else if (isSelected) {
               borderColor = theme.colors.text.primary;
             }
