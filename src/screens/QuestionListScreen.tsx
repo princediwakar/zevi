@@ -13,6 +13,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { QuestionCard } from '../components/QuestionCard';
 import { useQuestionsStore } from '../stores/questionsStore';
+import { useProgressStore } from '../stores/progressStore';
+import { useAuth } from '../hooks/useAuth';
 import { QuestionCategory, Difficulty } from '../types';
 import { theme } from '../theme';
 

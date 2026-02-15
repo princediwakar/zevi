@@ -8,6 +8,7 @@ import { useProgressStore } from '../stores/progressStore';
 import { useAuth } from '../hooks/useAuth';
 import { QuestionCategory, QUESTION_CATEGORIES } from '../types';
 import { theme } from '../theme';
+import { ArrowRight } from 'lucide-react-native';
 
 type CategoryBrowseScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CategoryBrowse'>;
 
@@ -57,7 +58,37 @@ export default function CategoryBrowseScreen() {
     'behavioral',
     'estimation',
     'technical',
+    'pricing',
+    'ab_testing'
   ];
+
+  // Find the next category to practice (least progress)
+  const nextCategory = React.useMemo(() => {
+    let minProgress = Infinity;
+    let nextCat: QuestionCategory | null = null;
+    
+    categories.forEach(cat => {
+      const completed = userProgress[cat] || 0;
+      const total = categoryStats[cat] || 0;
+      if (total > 0 && completed < total && completed < minProgress) {
+        minProgress = completed;
+        nextCat = cat;
+      }
+    });
+    
+    // If all completed, find one with any questions
+    if (!nextCat) {
+      for (const cat of categories) {
+        const total = categoryStats[cat] || 0;
+        if (total > 0) {
+          nextCat = cat;
+          break;
+        }
+      }
+    }
+    
+    return nextCat;
+  }, [userProgress, categoryStats, categories]);
 
   const handleCategoryPress = (category: QuestionCategory) => {
     navigation.navigate('QuestionList', { category });
@@ -91,26 +122,34 @@ export default function CategoryBrowseScreen() {
           const info = CATEGORY_INFO[category];
           const count = categoryStats[category] || 0;
           const progress = userProgress[category] || 0;
+          const isNext = category === nextCategory;
 
           return (
             <TouchableOpacity
               key={category}
-              style={styles.categoryRow}
+              style={[styles.categoryRow, isNext && styles.categoryRowNext]}
               onPress={() => handleCategoryPress(category)}
               activeOpacity={0.7}
             >
+              {/* NEXT badge */}
+              {isNext && (
+                <View style={styles.nextBadge}>
+                  <Text style={styles.nextBadgeText}>NEXT</Text>
+                </View>
+              )}
+              
               {/* Category name - bold */}
-              <Text style={styles.categoryLabel}>{info.label}</Text>
+              <Text style={[styles.categoryLabel, isNext && styles.categoryLabelNext]}>{info.label}</Text>
               
               {/* Count and progress */}
               <View style={styles.categoryMeta}>
-                <Text style={styles.categoryCount}>{count} Q</Text>
+                <Text style={[styles.categoryCount, progress > 0 && styles.categoryCountDone]}>{count} Q</Text>
                 {progress > 0 && (
                   <View style={styles.progressIndicator}>
-                    <View style={[styles.progressFill, { width: `${progress}%` }]} />
+                    <View style={[styles.progressFill, { width: `${Math.min(100, progress)}%` }]} />
                   </View>
                 )}
-                <Text style={styles.arrow}>→</Text>
+                <ArrowRight size={20} color={isNext ? theme.colors.text.primary : theme.colors.text.secondary} />
               </View>
             </TouchableOpacity>
           );
@@ -181,11 +220,33 @@ const styles = StyleSheet.create({
     borderBottomWidth: theme.swiss.border.light,
     borderBottomColor: theme.colors.border.light,
   },
+  categoryRowNext: {
+    backgroundColor: theme.colors.neutral[50],
+    borderLeftWidth: 3,
+    borderLeftColor: theme.colors.text.primary,
+    paddingLeft: theme.spacing[2],
+    marginLeft: -theme.spacing[2],
+  },
+  nextBadge: {
+    backgroundColor: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[2],
+    paddingVertical: 2,
+    marginRight: theme.spacing[2],
+  },
+  nextBadgeText: {
+    fontSize: 10,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
   categoryLabel: {
     fontSize: theme.swiss.fontSize.heading - 6,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
     letterSpacing: theme.swiss.letterSpacing.normal,
+  },
+  categoryLabelNext: {
+    fontWeight: theme.swiss.fontWeight.black,
   },
   categoryMeta: {
     flexDirection: 'row',
@@ -196,6 +257,9 @@ const styles = StyleSheet.create({
     fontSize: theme.swiss.fontSize.label,
     fontWeight: theme.swiss.fontWeight.medium,
     color: theme.colors.text.secondary,
+  },
+  categoryCountDone: {
+    color: theme.colors.text.disabled,
   },
   progressIndicator: {
     width: 60,
