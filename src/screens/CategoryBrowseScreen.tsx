@@ -65,34 +65,6 @@ export default function CategoryBrowseScreen() {
     'ab_testing'
   ];
 
-  // Find the next category to practice (least progress)
-  const nextCategory = React.useMemo(() => {
-    let minProgress = Infinity;
-    let nextCat: QuestionCategory | null = null;
-    
-    categories.forEach(cat => {
-      const completed = userProgress[cat] || 0;
-      const total = categoryStats[cat] || 0;
-      if (total > 0 && completed < total && completed < minProgress) {
-        minProgress = completed;
-        nextCat = cat;
-      }
-    });
-    
-    // If all completed, find one with any questions
-    if (!nextCat) {
-      for (const cat of categories) {
-        const total = categoryStats[cat] || 0;
-        if (total > 0) {
-          nextCat = cat;
-          break;
-        }
-      }
-    }
-    
-    return nextCat;
-  }, [userProgress, categoryStats, categories]);
-
   const handleCategoryPress = (category: QuestionCategory) => {
     navigation.navigate('QuestionList', { category });
   };
@@ -125,24 +97,16 @@ export default function CategoryBrowseScreen() {
           const info = CATEGORY_INFO[category];
           const count = categoryStats[category] || 0;
           const progress = userProgress[category] || 0;
-          const isNext = category === nextCategory;
 
           return (
             <TouchableOpacity
               key={category}
-              style={[styles.categoryRow, isNext && styles.categoryRowNext]}
+              style={styles.categoryRow}
               onPress={() => handleCategoryPress(category)}
               activeOpacity={0.7}
             >
-              {/* NEXT badge */}
-              {isNext && (
-                <View style={styles.nextBadge}>
-                  <Text style={styles.nextBadgeText}>NEXT</Text>
-                </View>
-              )}
-              
               {/* Category name - bold */}
-              <Text style={[styles.categoryLabel, isNext && styles.categoryLabelNext]}>{info.label}</Text>
+              <Text style={styles.categoryLabel}>{info.label}</Text>
               
               {/* Count and progress */}
               <View style={styles.categoryMeta}>
@@ -152,7 +116,7 @@ export default function CategoryBrowseScreen() {
                     <View style={[styles.progressFill, { width: `${Math.min(100, progress)}%` }]} />
                   </View>
                 )}
-                <ArrowRight size={20} color={isNext ? theme.colors.text.primary : theme.colors.text.secondary} />
+                <ArrowRight size={20} color={theme.colors.text.secondary} />
               </View>
             </TouchableOpacity>
           );

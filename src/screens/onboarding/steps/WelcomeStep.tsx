@@ -34,7 +34,7 @@ export default function WelcomeStep({ onNext }: OnboardingStepProps) {
           </Text>
         </TouchableOpacity>
         
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={styles.secondaryButton}
           accessibilityLabel="I already have an account"
           accessibilityHint="Sign in to your existing account"
@@ -43,7 +43,7 @@ export default function WelcomeStep({ onNext }: OnboardingStepProps) {
           <Text style={styles.secondaryButtonText}>
             I ALREADY HAVE AN ACCOUNT
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </SafeAreaView>
   );
