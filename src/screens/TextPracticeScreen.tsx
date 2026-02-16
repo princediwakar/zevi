@@ -46,7 +46,7 @@ export default function TextPracticeScreen() {
     loading,
     resetPractice,
   } = usePracticeStore();
-  const { user, guestId } = useAuth();
+  const { user } = useAuth();
   const { updateAfterCompletion } = useProgressStore();
   
   const question = questions.find((q) => q.id === questionId);
@@ -63,14 +63,14 @@ export default function TextPracticeScreen() {
 
   useEffect(() => {
     // Load draft if user is logged in
-    const userId = user?.id || guestId;
+    const userId = user?.id;
     if (userId) {
       loadDraftRef.current(userId, questionId);
     }
-  }, [questionId, user, guestId]);
+  }, [questionId, user]);
 
   const handleSaveDraft = async () => {
-    const userId = user?.id || guestId;
+    const userId = user?.id;
     if (userId) {
       const success = await saveDraft(userId);
       if (success) {
@@ -89,16 +89,15 @@ export default function TextPracticeScreen() {
       return;
     }
 
-    const userId = user?.id || guestId;
-    const isGuest = !user?.id;
+    const userId = user?.id;
 
     if (userId && question) {
       // First, submit the answer to create/update the session
-      const sessionSubmitted = await submitAnswer(userId, isGuest);
+      const sessionSubmitted = await submitAnswer(userId);
 
       if (sessionSubmitted) {
         // Now generate AI feedback using the practice store method
-        await generateFeedbackAndComplete(userId, isGuest);
+        await generateFeedbackAndComplete(userId);
       } else {
         Alert.alert('ERROR', 'Failed to submit answer. Please try again.');
       }
@@ -106,12 +105,12 @@ export default function TextPracticeScreen() {
   };
 
   // Generate AI feedback and update progress
-  const generateFeedbackAndComplete = async (userId: string, isGuest: boolean) => {
+  const generateFeedbackAndComplete = async (userId: string) => {
     if (!question) return;
 
     try {
       const { generateFeedback } = usePracticeStore.getState();
-      await generateFeedback(userId, isGuest);
+      await generateFeedback(userId);
 
       const { error: feedbackError } = usePracticeStore.getState();
 
@@ -124,7 +123,7 @@ export default function TextPracticeScreen() {
       }
 
       // Update progress after successful completion
-      await updateAfterCompletion(userId, 'text', question.category, isGuest);
+      await updateAfterCompletion(userId, 'text', question.category);
 
       // Navigate to results which shows feedback
       resetPractice();

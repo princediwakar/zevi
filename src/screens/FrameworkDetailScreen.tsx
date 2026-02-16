@@ -33,7 +33,7 @@ export default function FrameworkDetailScreen() {
   const route = useRoute<FrameworkDetailRouteProp>();
   const { frameworkName } = route.params;
   const { progress, updateFrameworkMastery } = useProgressStore();
-  const { user, isGuest, guestId } = useAuth();
+  const { user } = useAuth();
   
   // State for interactive exercises
   const [currentFillInBlank, setCurrentFillInBlank] = useState(0);
@@ -46,7 +46,7 @@ export default function FrameworkDetailScreen() {
   const frameworkKey = frameworkName as FrameworkName;
   const framework = FRAMEWORKS[frameworkKey];
 
-  const userId = user?.id || guestId || '';
+  const userId = user?.id || '';
 
   // Get framework mastery from progress
   const getFrameworkMastery = (): number => {
@@ -79,7 +79,7 @@ export default function FrameworkDetailScreen() {
       // Update framework mastery
       const currentMastery = getFrameworkMastery();
       const newMastery = Math.min(100, currentMastery + 5);
-      updateFrameworkMastery(userId, frameworkName, newMastery, isGuest);
+      updateFrameworkMastery(userId, frameworkName, newMastery);
     }
   };
 
@@ -98,7 +98,7 @@ export default function FrameworkDetailScreen() {
       // Update framework mastery
       const currentMastery = getFrameworkMastery();
       const newMastery = Math.min(100, currentMastery + 5);
-      updateFrameworkMastery(userId, frameworkName, newMastery, isGuest);
+      updateFrameworkMastery(userId, frameworkName, newMastery);
     }
   };
 

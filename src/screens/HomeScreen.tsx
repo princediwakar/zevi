@@ -5,26 +5,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../hooks/useAuth';
 import { theme } from '../theme';
-import { Spacer, HomeScreenSkeleton } from '../components';
+import { HomeScreenSkeleton, CategoryListSection } from '../components';
 import { useProgressStore } from '../stores/progressStore';
 import { useQuestionsStore } from '../stores/questionsStore';
 import { getPersonalizedQuestion } from '../services/questionService';
-import { Question, QuestionCategory, QUESTION_CATEGORIES } from '../types';
-import { ArrowRight } from 'lucide-react-native';
+import { Question } from '../types';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Main'>;
-
-// Category labels
-const CATEGORY_LABELS: Record<QuestionCategory, string> = {
-  product_sense: 'Product Sense',
-  execution: 'Execution',
-  strategy: 'Strategy',
-  behavioral: 'Behavioral',
-  technical: 'Technical',
-  estimation: 'Estimation',
-  pricing: 'Pricing',
-  ab_testing: 'A/B Testing',
-};
 
 // SWISS DESIGN: Sharp, bold, minimal, high contrast
 // Using centralized theme tokens for consistency
@@ -50,14 +37,14 @@ export default function HomeScreen() {
 
   const loadData = useCallback(async () => {
     if (userId) {
-      await fetchProgress(userId, false);
+      await fetchProgress(userId);
       await fetchQuestions({});
       await fetchCategoryStats();
       
       if (!hasPracticedToday) {
         try {
           setLoadingQuestion(true);
-          const question = await getPersonalizedQuestion(userId, false);
+          const question = await getPersonalizedQuestion(userId);
           setTodaysQuestion(question);
         } catch (error) {
           console.error('Error loading question:', error);
@@ -91,10 +78,6 @@ export default function HomeScreen() {
     } else {
       navigation.navigate('QuickQuiz', { questionCount: 1 });
     }
-  };
-
-  const handleBrowseCategories = () => {
-    navigation.navigate('CategoryBrowse');
   };
 
   if (isLoading) {
@@ -167,43 +150,43 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Heavy separator line */}
-        <View style={styles.separator} />
 
-        {/* Question - extremely bold */}
+        {/* TODAY'S QUESTION Section */}
         <View style={styles.questionSection}>
-          {loadingQuestion ? (
-            <ActivityIndicator size="large" color={theme.colors.text.primary} />
-          ) : todaysQuestion ? (
-            <Text style={styles.questionText}>
-              {todaysQuestion.question_text}
-            </Text>
-          ) : (
-            <Text style={styles.noQuestion}>No question</Text>
-          )}
-        </View>
-
-        {/* Minimal metadata - bordered boxes */}
-        {todaysQuestion && (
-          <View style={styles.metaRow}>
-            <View style={styles.metaBox}>
-              <Text style={styles.metaText}>
-                {todaysQuestion.category.replace('_', ' ')}
+          <Text style={styles.sectionLabel}>TODAY'S QUESTION</Text>
+          
+          {/* Question card - bordered */}
+          <View style={styles.questionCard}>
+            {loadingQuestion ? (
+              <ActivityIndicator size="large" color={theme.colors.text.primary} />
+            ) : todaysQuestion ? (
+              <Text style={styles.questionText}>
+                {todaysQuestion.question_text}
               </Text>
-            </View>
-            <View style={styles.metaBox}>
-              <Text style={styles.metaText}>{todaysQuestion.difficulty}</Text>
-            </View>
-            {todaysQuestion.company && (
-              <View style={styles.metaBox}>
-                <Text style={styles.metaText}>{todaysQuestion.company}</Text>
-              </View>
+            ) : (
+              <Text style={styles.noQuestion}>No question available</Text>
             )}
           </View>
-        )}
 
-        {/* Heavy separator */}
-        <View style={styles.separator} />
+          {/* Minimal metadata - bordered boxes */}
+          {todaysQuestion && (
+            <View style={styles.metaRow}>
+              <View style={styles.metaBox}>
+                <Text style={styles.metaText}>
+                  {todaysQuestion.category.replace('_', ' ')}
+                </Text>
+              </View>
+              <View style={styles.metaBox}>
+                <Text style={styles.metaText}>{todaysQuestion.difficulty}</Text>
+              </View>
+              {todaysQuestion.company && (
+                <View style={styles.metaBox}>
+                  <Text style={styles.metaText}>{todaysQuestion.company}</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
 
         {/* START - Large bordered button */}
         <TouchableOpacity
@@ -218,99 +201,6 @@ export default function HomeScreen() {
         {/* Full Category List - Combined with Today's Question */}
         <CategoryListSection onCategoryPress={(category) => navigation.navigate('QuestionList', { category })} />
       </ScrollView>
-    </View>
-  );
-}
-
-// Category List Section - Full browse list (combined from CategoryBrowseScreen)
-function CategoryListSection({ onCategoryPress }: { onCategoryPress: (cat: QuestionCategory) => void }) {
-  const { progress } = useProgressStore();
-  const { categoryStats } = useQuestionsStore();
-  
-  const categories: QuestionCategory[] = [
-    'product_sense',
-    'execution', 
-    'strategy',
-    'behavioral',
-    'technical',
-    'estimation',
-    'pricing',
-    'ab_testing'
-  ];
-
-  // Get category progress - show all categories, sorted by completion
-  const categoryProgress = React.useMemo(() => {
-    const progressData = categories.map(cat => {
-      const completed = progress?.category_progress?.[cat] || 0;
-      const total = categoryStats[cat] || 0;
-      return {
-        category: cat,
-        completed,
-        total,
-        percent: total > 0 ? Math.round((completed / total) * 100) : 0,
-      };
-    });
-    
-    // Sort: incomplete first (by least completed), then completed (by most total)
-    progressData.sort((a, b) => {
-      if (a.completed < a.total && b.completed >= b.total) return -1;
-      if (b.completed < b.total && a.completed >= a.total) return 1;
-      if (a.completed < a.total && b.completed < b.total) return a.completed - b.completed;
-      return b.total - a.total;
-    });
-    
-    return progressData;
-  }, [progress, categoryStats]);
-
-  return (
-    <View style={styles.categoryListSection}>
-      <Text style={styles.categoryListTitle}>BROWSE BY CATEGORY</Text>
-      
-      {categoryProgress.map((cat) => {
-        const isNext = cat.completed < cat.total;
-        
-        return (
-          <TouchableOpacity
-            key={cat.category}
-            style={[
-              styles.categoryRow,
-              isNext && styles.categoryRowNext,
-            ]}
-            onPress={() => onCategoryPress(cat.category)}
-          >
-            {/* Category name - bold */}
-            <View style={styles.categoryRowLeft}>
-              {isNext && cat.completed > 0 && (
-                <View style={styles.nextBadgeSmall}>
-                  <Text style={styles.nextBadgeTextSmall}>NEXT</Text>
-                </View>
-              )}
-              <Text style={[
-                styles.categoryLabel,
-                cat.completed >= cat.total && cat.total > 0 && styles.categoryLabelDone,
-              ]}>
-                {CATEGORY_LABELS[cat.category]}
-              </Text>
-            </View>
-            
-            {/* Count and progress */}
-            <View style={styles.categoryRowRight}>
-              <Text style={[
-                styles.categoryCount,
-                cat.completed >= cat.total && cat.total > 0 && styles.categoryCountDone,
-              ]}>
-                {cat.total} Q
-              </Text>
-              {cat.completed > 0 && (
-                <View style={styles.progressIndicator}>
-                  <View style={[styles.progressFill, { width: `${cat.percent}%` }]} />
-                </View>
-              )}
-              <ArrowRight size={20} color={theme.colors.text.secondary} />
-            </View>
-          </TouchableOpacity>
-        );
-      })}
     </View>
   );
 }
@@ -369,9 +259,22 @@ const styles = StyleSheet.create({
   
   // Question Section
   questionSection: {
-    minHeight: 200,
-    justifyContent: 'center',
     marginBottom: theme.swiss.layout.elementGap,
+  },
+  sectionLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing[4],
+  },
+  questionCard: {
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.swiss.layout.sectionGap,
+    marginBottom: theme.swiss.layout.elementGap,
+    minHeight: 150,
+    justifyContent: 'center',
   },
   questionText: {
     fontSize: 28,

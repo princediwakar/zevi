@@ -1,19 +1,16 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RootStackParamList } from './types';
 
 // Screens
 import {
   WelcomeScreen,
-  OnboardingFlow,
   AuthScreen,
   QuickQuizScreen,
   QuizResultsScreen,
   HomeScreen,
-  CategoryBrowseScreen,
   QuestionListScreen,
   QuestionDetailScreen,
   TextPracticeScreen,
@@ -27,8 +24,6 @@ import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const ONBOARDING_COMPLETED_KEY = 'onboarding_completed';
-
 // Loading screen component
 const LoadingScreen = () => (
   <View style={styles.loadingContainer}>
@@ -37,7 +32,7 @@ const LoadingScreen = () => (
 );
 
 export default function RootNavigator() {
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Welcome');
   const [isReady, setIsReady] = useState(false);
@@ -46,17 +41,11 @@ export default function RootNavigator() {
   useEffect(() => {
     const determineRoute = async () => {
       try {
-        const onboardingCompleted = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
-        
         let targetRoute: keyof RootStackParamList = 'Welcome';
         
         // User must be authenticated to access the app
         if (user) {
-          if (onboardingCompleted === 'true') {
-            targetRoute = 'MainTabs';
-          } else {
-            targetRoute = 'Onboarding';
-          }
+          targetRoute = 'MainTabs';
         }
 
         // Only update route if we're still in loading state or at initial route
@@ -84,18 +73,16 @@ export default function RootNavigator() {
       if (!isReady || authLoading) return;
       
       const currentRoute = navigationRef.current?.getCurrentRoute()?.name;
-      const onboardingCompleted = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
       
-      // If user just logged in (user exists) and we're still on Welcome or Auth, navigate to appropriate screen
+      // If user just logged in (user exists) and we're still on Welcome or Auth, navigate to MainTabs
       if (user && (currentRoute === 'Welcome' || currentRoute === 'Auth')) {
-        const destination = onboardingCompleted === 'true' ? 'MainTabs' : 'Onboarding';
-        console.log('Navigating to:', destination, 'after login');
-        navigationRef.current?.navigate(destination);
+        console.log('Navigating to MainTabs after login');
+        navigationRef.current?.navigate('MainTabs');
       }
     };
 
     handleUserChange();
-  }, [user, isAuthenticated, isReady, authLoading]);
+  }, [user, isReady, authLoading]);
 
   // Show loading screen while determining route
   if (!isReady) {
@@ -114,7 +101,6 @@ export default function RootNavigator() {
         }}
       >
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        <Stack.Screen name="Onboarding" component={OnboardingFlow} />
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="QuickQuiz" component={QuickQuizScreen} />
         <Stack.Screen name="QuizResults" component={QuizResultsScreen} />

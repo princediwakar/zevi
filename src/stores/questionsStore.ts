@@ -43,8 +43,8 @@ interface QuestionsState {
   searchQuestions: (query: string) => Promise<void>;
   getQuestionById: (id: string) => Promise<Question | null>;
   getRelatedQuestions: (questionId: string, category: QuestionCategory) => Promise<Question[]>;
-  getRecommendedQuestions: (userId: string, isGuest?: boolean, limit?: number) => Promise<Question[]>;
-  getRandomMCQQuestion: (userId?: string, isGuest?: boolean) => Promise<Question | undefined>;
+  getRecommendedQuestions: (userId: string, limit?: number) => Promise<Question[]>;
+  getRandomMCQQuestion: (userId?: string) => Promise<Question | undefined>;
   filterByCategory: (category: QuestionCategory) => Question[];
   loadMore: (filters?: questionService.QuestionFilters) => Promise<void>;
   getQuestionsByLessonId: (lessonId: string) => Promise<Question[]>;
@@ -155,11 +155,11 @@ export const useQuestionsStore = create<QuestionsState>((set, get) => ({
     }
   },
 
-  getRandomMCQQuestion: async (userId?: string, isGuest: boolean = false) => {
+  getRandomMCQQuestion: async (userId?: string) => {
     // If we have a userId, try to use personalized selection first
-    if (userId && userId !== 'guest') {
+    if (userId) {
       try {
-        const personalized = await questionService.getPersonalizedQuestion(userId, isGuest);
+        const personalized = await questionService.getPersonalizedQuestion(userId);
         if (personalized) {
           // Cache this personalized fetch
           set({ lastPersonalizedFetch: Date.now() });
@@ -178,10 +178,10 @@ export const useQuestionsStore = create<QuestionsState>((set, get) => ({
     return mcqQuestions[randomIndex];
   },
 
-  getRecommendedQuestions: async (userId: string, isGuest: boolean = false, limit: number = 5) => {
+  getRecommendedQuestions: async (userId: string, limit: number = 5) => {
     // Use personalized question selection based on user's practice history
     try {
-      const personalized = await questionService.getPersonalizedQuizQuestions(userId, limit, isGuest);
+      const personalized = await questionService.getPersonalizedQuizQuestions(userId, limit);
       if (personalized && personalized.length > 0) {
         // Cache this personalized fetch
         set({ lastPersonalizedFetch: Date.now() });

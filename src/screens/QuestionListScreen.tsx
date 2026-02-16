@@ -37,7 +37,7 @@ export default function QuestionListScreen() {
   } = useQuestionsStore();
   
   const { progress, fetchProgress, getCategoryProgress } = useProgressStore();
-  const { user, isGuest, guestId } = useAuth();
+  const { user } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<QuestionCategory | undefined>(
@@ -47,14 +47,14 @@ export default function QuestionListScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [categoryProgress, setCategoryProgress] = useState<{completed: number, total: number}>({ completed: 0, total: 0 });
 
-  const userId = user?.id || guestId;
+  const userId = user?.id;
 
   // Load progress when category changes
   React.useEffect(() => {
     async function loadProgress() {
       if (userId && selectedCategory) {
-        await fetchProgress(userId, isGuest);
-        const catProgress = await getCategoryProgress(userId, isGuest);
+        await fetchProgress(userId);
+        const catProgress = await getCategoryProgress(userId);
         const completed = catProgress[selectedCategory] || 0;
         setCategoryProgress({ completed, total: questions.length });
       }

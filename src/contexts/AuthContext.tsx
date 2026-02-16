@@ -253,13 +253,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isSigningOut.current = true;
     
     try {
-      // Clear onboarding data on sign out
-      try {
-        await AsyncStorage.removeItem('onboarding_completed');
-      } catch (error) {
-        console.error('Error clearing onboarding data:', error);
-      }
-      
       // Sign out from Supabase
       try {
         const { error: signOutError } = await supabase.auth.signOut();

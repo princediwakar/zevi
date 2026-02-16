@@ -21,17 +21,17 @@ interface ProgressState {
   incorrectQuestions: SessionWithQuestion[];
   
   // Actions
-  fetchProgress: (userId: string, isGuest?: boolean) => Promise<void>;
-  fetchHistory: (userId: string, isGuest?: boolean) => Promise<void>;
-  fetchActivity: (userId: string, isGuest?: boolean) => Promise<void>;
-  fetchMastery: (userId: string, isGuest?: boolean) => Promise<void>;
-  fetchWeakAreas: (userId: string, isGuest?: boolean) => Promise<void>;
-  updateAfterCompletion: (userId: string, mode: PracticeMode, category: QuestionCategory, isGuest?: boolean) => Promise<void>;
-  updateFrameworkMastery: (userId: string, frameworkName: string, score: number, isGuest?: boolean) => Promise<void>;
-  updatePatternMastery: (userId: string, patternName: string, score: number, isGuest?: boolean) => Promise<void>;
-  calculateReadiness: (userId: string, isGuest?: boolean) => Promise<void>;
-  updateStreak: (userId: string, isGuest?: boolean) => Promise<void>;
-  getCategoryProgress: (userId: string, isGuest?: boolean) => Promise<Record<string, number>>;
+  fetchProgress: (userId: string) => Promise<void>;
+  fetchHistory: (userId: string) => Promise<void>;
+  fetchActivity: (userId: string) => Promise<void>;
+  fetchMastery: (userId: string) => Promise<void>;
+  fetchWeakAreas: (userId: string) => Promise<void>;
+  updateAfterCompletion: (userId: string, mode: PracticeMode, category: QuestionCategory) => Promise<void>;
+  updateFrameworkMastery: (userId: string, frameworkName: string, score: number) => Promise<void>;
+  updatePatternMastery: (userId: string, patternName: string, score: number) => Promise<void>;
+  calculateReadiness: (userId: string) => Promise<void>;
+  updateStreak: (userId: string) => Promise<void>;
+  getCategoryProgress: (userId: string) => Promise<Record<string, number>>;
   resetProgress: () => void;
 }
 
@@ -47,10 +47,10 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
   weakAreas: [],
   incorrectQuestions: [],
 
-  fetchProgress: async (userId: string, isGuest: boolean = false) => {
+  fetchProgress: async (userId: string) => {
     set({ loading: true, error: null });
     try {
-      const progress = await progressService.getUserProgress(userId, isGuest);
+      const progress = await progressService.getUserProgress(userId);
       set({ 
         progress, 
         loading: false,
@@ -64,31 +64,31 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
     }
   },
 
-  fetchActivity: async (userId: string, isGuest: boolean = false) => {
+  fetchActivity: async (userId: string) => {
     try {
-      const dates = await progressService.getPracticeActivity(userId, isGuest);
+      const dates = await progressService.getPracticeActivity(userId);
       set({ activityData: dates });
     } catch (error) {
       console.error('Failed to fetch activity:', error);
     }
   },
 
-  fetchHistory: async (userId: string, isGuest: boolean = false) => {
+  fetchHistory: async (userId: string) => {
     try {
       const { getUserSessions } = await import('../services/practiceService');
-      const history = await getUserSessions(userId, 10, isGuest);
+      const history = await getUserSessions(userId, 10);
       set({ history });
     } catch (error) {
       console.error('Failed to fetch history:', error);
     }
   },
 
-  fetchMastery: async (userId: string, isGuest: boolean = false) => {
+  fetchMastery: async (userId: string) => {
     try {
       const [frameworkMastery, patternMastery, readinessScore] = await Promise.all([
-        progressService.getFrameworkMastery(userId, isGuest),
-        progressService.getPatternMastery(userId, isGuest),
-        progressService.getReadinessScore(userId, isGuest),
+        progressService.getFrameworkMastery(userId),
+        progressService.getPatternMastery(userId),
+        progressService.getReadinessScore(userId),
       ]);
       set({ frameworkMastery, patternMastery, readinessScore });
     } catch (error) {
@@ -96,64 +96,64 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
     }
   },
 
-  fetchWeakAreas: async (userId: string, isGuest: boolean = false) => {
+  fetchWeakAreas: async (userId: string) => {
     try {
-      const weakAreas = await progressService.getWeakAreas(userId, isGuest);
-      const incorrectQuestions = await progressService.getIncorrectQuestions(userId, isGuest);
+      const weakAreas = await progressService.getWeakAreas(userId);
+      const incorrectQuestions = await progressService.getIncorrectQuestions(userId);
       set({ weakAreas, incorrectQuestions });
     } catch (error) {
       console.error('Failed to fetch weak areas:', error);
     }
   },
 
-  updateAfterCompletion: async (userId: string, mode: PracticeMode, category: QuestionCategory, isGuest: boolean = false) => {
+  updateAfterCompletion: async (userId: string, mode: PracticeMode, category: QuestionCategory) => {
     try {
-      await progressService.updateProgressAfterCompletion(userId, mode, category, isGuest);
-      await get().fetchProgress(userId, isGuest);
+      await progressService.updateProgressAfterCompletion(userId, mode, category);
+      await get().fetchProgress(userId);
     } catch (error) {
       console.error('Error updating progress:', error);
       set({ error: 'Failed to update progress' });
     }
   },
 
-  updateFrameworkMastery: async (userId: string, frameworkName: string, score: number, isGuest: boolean = false) => {
+  updateFrameworkMastery: async (userId: string, frameworkName: string, score: number) => {
     try {
-      await progressService.updateFrameworkMastery(userId, frameworkName, score, isGuest);
-      await get().fetchMastery(userId, isGuest);
+      await progressService.updateFrameworkMastery(userId, frameworkName, score);
+      await get().fetchMastery(userId);
     } catch (error) {
       console.error('Error updating framework mastery:', error);
     }
   },
 
-  updatePatternMastery: async (userId: string, patternName: string, score: number, isGuest: boolean = false) => {
+  updatePatternMastery: async (userId: string, patternName: string, score: number) => {
     try {
-      await progressService.updatePatternMastery(userId, patternName, score, isGuest);
-      await get().fetchMastery(userId, isGuest);
+      await progressService.updatePatternMastery(userId, patternName, score);
+      await get().fetchMastery(userId);
     } catch (error) {
       console.error('Error updating pattern mastery:', error);
     }
   },
 
-  calculateReadiness: async (userId: string, isGuest: boolean = false) => {
+  calculateReadiness: async (userId: string) => {
     try {
-      const readinessScore = await progressService.calculateAndUpdateReadiness(userId, isGuest);
+      const readinessScore = await progressService.calculateAndUpdateReadiness(userId);
       set({ readinessScore });
     } catch (error) {
       console.error('Error calculating readiness:', error);
     }
   },
 
-  updateStreak: async (userId: string, isGuest: boolean = false) => {
+  updateStreak: async (userId: string) => {
     try {
-      await get().fetchProgress(userId, isGuest);
+      await get().fetchProgress(userId);
     } catch (error) {
       console.error('Error updating streak:', error);
     }
   },
 
-  getCategoryProgress: async (userId: string, isGuest: boolean = false) => {
+  getCategoryProgress: async (userId: string) => {
     try {
-      return await progressService.getCategoryProgress(userId, isGuest);
+      return await progressService.getCategoryProgress(userId);
     } catch (error) {
       console.error('Error getting category progress:', error);
       return {};
@@ -164,4 +164,3 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
     set({ progress: null, error: null, frameworkMastery: {}, patternMastery: {}, readinessScore: 0 });
   },
 }));
-

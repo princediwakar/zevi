@@ -18,7 +18,7 @@ interface UserState {
   error: string | null;
 
   // Actions
-  initializeUser: (userData: any, isGuest: boolean) => void;
+  initializeUser: (userData: any) => void;
   updateUser: (updates: Partial<UserState['user']>) => void;
   reset: () => void;
 }

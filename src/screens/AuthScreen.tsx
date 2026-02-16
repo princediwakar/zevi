@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../hooks/useAuth';
 import { Container, H1, BodyLG, BodyMD, BodySM, LabelSM, PrimaryButton, OutlineButton, GhostButton, EmailInput, PasswordInput, TextInput } from '../components/ui';
@@ -51,22 +50,19 @@ export default function AuthScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      // After successful auth, navigate based on onboarding status
-      const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
-      const destination = onboardingCompleted === 'true' ? 'MainTabs' : 'Onboarding';
-      
-      // Use replace to prevent going back to Auth screen
+      // After successful auth, navigate to MainTabs
       if (mode === 'signup') {
         Alert.alert(
           'Success',
           'Account created! Please check your email to verify your account.',
-          [{ text: 'OK', onPress: () => navigation.replace(destination) }]
+          [{ text: 'OK', onPress: () => navigation.replace('MainTabs') }]
         );
       } else {
-        navigation.replace(destination);
+        navigation.replace('MainTabs');
       }
     }
   };
+
   const handleGoogleAuth = async () => {
     setLoading(true);
     const { error } = await signInWithGoogle();
@@ -75,11 +71,8 @@ export default function AuthScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      // After successful auth, navigate based on onboarding status
-      // Use replace to prevent going back to Auth screen
-      const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
-      const destination = onboardingCompleted === 'true' ? 'MainTabs' : 'Onboarding';
-      navigation.replace(destination);
+      // After successful auth, navigate to MainTabs
+      navigation.replace('MainTabs');
     }
   };
 

@@ -36,12 +36,12 @@ const PATH_INFO: Record<QuestionCategory, { label: string; description: string }
 // Using centralized theme tokens for consistency
 export default function LearnScreen() {
   const navigation = useNavigation<LearnScreenNavigationProp>();
-  const { user, isGuest, guestId } = useAuth();
+  const { user } = useAuth();
   const { progress, fetchProgress, fetchWeakAreas } = useProgressStore();
   const { units, fetchPath } = useLearningPathStore();
   const [refreshing, setRefreshing] = useState(false);
 
-  const userId = user?.id || guestId;
+  const userId = user?.id;
 
   // Get completed lesson IDs
   const completedLessonIds = React.useMemo(() => {
@@ -79,21 +79,21 @@ export default function LearnScreen() {
     useCallback(() => {
       fetchPath();
       if (userId) {
-        fetchProgress(userId, isGuest);
-        fetchWeakAreas(userId, isGuest);
+        fetchProgress(userId);
+        fetchWeakAreas(userId);
       }
-    }, [userId, isGuest, fetchPath, fetchProgress, fetchWeakAreas])
+    }, [userId, fetchPath, fetchProgress, fetchWeakAreas])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
       fetchPath(),
-      userId ? fetchProgress(userId, isGuest) : Promise.resolve(),
-      userId ? fetchWeakAreas(userId, isGuest) : Promise.resolve(),
+      userId ? fetchProgress(userId) : Promise.resolve(),
+      userId ? fetchWeakAreas(userId) : Promise.resolve(),
     ]);
     setRefreshing(false);
-  }, [userId, isGuest, fetchPath, fetchProgress, fetchWeakAreas]);
+  }, [userId, fetchPath, fetchProgress, fetchWeakAreas]);
 
   const streak = progress?.current_streak || 0;
 

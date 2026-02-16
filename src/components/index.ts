@@ -15,5 +15,6 @@ export * from './SwissTimer';
 export * from './VoiceRecorder';
 export * from './OutlineBuilder';
 export * from './FillInBlank';
+export * from './CategoryListSection';
 
 

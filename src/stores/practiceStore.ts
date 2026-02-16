@@ -42,18 +42,18 @@ interface PracticeState {
   error: string | null;
   
   // Actions
-  startPractice: (question: Question, mode: PracticeMode, userId: string, isGuest?: boolean) => Promise<void>;
-  startQuiz: (questions: Question[], userId: string, isGuest?: boolean) => Promise<void>;
+  startPractice: (question: Question, mode: PracticeMode, userId: string) => Promise<void>;
+  startQuiz: (questions: Question[], userId: string) => Promise<void>;
   answerMCQSubQuestion: (questionIndex: number, optionIndex: number, correct: boolean) => void;
   setTextAnswer: (answer: string) => void;
   setOutlineAnswer: (outline: UserOutline) => void;
   getAnswerAsText: () => string;
-  saveDraft: (userId: string, isGuest?: boolean) => Promise<boolean>;
-  loadDraft: (userId: string, questionId: string, isGuest?: boolean) => Promise<void>;
-  submitAnswer: (userId: string, isGuest?: boolean) => Promise<boolean>;
-  generateFeedback: (userId: string, isGuest?: boolean) => Promise<void>;
+  saveDraft: (userId: string) => Promise<boolean>;
+  loadDraft: (userId: string, questionId: string) => Promise<void>;
+  submitAnswer: (userId: string) => Promise<boolean>;
+  generateFeedback: (userId: string) => Promise<void>;
   nextMCQQuestion: () => void;
-  nextQuizQuestion: (userId: string, isGuest?: boolean) => Promise<boolean>; // Returns true if there is a next step/question
+  nextQuizQuestion: (userId: string) => Promise<boolean>; // Returns true if there is a next step/question
   calculateMCQScore: () => number; // Local score for current question
   calculateQuizScore: () => { correct: number; total: number; percentage: number }; // Global score
   resetPractice: () => void;
@@ -83,7 +83,7 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
   loading: false,
   error: null,
 
-  startPractice: async (question: Question | null, mode: PracticeMode, userId: string, isGuest: boolean = false) => {
+  startPractice: async (question: Question | null, mode: PracticeMode, userId: string) => {
     if (!question) {
       logger.error('Cannot start practice: question is null or undefined');
       set({ loading: false, error: 'No question available to practice' });
@@ -92,12 +92,11 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
 
     set({ loading: true, error: null });
     try {
-      // Create practice session in database or local storage
+      // Create practice session in database
       const sessionId = await practiceService.createPracticeSession({
         userId,
         questionId: question.id,
         mode,
-        isGuest,
       });
 
       const subQuestionsLength = question.mcq_version?.sub_questions?.length || 1;
@@ -124,32 +123,11 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
       });
     } catch (error) {
       logger.error('Error starting practice:', error);
-      // Continue without session ID for offline mode (implicit if generic error, creates "phantom" session state)
-      const subQuestionsLength = question.mcq_version?.sub_questions?.length || 1;
-      set({
-        currentQuestion: question,
-        currentMode: mode,
-        currentSessionId: null,
-        currentQuestionIndex: 0,
-        mcqAnswers: [],
-        textAnswer: '',
-        startTime: Date.now(),
-        timeSpentSeconds: 0,
-        loading: false,
-        error: isGuest ? 'Guest session failed' : 'Failed to create session. Continuing in offline mode.',
-         ...(get().isQuizActive ? {} : {
-            questionQueue: [],
-            currentQueueIndex: 0,
-            quizAnswers: [],
-            isQuizActive: false,
-            totalQuizSteps: subQuestionsLength,
-            currentQuizStep: 1
-        })
-      });
+      set({ loading: false, error: 'Failed to create session' });
     }
   },
 
-  startQuiz: async (questions: Question[], userId: string, isGuest: boolean = false) => {
+  startQuiz: async (questions: Question[], userId: string) => {
     if (!questions || questions.length === 0) {
       logger.error('Cannot start quiz: no questions provided');
       return;
@@ -180,7 +158,7 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
     });
 
     // Start the first question
-    await get().startPractice(validQuestions[0], 'mcq', userId, isGuest);
+    await get().startPractice(validQuestions[0], 'mcq', userId);
   },
 
   answerMCQSubQuestion: (questionIndex: number, optionIndex: number, correct: boolean) => {
@@ -215,7 +193,7 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
     return textAnswer;
   },
 
-  saveDraft: async (userId: string, isGuest: boolean = false) => {
+  saveDraft: async (userId: string) => {
     const { currentQuestion, textAnswer } = get();
     if (!currentQuestion || !textAnswer.trim()) return false;
 
@@ -224,7 +202,6 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
         userId,
         questionId: currentQuestion.id,
         draftText: textAnswer,
-        isGuest,
       });
       return true;
     } catch (error) {
@@ -234,9 +211,9 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
     }
   },
 
-  loadDraft: async (userId: string, questionId: string, isGuest: boolean = false) => {
+  loadDraft: async (userId: string, questionId: string) => {
     try {
-      const draftText = await practiceService.getDraft(userId, questionId, isGuest);
+      const draftText = await practiceService.getDraft(userId, questionId);
       if (draftText) {
         set({ textAnswer: draftText });
       }
@@ -245,7 +222,7 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
     }
   },
 
-  submitAnswer: async (userId: string, isGuest: boolean = false) => {
+  submitAnswer: async (userId: string) => {
     const {
         currentSessionId,
         textAnswer,
@@ -265,11 +242,6 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
 
     set({ loading: true, error: null });
     try {
-      // NOTE: We are submitting primarily to record the DB interaction.
-      // For MCQs with multiple parts, we might be calling this multiple times (once per sub-question)
-      // OR once at the end. The standard flow calls submitAnswer after EACH sub-question interaction?
-      // Based on QuickQuizScreen, it calls submitAnswer() immediately after selection.
-
       // Use outlineAnswer if available, otherwise textAnswer
       const userAnswer = outlineAnswer || textAnswer;
 
@@ -286,13 +258,9 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
         timeSpentSeconds,
         mcqAnswers: currentMode === 'mcq' ? mcqAnswers : undefined,
         isCorrect,
-        isGuest,
       });
 
-      // Update user progress (only if it's the final sub-question or we want incremental updates)
-      // Here we do it every time to be safe, though usage stats might be slightly inflated if not careful.
-      // But updateProgressAfterCompletion usually increments "questions completed".
-      // Ideally we only call this when the *entire* question is done.
+      // Update user progress only if it's the final sub-question
       const totalSubQuestions = currentQuestion.mcq_version?.sub_questions.length || 0;
       const isLastSubQuestion = currentQuestionIndex === totalSubQuestions - 1;
 
@@ -300,8 +268,7 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
         await progressService.updateProgressAfterCompletion(
             userId,
             currentMode,
-            currentQuestion.category,
-            isGuest,
+            currentQuestion.category
         );
       }
 
@@ -325,7 +292,7 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
                   timeSpent: timeSpentSeconds
                };
                
-               // Check if we already have an answer for this step (to prevent duplicates if user spams)
+               // Check if we already have an answer for this step
                const existingIndex = quizAnswers.findIndex(
                    a => a.questionId === currentQuestion.id && a.subQuestionIndex === currentQuestionIndex
                );
@@ -349,7 +316,7 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
     }
   },
 
-  generateFeedback: async (userId: string, isGuest: boolean = false) => {
+  generateFeedback: async (userId: string) => {
     const { currentQuestion, textAnswer, outlineAnswer, currentSessionId } = get();
     const userAnswer = outlineAnswer || textAnswer;
     if (!currentQuestion || !userAnswer || !currentSessionId) return;
@@ -367,7 +334,6 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
         sessionId: currentSessionId,
         userAnswer,
         timeSpentSeconds: get().timeSpentSeconds,
-        isGuest,
         aiFeedback: feedback
       });
       
@@ -387,7 +353,7 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
     }
   },
 
-  nextQuizQuestion: async (userId: string, isGuest: boolean = false) => {
+  nextQuizQuestion: async (userId: string) => {
       const { 
           currentQueueIndex, 
           questionQueue, 
@@ -418,14 +384,9 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
               set({ 
                   currentQueueIndex: nextIndex,
                   currentQuizStep: Math.min(currentQuizStep + 1, totalQuizSteps),
-                  // IMPORTANT: Clear previous question's answers to avoid ghost state?
-                  // Actually `startPractice` handles clearing mcqAnswers if not quizActive,
-                  // BUT in startQuiz we probably don't want to clear mcqAnswers inside startPractice 
-                  // every time if we want to support back navigation.
-                  // Current implementation clears it in startPractice.
               });
               
-              await get().startPractice(nextQuestion, 'mcq', userId, isGuest);
+              await get().startPractice(nextQuestion, 'mcq', userId);
               return true;
           }
       }
@@ -446,8 +407,6 @@ export const usePracticeStore = create<PracticeState>((set, get) => ({
   calculateQuizScore: () => {
       const { quizAnswers, totalQuizSteps } = get();
       const correct = quizAnswers.filter(a => a.isCorrect).length;
-      // Use totalQuizSteps as the denominator to reflect true progress/score
-      // prevent division by zero
       const total = totalQuizSteps || 1;
       const percentage = Math.round((correct / total) * 100);
 

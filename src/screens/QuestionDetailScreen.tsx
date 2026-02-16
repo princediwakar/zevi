@@ -30,7 +30,7 @@ export default function QuestionDetailScreen() {
 
   const { questions, getQuestionById, getRelatedQuestions } = useQuestionsStore();
   const { startPractice, loading: practiceLoading } = usePracticeStore();
-  const { user, guestId, isGuest } = useAuth();
+  const { user } = useAuth();
   
   const [question, setQuestion] = useState<Question | null>(
     questions.find((q) => q.id === questionId) || null
@@ -56,11 +56,11 @@ export default function QuestionDetailScreen() {
           const related = await getRelatedQuestions(currentQuestion.id, currentQuestion.category);
           setRelatedQuestions(related);
 
-          const userId = user?.id || guestId;
+          const userId = user?.id;
           if (userId) {
               try {
                   setCheckingCompletion(true);
-                  const sessions = await practiceService.getQuestionSessions(userId, currentQuestion.id, isGuest);
+                  const sessions = await practiceService.getQuestionSessions(userId, currentQuestion.id);
                   const completedFn = sessions.some(s => s.completed);
                   setIsCompleted(completedFn);
               } catch (e) {
@@ -70,7 +70,7 @@ export default function QuestionDetailScreen() {
               }
           }
       }
-  }, [questionId, user, guestId, isGuest, getQuestionById, getRelatedQuestions]);
+  }, [questionId, user, getQuestionById, getRelatedQuestions]);
 
   useFocusEffect(
     useCallback(() => {
@@ -101,7 +101,7 @@ export default function QuestionDetailScreen() {
   }
 
   const handleStartPractice = async (mode: 'mcq' | 'text') => {
-    const userId = user?.id || guestId;
+    const userId = user?.id;
     if (!userId) {
       logger.error('No user ID available');
       return;
@@ -113,7 +113,7 @@ export default function QuestionDetailScreen() {
     }
     
     try {
-      await startPractice(question, mode, userId, isGuest);
+      await startPractice(question, mode, userId);
       
       if (mode === 'mcq') {
          navigation.navigate('QuickQuiz', { questions: [question], sourceQuestionId: question.id });
@@ -122,13 +122,6 @@ export default function QuestionDetailScreen() {
       }
     } catch (error) {
       logger.error('Failed to start practice session:', error);
-      if (isGuest) {
-        if (mode === 'mcq') {
-           navigation.navigate('QuickQuiz', { questions: [question], sourceQuestionId: question.id });
-        } else {
-           navigation.navigate('TextPractice', { questionId: question.id });
-        }
-      }
     }
   };
 
@@ -224,7 +217,7 @@ export default function QuestionDetailScreen() {
           )}
         </View>
 
-        {/* Related Questions */}
+        {/* Related Questions
         {relatedQuestions.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>RELATED</Text>
@@ -241,9 +234,8 @@ export default function QuestionDetailScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        )}
+        )} */}
 
-        <View style={styles.separator} />
       </ScrollView>
 
       {/* Action Footer */}

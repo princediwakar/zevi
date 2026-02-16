@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
 import { UserProgress, PracticeMode, QuestionCategory, SessionWithQuestion, FrameworkName, MCQAnswer } from '../types';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserSessions } from './practiceService';
 import { logger } from '../utils/logger';
 
@@ -23,36 +22,11 @@ interface InitialProgressInput {
   updated_at?: string;
 }
 
-// Type for guest session
-interface GuestSessionFilter {
-  user_id: string;
-  created_at: Date;
-}
-
-const GUEST_PROGRESS_KEY = 'guest_progress';
-const GUEST_SESSIONS_KEY = 'guest_sessions';
-
 // Weekly limit for free tier (text questions with AI feedback)
 const FREE_WEEKLY_LIMIT = 3;
 
-export async function getUserProgress(userId: string, isGuest: boolean = false): Promise<UserProgress | null> {
+export async function getUserProgress(userId: string): Promise<UserProgress | null> {
   try {
-    if (isGuest) {
-      const stored = await AsyncStorage.getItem(GUEST_PROGRESS_KEY);
-      if (!stored) {
-        return await initializeUserProgress(userId, true);
-      }
-      const parsed = JSON.parse(stored);
-      // Ensure new fields have defaults
-      return {
-        ...parsed,
-        framework_mastery: parsed.framework_mastery || {},
-        pattern_mastery: parsed.pattern_mastery || {},
-        readiness_score: parsed.readiness_score || 0,
-        readiness_by_category: parsed.readiness_by_category || {},
-      };
-    }
-
     const { data, error } = await supabase
       .from('user_progress')
       .select('*')
@@ -81,31 +55,8 @@ export async function getUserProgress(userId: string, isGuest: boolean = false):
 }
 
 
-export async function initializeUserProgress(userId: string, isGuest: boolean = false): Promise<UserProgress> {
+export async function initializeUserProgress(userId: string): Promise<UserProgress> {
   try {
-    const initialProgress: InitialProgressInput = {
-      user_id: userId,
-      current_streak: 0,
-      longest_streak: 0,
-      total_questions_completed: 0,
-      total_mcq_completed: 0,
-      total_text_completed: 0,
-      category_progress: {},
-      framework_mastery: {},
-      pattern_mastery: {},
-      readiness_score: 0,
-      readiness_by_category: {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      weekly_questions_used: 0,
-      week_reset_date: new Date().toISOString(),
-    };
-
-    if (isGuest) {
-      await AsyncStorage.setItem(GUEST_PROGRESS_KEY, JSON.stringify(initialProgress));
-      return initialProgress as UserProgress;
-    }
-
     const { data, error } = await supabase
       .from('user_progress')
       .insert({
@@ -138,40 +89,9 @@ export async function initializeUserProgress(userId: string, isGuest: boolean = 
 export async function updateProgressAfterCompletion(
   userId: string,
   sessionType: PracticeMode,
-  category: QuestionCategory,
-  isGuest: boolean = false
+  category: QuestionCategory
 ): Promise<void> {
   try {
-    if (isGuest) {
-      let progress = await getUserProgress(userId, true);
-      if (!progress) progress = await initializeUserProgress(userId, true);
-
-      // Increment counts
-      progress.total_questions_completed = (progress.total_questions_completed || 0) + 1;
-      if (sessionType === 'mcq') progress.total_mcq_completed = (progress.total_mcq_completed || 0) + 1;
-      if (sessionType === 'text') progress.total_text_completed = (progress.total_text_completed || 0) + 1;
-
-      // Update category progress
-      const currentCategoryCount = progress.category_progress?.[category] || 0;
-      progress.category_progress = {
-        ...progress.category_progress,
-        [category]: currentCategoryCount + 1
-      };
-
-      // Update weekly usage for text questions
-      if (sessionType === 'text') {
-        progress.weekly_questions_used = (progress.weekly_questions_used || 0) + 1;
-      }
-
-      progress.updated_at = new Date().toISOString();
-      // (streak update handles saving, but we save here to be safe if streak logic fails or changes)
-      await AsyncStorage.setItem(GUEST_PROGRESS_KEY, JSON.stringify(progress));
-
-      // Update streak
-      await updateStreak(userId, true);
-      return;
-    }
-
     // Call the combined transactional function to increment completion count and update streak
     const { error } = await supabase.rpc('complete_practice_session', {
       p_user_id: userId,
@@ -186,39 +106,8 @@ export async function updateProgressAfterCompletion(
   }
 }
 
-export async function updateStreak(userId: string, isGuest: boolean = false): Promise<void> {
+export async function updateStreak(userId: string): Promise<void> {
   try {
-    if (isGuest) {
-       let progress = await getUserProgress(userId, true);
-       if (!progress) return;
-
-       const today = new Date();
-       today.setHours(0, 0, 0, 0); // normalize to midnight
-       
-       const lastPractice = progress.last_practice_date ? new Date(progress.last_practice_date) : null;
-       if (lastPractice) lastPractice.setHours(0, 0, 0, 0);
-
-       if (!lastPractice) {
-           progress.current_streak = 1;
-       } else if (lastPractice.getTime() === today.getTime()) {
-           // Already practiced today
-       } else if (lastPractice.getTime() === today.getTime() - 86400000) {
-           // Practiced yesterday
-           progress.current_streak = (progress.current_streak || 0) + 1;
-       } else {
-           // Streak broken
-           progress.current_streak = 1;
-       }
-
-       if ((progress.current_streak || 0) > (progress.longest_streak || 0)) {
-           progress.longest_streak = progress.current_streak;
-       }
-       
-       progress.last_practice_date = new Date().toISOString(); // set to now
-       await AsyncStorage.setItem(GUEST_PROGRESS_KEY, JSON.stringify(progress));
-       return;
-    }
-
     const { error } = await supabase.rpc('update_user_streak', {
       p_user_id: userId,
     });
@@ -230,13 +119,8 @@ export async function updateStreak(userId: string, isGuest: boolean = false): Pr
   }
 }
 
-export async function getCategoryProgress(userId: string, isGuest: boolean = false): Promise<Record<string, number>> {
+export async function getCategoryProgress(userId: string): Promise<Record<string, number>> {
   try {
-    if (isGuest) {
-        const progress = await getUserProgress(userId, true);
-        return (progress?.category_progress as Record<string, number>) || {};
-    }
-
     const { data, error } = await supabase
       .from('user_progress')
       .select('category_progress')
@@ -251,16 +135,8 @@ export async function getCategoryProgress(userId: string, isGuest: boolean = fal
   }
 }
 
-export async function calculateStreak(userId: string, isGuest: boolean = false): Promise<{ current: number; longest: number }> {
+export async function calculateStreak(userId: string): Promise<{ current: number; longest: number }> {
   try {
-    if (isGuest) {
-        const progress = await getUserProgress(userId, true);
-        return {
-            current: progress?.current_streak || 0,
-            longest: progress?.longest_streak || 0
-        };
-    }
-
     const { data, error } = await supabase
       .from('user_progress')
       .select('current_streak, longest_streak')
@@ -279,20 +155,10 @@ export async function calculateStreak(userId: string, isGuest: boolean = false):
   }
 }
 
-export async function getRecentActivity(userId: string, days: number = 7, isGuest: boolean = false): Promise<SessionWithQuestion[]> {
+export async function getRecentActivity(userId: string, days: number = 7): Promise<SessionWithQuestion[]> {
   try {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-
-    if (isGuest) {
-        const stored = await AsyncStorage.getItem(GUEST_SESSIONS_KEY);
-        if (!stored) return [];
-        const sessions = JSON.parse(stored).filter((s: any) => 
-            s.user_id === userId && 
-            new Date(s.created_at) >= startDate
-        );
-        return sessions.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    }
 
     const { data, error } = await supabase
       .from('practice_sessions')
@@ -317,20 +183,11 @@ export async function getRecentActivity(userId: string, days: number = 7, isGues
     throw error;
   }
 }
-export async function getPracticeActivity(userId: string, isGuest: boolean = false): Promise<string[]> {
+
+export async function getPracticeActivity(userId: string): Promise<string[]> {
   try {
     const startDate = new Date();
     startDate.setFullYear(startDate.getFullYear() - 1); // Last year
-
-    if (isGuest) {
-        const stored = await AsyncStorage.getItem(GUEST_SESSIONS_KEY);
-        if (!stored) return [];
-        const sessions = JSON.parse(stored).filter((s: any) =>
-            s.user_id === userId &&
-            new Date(s.created_at) >= startDate
-        );
-        return sessions.map((s: any) => s.created_at);
-    }
 
     const { data, error } = await supabase
       .from('practice_sessions')
@@ -347,20 +204,8 @@ export async function getPracticeActivity(userId: string, isGuest: boolean = fal
 }
 
 // Check if user is within weekly free tier limit
-export async function checkWeeklyLimit(userId: string, isGuest: boolean = false): Promise<{ used: number; limit: number; remaining: number; canPractice: boolean }> {
+export async function checkWeeklyLimit(userId: string): Promise<{ used: number; limit: number; remaining: number; canPractice: boolean }> {
   try {
-    if (isGuest) {
-      const progress = await getUserProgress(userId, true);
-      const used = progress?.weekly_questions_used || 0;
-      const remaining = FREE_WEEKLY_LIMIT - used;
-      return {
-        used,
-        limit: FREE_WEEKLY_LIMIT,
-        remaining: Math.max(0, remaining),
-        canPractice: remaining > 0,
-      };
-    }
-
     // Check via RPC function
     const { data, error } = await supabase.rpc('check_rate_limit', {
       p_user_id: userId,
@@ -368,7 +213,7 @@ export async function checkWeeklyLimit(userId: string, isGuest: boolean = false)
 
     if (error) {
       // Fallback to manual check
-      const progress = await getUserProgress(userId, false);
+      const progress = await getUserProgress(userId);
       const used = progress?.weekly_questions_used || 0;
       const remaining = FREE_WEEKLY_LIMIT - used;
       return {
@@ -401,31 +246,9 @@ export async function checkWeeklyLimit(userId: string, isGuest: boolean = false)
 export async function updateFrameworkMastery(
   userId: string,
   frameworkName: string,
-  score: number,
-  isGuest: boolean = false
+  score: number
 ): Promise<void> {
   try {
-    if (isGuest) {
-      let progress = await getUserProgress(userId, true);
-      if (!progress) progress = await initializeUserProgress(userId, true);
-
-      const currentMastery = progress.framework_mastery?.[frameworkName] || 0;
-      // Calculate moving average: 80% old, 20% new
-      const newMastery = Math.round(currentMastery * 0.8 + score * 0.2);
-
-      progress.framework_mastery = {
-        ...progress.framework_mastery,
-        [frameworkName]: newMastery
-      };
-      progress.updated_at = new Date().toISOString();
-
-      await AsyncStorage.setItem(GUEST_PROGRESS_KEY, JSON.stringify(progress));
-
-      // Recalculate readiness
-      await calculateAndUpdateReadiness(userId, true);
-      return;
-    }
-
     // Use database function
     const { error } = await supabase.rpc('update_framework_mastery', {
       p_user_id: userId,
@@ -447,31 +270,9 @@ export async function updateFrameworkMastery(
 export async function updatePatternMastery(
   userId: string,
   patternName: string,
-  score: number,
-  isGuest: boolean = false
+  score: number
 ): Promise<void> {
   try {
-    if (isGuest) {
-      let progress = await getUserProgress(userId, true);
-      if (!progress) progress = await initializeUserProgress(userId, true);
-
-      const currentMastery = progress.pattern_mastery?.[patternName] || 0;
-      // Calculate moving average: 80% old, 20% new
-      const newMastery = Math.round(currentMastery * 0.8 + score * 0.2);
-
-      progress.pattern_mastery = {
-        ...progress.pattern_mastery,
-        [patternName]: newMastery
-      };
-      progress.updated_at = new Date().toISOString();
-
-      await AsyncStorage.setItem(GUEST_PROGRESS_KEY, JSON.stringify(progress));
-
-      // Recalculate readiness
-      await calculateAndUpdateReadiness(userId, true);
-      return;
-    }
-
     // Use database function
     const { error } = await supabase.rpc('update_pattern_mastery', {
       p_user_id: userId,
@@ -491,12 +292,9 @@ export async function updatePatternMastery(
 
 // Calculate and update readiness score based on NEW_PLAN spec
 // weights: framework_mastery: 0.4, pattern_mastery: 0.3, category_completion: 0.2, practice_volume: 0.1
-export async function calculateAndUpdateReadiness(
-  userId: string,
-  isGuest: boolean = false
-): Promise<number> {
+export async function calculateAndUpdateReadiness(userId: string): Promise<number> {
   try {
-    const progress = await getUserProgress(userId, isGuest);
+    const progress = await getUserProgress(userId);
     if (!progress) return 0;
 
     // Calculate framework average
@@ -528,18 +326,12 @@ export async function calculateAndUpdateReadiness(
       volumeScore * 0.1
     );
 
-    if (isGuest) {
-      progress.readiness_score = readiness;
-      progress.updated_at = new Date().toISOString();
-      await AsyncStorage.setItem(GUEST_PROGRESS_KEY, JSON.stringify(progress));
-    } else {
-      const { error } = await supabase
-        .from('user_progress')
-        .update({ readiness_score: readiness, updated_at: new Date().toISOString() })
-        .eq('user_id', userId);
+    const { error } = await supabase
+      .from('user_progress')
+      .update({ readiness_score: readiness, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
 
-      if (error) throw error;
-    }
+    if (error) throw error;
 
     return readiness;
   } catch (error) {
@@ -549,12 +341,9 @@ export async function calculateAndUpdateReadiness(
 }
 
 // Get framework mastery scores
-export async function getFrameworkMastery(
-  userId: string,
-  isGuest: boolean = false
-): Promise<Record<string, number>> {
+export async function getFrameworkMastery(userId: string): Promise<Record<string, number>> {
   try {
-    const progress = await getUserProgress(userId, isGuest);
+    const progress = await getUserProgress(userId);
     return progress?.framework_mastery || {};
   } catch (error) {
     logger.error('Error fetching framework mastery:', error);
@@ -563,12 +352,9 @@ export async function getFrameworkMastery(
 }
 
 // Get pattern mastery scores
-export async function getPatternMastery(
-  userId: string,
-  isGuest: boolean = false
-): Promise<Record<string, number>> {
+export async function getPatternMastery(userId: string): Promise<Record<string, number>> {
   try {
-    const progress = await getUserProgress(userId, isGuest);
+    const progress = await getUserProgress(userId);
     return progress?.pattern_mastery || {};
   } catch (error) {
     logger.error('Error fetching pattern mastery:', error);
@@ -577,12 +363,9 @@ export async function getPatternMastery(
 }
 
 // Get readiness score
-export async function getReadinessScore(
-  userId: string,
-  isGuest: boolean = false
-): Promise<number> {
+export async function getReadinessScore(userId: string): Promise<number> {
   try {
-    const progress = await getUserProgress(userId, isGuest);
+    const progress = await getUserProgress(userId);
     return progress?.readiness_score || 0;
   } catch (error) {
     logger.error('Error fetching readiness score:', error);
@@ -592,12 +375,9 @@ export async function getReadinessScore(
 
 // Compute weak areas based on user's incorrect answers
 // Returns categories where user has < 70% success rate with at least 3 attempts
-export async function getWeakAreas(
-  userId: string,
-  isGuest: boolean = false
-): Promise<{ category: string; successRate: number; totalAttempts: number }[]> {
+export async function getWeakAreas(userId: string): Promise<{ category: string; successRate: number; totalAttempts: number }[]> {
   try {
-    const sessions = await getUserSessions(userId, 100, isGuest);
+    const sessions = await getUserSessions(userId, 100);
     
     if (!sessions || sessions.length === 0) {
       return [];
@@ -661,11 +441,10 @@ export async function getWeakAreas(
 // Get questions user got wrong (for mistakes review)
 export async function getIncorrectQuestions(
   userId: string,
-  isGuest: boolean = false,
   limit: number = 20
 ): Promise<SessionWithQuestion[]> {
   try {
-    const sessions = await getUserSessions(userId, 100, isGuest);
+    const sessions = await getUserSessions(userId, 100);
     
     if (!sessions || sessions.length === 0) {
       return [];

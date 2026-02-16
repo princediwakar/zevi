@@ -12,7 +12,6 @@ import {
   QuizResultsScreen,
   ProgressScreen,
   ProfileScreen,
-  CategoryBrowseScreen,
   QuestionListScreen,
   QuestionDetailScreen,
   TextPracticeScreen,
@@ -35,7 +34,6 @@ function HomeStackNavigator() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="Main" component={HomeScreen} />
-      <HomeStack.Screen name="CategoryBrowse" component={CategoryBrowseScreen} />
       <HomeStack.Screen name="QuestionList" component={QuestionListScreen} />
       <HomeStack.Screen name="QuestionDetail" component={QuestionDetailScreen} />
       <HomeStack.Screen name="TextPractice" component={TextPracticeScreen} />

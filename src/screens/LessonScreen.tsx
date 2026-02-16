@@ -32,7 +32,7 @@ export default function LessonScreen() {
   const route = useRoute<LessonScreenRouteProp>();
   const lessonId = route.params?.lessonId as string | undefined;
   const navigation = useNavigation();
-  const { user, isGuest, guestId } = useAuth();
+  const { user } = useAuth();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +41,7 @@ export default function LessonScreen() {
 
   const { units } = useLearningPathStore();
   const { updateAfterCompletion, progress, readinessScore } = useProgressStore();
-  const userId = user?.id || guestId;
+  const userId = user?.id;
 
   useEffect(() => {
     if (lessonId) {
@@ -80,8 +80,8 @@ export default function LessonScreen() {
           mode = 'guided';
         }
         
-        await updateAfterCompletion(userId, mode, category, isGuest);
-        await useProgressStore.getState().fetchProgress(userId, isGuest);
+        await updateAfterCompletion(userId, mode, category);
+        await useProgressStore.getState().fetchProgress(userId);
       } catch (error) {
         console.error('Error updating progress:', error);
       }
@@ -205,8 +205,8 @@ export default function LessonScreen() {
           mode = 'text';
         }
         
-        await updateAfterCompletion(userId, mode, category, isGuest);
-        await useProgressStore.getState().fetchProgress(userId, isGuest);
+        await updateAfterCompletion(userId, mode, category);
+        await useProgressStore.getState().fetchProgress(userId);
       } catch (error) {
         console.error('Error marking complete:', error);
       }

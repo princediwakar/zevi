@@ -226,8 +226,7 @@ export async function getQuestionsByLessonId(lessonId: string): Promise<Question
  */
 export async function getUnpracticedQuestions(
   userId: string,
-  limit: number = 10,
-  isGuest: boolean = false
+  limit: number = 10
 ): Promise<Question[]> {
   try {
     // Get all question IDs the user has practiced
@@ -309,12 +308,11 @@ export async function getUnpracticedQuestions(
  */
 export async function getWeakCategoryQuestions(
   userId: string,
-  limit: number = 5,
-  isGuest: boolean = false
+  limit: number = 5
 ): Promise<Question[]> {
   try {
     // Get user's category progress
-    const categoryProgress = await progressService.getCategoryProgress(userId, isGuest);
+    const categoryProgress = await progressService.getCategoryProgress(userId);
     
     // Get all categories
     const { data: allQuestions, error } = await supabase
@@ -374,19 +372,16 @@ export async function getWeakCategoryQuestions(
  * Get a single personalized question based on user's history
  * Prioritizes: unpracticed > weakest category > random
  */
-export async function getPersonalizedQuestion(
-  userId: string,
-  isGuest: boolean = false
-): Promise<Question | null> {
+export async function getPersonalizedQuestion(userId: string): Promise<Question | null> {
   try {
     // First, try to get an unpracticed question
-    const unpracticed = await getUnpracticedQuestions(userId, 1, isGuest);
+    const unpracticed = await getUnpracticedQuestions(userId, 1);
     if (unpracticed.length > 0) {
       return unpracticed[0];
     }
 
     // If all questions practiced, get from weakest category
-    const weakQuestions = await getWeakCategoryQuestions(userId, 1, isGuest);
+    const weakQuestions = await getWeakCategoryQuestions(userId, 1);
     if (weakQuestions.length > 0) {
       return weakQuestions[0];
     }
@@ -405,21 +400,20 @@ export async function getPersonalizedQuestion(
  */
 export async function getPersonalizedQuizQuestions(
   userId: string,
-  totalQuestions: number = 5,
-  isGuest: boolean = false
+  totalQuestions: number = 5
 ): Promise<Question[]> {
   try {
     const result: Question[] = [];
 
     // 50% unpracticed
     const unpracticedCount = Math.ceil(totalQuestions * 0.5);
-    const unpracticed = await getUnpracticedQuestions(userId, unpracticedCount, isGuest);
+    const unpracticed = await getUnpracticedQuestions(userId, unpracticedCount);
     result.push(...unpracticed);
 
     // 30% from weak categories (if we need more)
     if (result.length < totalQuestions) {
       const weakCount = Math.ceil(totalQuestions * 0.3);
-      const weak = await getWeakCategoryQuestions(userId, weakCount, isGuest);
+      const weak = await getWeakCategoryQuestions(userId, weakCount);
       
       // Add only unique questions
       const existingIds = new Set(result.map(q => q.id));

@@ -4,11 +4,9 @@ import { Question } from '../types';
 export type RootStackParamList = {
   Welcome: undefined;
   Auth: { mode?: 'signin' | 'signup' } | undefined;
-  Onboarding: undefined;
   QuickQuiz: { questions?: Question[]; lessonId?: string; sourceQuestionId?: string; questionCount?: number } | undefined;
   QuizResults: { sourceQuestionId?: string } | undefined;
   Main: undefined;
-  CategoryBrowse: undefined;
   QuestionList: { category: string };
   QuestionDetail: { questionId: string };
   TextPractice: { questionId: string };

@@ -28,12 +28,12 @@ export default function CategoryBrowseScreen() {
   const navigation = useNavigation<CategoryBrowseScreenNavigationProp>();
   const { categoryStats, fetchCategoryStats } = useQuestionsStore();
   const { progress, fetchProgress, getCategoryProgress } = useProgressStore();
-  const { user, isGuest, guestId } = useAuth();
+  const { user } = useAuth();
   
   const [refreshing, setRefreshing] = useState(false);
   const [userProgress, setUserProgress] = useState<Record<string, number>>({});
 
-  const userId = user?.id || guestId;
+  const userId = user?.id;
 
   useEffect(() => {
     loadData();
@@ -42,8 +42,8 @@ export default function CategoryBrowseScreen() {
   const loadData = async () => {
     await fetchCategoryStats();
     if (userId) {
-      await fetchProgress(userId, isGuest);
-      const catProgress = await getCategoryProgress(userId, isGuest);
+      await fetchProgress(userId);
+      const catProgress = await getCategoryProgress(userId);
       setUserProgress(catProgress);
     }
   };
