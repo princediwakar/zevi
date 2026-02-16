@@ -5,8 +5,6 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { generateUUID } from '../utils/uuid';
-import * as practiceService from '../services/practiceService';
 import { useUserStore } from '../stores/userStore';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -30,13 +28,11 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isAuthenticated: boolean;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  isGuest: boolean;
-  guestId: string | null;
-  convertGuestToUser: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,8 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isGuest, setIsGuest] = useState(true);
-  const [guestId, setGuestId] = useState<string | null>(null);
   const { initializeUser } = useUserStore();
 
   // Track if we're currently signing out
@@ -55,25 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Initialize guest ID
-        let storedGuestId = await AsyncStorage.getItem('guest_id');
-        if (!storedGuestId) {
-          storedGuestId = generateUUID();
-          await AsyncStorage.setItem('guest_id', storedGuestId);
-        }
-        setGuestId(storedGuestId);
-
         // Check for existing session
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
         setUser(session?.user ?? null);
-        setIsGuest(!session);
 
-        // Initialize user store with appropriate ID
+        // Initialize user store with authenticated user
         if (session?.user) {
           await initializeUser(session.user, false);
-        } else {
-          await initializeUser({ id: storedGuestId }, true);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -98,13 +81,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setSession(session);
       setUser(session?.user ?? null);
-      setIsGuest(!session);
 
       // Initialize user store
       if (session?.user) {
         await initializeUser(session.user, false);
-      } else if (guestId) {
-        await initializeUser({ id: guestId }, true);
       }
 
       setLoading(false);
@@ -126,13 +106,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
-      
-      // If sign up successful and we were a guest, migrate data
-      if (data.user && isGuest && guestId) {
-          await practiceService.migrateGuestData(guestId, data.user.id);
-          // Update state to reflect user
-          setUser(data.user);
-          setIsGuest(false);
+
+      // If sign up successful, update state
+      if (data.user) {
+        setUser(data.user);
       }
 
       return { error: null };
@@ -150,16 +127,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      // If sign in successful and we were a guest, migrate data?
-      // Usually only on sign UP or explicit "link account". 
-      // But if they sign in, we might want to merge? 
-      // For now, let's assume if they sign in to an existing account, 
-      // we might PROMPT them to merge, or just merge silently if safe.
-      // Let's merge silently for valid non-conflicting data types like drafts.
-      if (data.user && isGuest && guestId) {
-           await practiceService.migrateGuestData(guestId, data.user.id);
-           setUser(data.user);
-           setIsGuest(false);
+      // If sign in successful, update state
+      if (data.user) {
+        setUser(data.user);
       }
 
       return { error: null };
@@ -247,12 +217,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (sessionError) throw sessionError;
 
-            // Migration logic for OAuth
-            if (sessionData.user && sessionData.session && isGuest && guestId) {
-              await practiceService.migrateGuestData(guestId, sessionData.user.id);
+            // Update state for OAuth success
+            if (sessionData.user && sessionData.session) {
               setUser(sessionData.user);
               setSession(sessionData.session);
-              setIsGuest(false);
             }
 
             // Clean up stored code verifier
@@ -278,26 +246,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.removeItem('google_code_verifier');
       return { error: error as Error };
     }
-  }, [isGuest, guestId]);
+  }, []);
 
   const signOut = async () => {
     // Mark that we're signing out
     isSigningOut.current = true;
     
     try {
-      // Generate a new guest ID BEFORE signing out
-      const newGuestId = generateUUID();
-      
-      // Clear guest user data from AsyncStorage FIRST
+      // Clear onboarding data on sign out
       try {
-        await AsyncStorage.removeItem('guest_user_data');
-        await AsyncStorage.removeItem('guest_progress');
-        await AsyncStorage.removeItem('guest_sessions');
+        await AsyncStorage.removeItem('onboarding_completed');
       } catch (error) {
-        console.error('Error clearing guest data:', error);
+        console.error('Error clearing onboarding data:', error);
       }
       
-      // Sign out from Supabase - wrapped in try-catch to ensure we continue even if it fails
+      // Sign out from Supabase
       try {
         const { error: signOutError } = await supabase.auth.signOut();
         if (signOutError) {
@@ -307,32 +270,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('Supabase sign out error (continuing anyway):', error);
       }
       
-      // Clear ALL AsyncStorage to ensure clean slate
-      try {
-        const keys = await AsyncStorage.getAllKeys();
-        for (const key of keys) {
-          // Only clear app-related keys, not all keys
-          if (key.startsWith('guest_') || key.includes('onboarding')) {
-            await AsyncStorage.removeItem(key);
-          }
-        }
-      } catch (error) {
-        console.error('Error clearing additional storage:', error);
-      }
-      
       // Update state - reset everything
       setUser(null);
       setSession(null);
-      setIsGuest(true);
-      await AsyncStorage.setItem('guest_id', newGuestId);
-      setGuestId(newGuestId);
       
       // Force reset the user store
       const { reset: resetUserStore } = useUserStore.getState();
       resetUserStore();
-      
-      // Initialize new guest user in the store
-      await initializeUser({ id: newGuestId }, true);
     } finally {
       // Allow auth state changes to process again after a short delay
       setTimeout(() => {
@@ -341,26 +285,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const convertGuestToUser = async (
-    email: string,
-    password: string,
-    fullName?: string
-  ) => {
-    // This is essentially just SignUp with explicit intent
-    return signUp(email, password, fullName);
-  };
-
   const value = {
     user,
     session,
     loading,
+    isAuthenticated: !!user,
     signUp,
     signIn,
     signInWithGoogle,
     signOut,
-    isGuest,
-    guestId,
-    convertGuestToUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

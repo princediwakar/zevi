@@ -229,7 +229,7 @@ const CategoryReadinessSection = ({
 // Main component
 export default function ProgressScreen() {
   const navigation = useNavigation();
-  const { user, isGuest, guestId } = useAuth();
+  const { user } = useAuth();
   const { 
     progress,
     loading,
@@ -248,22 +248,22 @@ export default function ProgressScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
-    const userId = user?.id || guestId;
+    const userId = user?.id;
     if (userId) {
       try {
         await Promise.all([
-          fetchProgress(userId, isGuest),
-          fetchHistory(userId, isGuest),
-          fetchActivity(userId, isGuest),
-          fetchMastery(userId, isGuest),
+          fetchProgress(userId, false),
+          fetchHistory(userId, false),
+          fetchActivity(userId, false),
+          fetchMastery(userId, false),
         ]);
-        const stats = await getCategoryProgress(userId, isGuest);
+        const stats = await getCategoryProgress(userId, false);
         setCategoryStats(stats);
       } catch (err) {
         console.error('Error loading progress data:', err);
       }
     }
-  }, [user, guestId, isGuest]);
+  }, [user]);
 
   useEffect(() => {
     loadData();

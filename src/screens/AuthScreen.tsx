@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,7 +6,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RootStackParamList } from '../navigation/types';
@@ -15,12 +15,15 @@ import { Container, H1, BodyLG, BodyMD, BodySM, LabelSM, PrimaryButton, OutlineB
 import { theme } from '../theme';
 
 type AuthScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Auth'>;
+type AuthScreenRouteProp = RouteProp<RootStackParamList, 'Auth'>;
 
 export default function AuthScreen() {
   const navigation = useNavigation<AuthScreenNavigationProp>();
+  const route = useRoute<AuthScreenRouteProp>();
   const { signIn, signUp, signInWithGoogle } = useAuth();
   
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  // Get initial mode from route params, default to signin
+  const [mode, setMode] = useState<'signin' | 'signup'>(route.params?.mode || 'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');

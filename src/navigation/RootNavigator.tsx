@@ -37,7 +37,7 @@ const LoadingScreen = () => (
 );
 
 export default function RootNavigator() {
-  const { user, loading: authLoading, isGuest } = useAuth();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Welcome');
   const [isReady, setIsReady] = useState(false);
@@ -50,12 +50,13 @@ export default function RootNavigator() {
         
         let targetRoute: keyof RootStackParamList = 'Welcome';
         
-        if (user && onboardingCompleted === 'true') {
-          targetRoute = 'MainTabs';
-        } else if (user && !onboardingCompleted) {
-          targetRoute = 'Onboarding';
-        } else if (isGuest && onboardingCompleted === 'true') {
-          targetRoute = 'MainTabs';
+        // User must be authenticated to access the app
+        if (user) {
+          if (onboardingCompleted === 'true') {
+            targetRoute = 'MainTabs';
+          } else {
+            targetRoute = 'Onboarding';
+          }
         }
 
         // Only update route if we're still in loading state or at initial route
@@ -75,7 +76,7 @@ export default function RootNavigator() {
     if (!authLoading) {
       determineRoute();
     }
-  }, [authLoading, user, isGuest]);
+  }, [authLoading, user]);
 
   // Handle navigation when user state changes (e.g., after login)
   useEffect(() => {
@@ -94,7 +95,7 @@ export default function RootNavigator() {
     };
 
     handleUserChange();
-  }, [user, isGuest, isReady, authLoading]);
+  }, [user, isAuthenticated, isReady, authLoading]);
 
   // Show loading screen while determining route
   if (!isReady) {

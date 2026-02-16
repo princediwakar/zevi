@@ -27,39 +27,32 @@ export default function WelcomeScreen() {
         <PrimaryButton
           size="lg"
           fullWidth
-          onPress={() => navigation.navigate('QuickQuiz')}
+          onPress={() => navigation.navigate('Auth', { mode: 'signup' })}
           style={styles.primaryButton}
         >
-          START QUICK QUIZ
+          GET STARTED
         </PrimaryButton>
 
         <LabelSM color="secondary" align="center" style={styles.buttonSubtext}>
-          Takes less than 2 minutes • AI-powered feedback
+          Master PM interview questions with AI-powered feedback
         </LabelSM>
 
         <View style={styles.secondaryActions}>
           <OutlineButton
             size="md"
             fullWidth
-            onPress={() => navigation.navigate('MainTabs')}
+            onPress={() => navigation.navigate('Auth', { mode: 'signin' })}
             style={styles.secondaryButton}
           >
-            SKIP TO FULL LIBRARY
+            ALREADY HAVE AN ACCOUNT? SIGN IN
           </OutlineButton>
-
-          <GhostButton
-            size="md"
-            fullWidth
-            onPress={() => navigation.navigate('Auth')}
-            style={styles.signInButton}
-          >
-            SIGN IN
-          </GhostButton>
         </View>
 
-        <BodyMD color="secondary" align="center" style={styles.footer}>
-          Try it out as a guest • No account needed
-        </BodyMD>
+        <View style={styles.footer}>
+          <BodyMD color="secondary" align="center" style={styles.footerText}>
+            By continuing, you agree to our Terms of Service
+          </BodyMD>
+        </View>
       </View>
     </Container>
   );

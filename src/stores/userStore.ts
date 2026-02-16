@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SubscriptionTier } from '../types';
 
 interface UserState {
@@ -24,16 +23,13 @@ interface UserState {
   reset: () => void;
 }
 
-// Constants
-const GUEST_USER_STORAGE_KEY = 'guest_user_data';
-
 export const useUserStore = create<UserState>((set, get) => {
   return {
     user: null,
     loading: false,
     error: null,
 
-    initializeUser: async (userData: any, isGuest: boolean = false) => {
+    initializeUser: async (userData: any, _isGuest: boolean = false) => {
       set({ loading: true, error: null });
 
       try {
@@ -41,35 +37,6 @@ export const useUserStore = create<UserState>((set, get) => {
         if (!userData) {
           console.warn('initializeUser called with null/undefined userData');
           set({ loading: false });
-          return;
-        }
-
-        // For guest users, load from storage or initialize
-        if (isGuest) {
-          const storedGuest = await AsyncStorage.getItem(GUEST_USER_STORAGE_KEY);
-          if (storedGuest) {
-            const guestData = JSON.parse(storedGuest);
-            set({
-              user: guestData,
-              loading: false
-            });
-          } else {
-            // Initialize new guest user
-            const newUser = {
-              id: userData?.id || 'guest',
-              email: 'guest@example.com',
-              subscription_tier: 'free' as SubscriptionTier,
-              total_xp: 0,
-              current_level: 1,
-              current_streak: 0,
-            };
-
-            await AsyncStorage.setItem(GUEST_USER_STORAGE_KEY, JSON.stringify(newUser));
-            set({
-              user: newUser,
-              loading: false
-            });
-          }
           return;
         }
 
@@ -102,18 +69,7 @@ export const useUserStore = create<UserState>((set, get) => {
       if (!user) return;
 
       const updatedUser = { ...user, ...updates };
-
-      try {
-        // Update storage for guest users
-        if (updatedUser.subscription_tier === 'free') {
-          await AsyncStorage.setItem(GUEST_USER_STORAGE_KEY, JSON.stringify(updatedUser));
-        }
-
-        set({ user: updatedUser });
-      } catch (error) {
-        console.error('Error updating user:', error);
-        set({ error: 'Failed to update user data' });
-      }
+      set({ user: updatedUser });
     },
 
     reset: () => {

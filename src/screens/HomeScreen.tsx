@@ -30,7 +30,7 @@ const CATEGORY_LABELS: Record<QuestionCategory, string> = {
 // Using centralized theme tokens for consistency
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { user, isGuest, guestId } = useAuth();
+  const { user } = useAuth();
   
   const { progress, loading: progressLoading, fetchProgress } = useProgressStore();
   const { fetchQuestions, fetchCategoryStats } = useQuestionsStore();
@@ -39,7 +39,7 @@ export default function HomeScreen() {
   const [todaysQuestion, setTodaysQuestion] = useState<Question | null>(null);
   const [loadingQuestion, setLoadingQuestion] = useState(true);
   
-  const userId = user?.id || guestId || undefined;
+  const userId = user?.id;
 
   // Check if user has practiced today
   const hasPracticedToday = React.useMemo(() => {
@@ -50,14 +50,14 @@ export default function HomeScreen() {
 
   const loadData = useCallback(async () => {
     if (userId) {
-      await fetchProgress(userId, isGuest);
+      await fetchProgress(userId, false);
       await fetchQuestions({});
       await fetchCategoryStats();
       
       if (!hasPracticedToday) {
         try {
           setLoadingQuestion(true);
-          const question = await getPersonalizedQuestion(userId, isGuest);
+          const question = await getPersonalizedQuestion(userId, false);
           setTodaysQuestion(question);
         } catch (error) {
           console.error('Error loading question:', error);
@@ -68,7 +68,7 @@ export default function HomeScreen() {
         setLoadingQuestion(false);
       }
     }
-  }, [userId, isGuest, fetchProgress, fetchQuestions, fetchCategoryStats, hasPracticedToday]);
+  }, [userId, fetchProgress, fetchQuestions, fetchCategoryStats, hasPracticedToday]);
 
   useFocusEffect(
     useCallback(() => {
@@ -118,22 +118,23 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Centered content with heavy line */}
-        <View style={styles.doneContent}>
-          <View style={styles.doneLine} />
-          <Text style={styles.doneTitle}>DONE</Text>
-          <Text style={styles.doneSubtitle}>Come back tomorrow</Text>
-          <View style={styles.doneLine} />
-        </View>
-
-        {/* Bottom action */}
-        <TouchableOpacity 
-          style={styles.doneAction}
-          onPress={handleBrowseCategories}
-          activeOpacity={0.7}
+        {/* Scrollable content */}
+        <ScrollView
+          style={styles.doneScrollView}
+          contentContainerStyle={styles.doneScrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.doneActionText}>BROWSE →</Text>
-        </TouchableOpacity>
+          {/* Centered content with heavy line */}
+          <View style={styles.doneContent}>
+            <View style={styles.doneLine} />
+            <Text style={styles.doneTitle}>DONE</Text>
+            <Text style={styles.doneSubtitle}>Come back tomorrow</Text>
+            <View style={styles.doneLine} />
+          </View>
+
+          {/* Full Category List - Combined */}
+          <CategoryListSection onCategoryPress={(category) => navigation.navigate('QuestionList', { category })} />
+        </ScrollView>
       </View>
     );
   }
@@ -214,30 +215,31 @@ export default function HomeScreen() {
           <Text style={styles.startButtonText}>START</Text>
         </TouchableOpacity>
 
-        {/* Alternative link */}
-        <TouchableOpacity 
-          style={styles.altLink}
-          onPress={handleBrowseCategories}
-        >
-          <Text style={styles.altLinkText}>BROWSE →</Text>
-        </TouchableOpacity>
-
-        {/* Category Progress Overview */}
-        <CategoryProgressSection onCategoryPress={(category) => navigation.navigate('CategoryBrowse', { category })} />
+        {/* Full Category List - Combined with Today's Question */}
+        <CategoryListSection onCategoryPress={(category) => navigation.navigate('QuestionList', { category })} />
       </ScrollView>
     </View>
   );
 }
 
-// Category Progress Section - shows which categories have been practiced
-function CategoryProgressSection({ onCategoryPress }: { onCategoryPress: (cat: QuestionCategory) => void }) {
+// Category List Section - Full browse list (combined from CategoryBrowseScreen)
+function CategoryListSection({ onCategoryPress }: { onCategoryPress: (cat: QuestionCategory) => void }) {
   const { progress } = useProgressStore();
   const { categoryStats } = useQuestionsStore();
   
-  // Get category progress
+  const categories: QuestionCategory[] = [
+    'product_sense',
+    'execution', 
+    'strategy',
+    'behavioral',
+    'technical',
+    'estimation',
+    'pricing',
+    'ab_testing'
+  ];
+
+  // Get category progress - show all categories, sorted by completion
   const categoryProgress = React.useMemo(() => {
-    const categories: QuestionCategory[] = ['product_sense', 'execution', 'strategy', 'behavioral', 'technical', 'estimation', 'ab_testing'];
-    
     const progressData = categories.map(cat => {
       const completed = progress?.category_progress?.[cat] || 0;
       const total = categoryStats[cat] || 0;
@@ -249,62 +251,63 @@ function CategoryProgressSection({ onCategoryPress }: { onCategoryPress: (cat: Q
       };
     });
     
-    // Sort by least practiced (next to practice) to most practiced
-    progressData.sort((a, b) => a.completed - b.completed);
+    // Sort: incomplete first (by least completed), then completed (by most total)
+    progressData.sort((a, b) => {
+      if (a.completed < a.total && b.completed >= b.total) return -1;
+      if (b.completed < b.total && a.completed >= a.total) return 1;
+      if (a.completed < a.total && b.completed < b.total) return a.completed - b.completed;
+      return b.total - a.total;
+    });
     
-    // Mark first incomplete as "next"
-    const firstIncomplete = progressData.find(p => p.completed < p.total);
-    return { categories: progressData, nextCategory: firstIncomplete?.category };
+    return progressData;
   }, [progress, categoryStats]);
 
   return (
-    <View style={styles.categoryProgressSection}>
-      <Text style={styles.categoryProgressTitle}>CATEGORY PROGRESS</Text>
+    <View style={styles.categoryListSection}>
+      <Text style={styles.categoryListTitle}>BROWSE BY CATEGORY</Text>
       
-      {categoryProgress.categories.map((cat) => {
-        const isNext = cat.category === categoryProgress.nextCategory;
-        const hasProgress = cat.completed > 0;
+      {categoryProgress.map((cat) => {
+        const isNext = cat.completed < cat.total;
         
         return (
           <TouchableOpacity
             key={cat.category}
             style={[
-              styles.categoryProgressRow,
-              isNext && styles.categoryProgressRowNext,
+              styles.categoryRow,
+              isNext && styles.categoryRowNext,
             ]}
             onPress={() => onCategoryPress(cat.category)}
           >
-            {/* NEXT badge */}
-            {isNext && (
-              <View style={styles.nextBadgeSmall}>
-                <Text style={styles.nextBadgeTextSmall}>NEXT</Text>
-              </View>
-            )}
-            
-            {/* Category name */}
-            <Text style={[
-              styles.categoryProgressLabel,
-              hasProgress && styles.categoryProgressLabelDone,
-            ]}>
-              {CATEGORY_LABELS[cat.category]}
-            </Text>
-            
-            {/* Progress */}
-            <View style={styles.categoryProgressMeta}>
-              <Text style={[
-                styles.categoryProgressCount,
-                hasProgress && styles.categoryProgressCountDone,
-              ]}>
-                {cat.completed}/{cat.total}
-              </Text>
-              {hasProgress && (
-                <View style={styles.categoryProgressBar}>
-                  <View style={[styles.categoryProgressFill, { width: `${cat.percent}%` }]} />
+            {/* Category name - bold */}
+            <View style={styles.categoryRowLeft}>
+              {isNext && cat.completed > 0 && (
+                <View style={styles.nextBadgeSmall}>
+                  <Text style={styles.nextBadgeTextSmall}>NEXT</Text>
                 </View>
               )}
+              <Text style={[
+                styles.categoryLabel,
+                cat.completed >= cat.total && cat.total > 0 && styles.categoryLabelDone,
+              ]}>
+                {CATEGORY_LABELS[cat.category]}
+              </Text>
             </View>
             
-            <ArrowRight size={16} color={theme.colors.text.secondary} />
+            {/* Count and progress */}
+            <View style={styles.categoryRowRight}>
+              <Text style={[
+                styles.categoryCount,
+                cat.completed >= cat.total && cat.total > 0 && styles.categoryCountDone,
+              ]}>
+                {cat.total} Q
+              </Text>
+              {cat.completed > 0 && (
+                <View style={styles.progressIndicator}>
+                  <View style={[styles.progressFill, { width: `${cat.percent}%` }]} />
+                </View>
+              )}
+              <ArrowRight size={20} color={theme.colors.text.secondary} />
+            </View>
           </TouchableOpacity>
         );
       })}
@@ -455,11 +458,16 @@ const styles = StyleSheet.create({
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,
   },
-  doneContent: {
+  doneScrollView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  },
+  doneScrollContent: {
     paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingTop: theme.swiss.layout.sectionGap,
+  },
+  doneContent: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing[6],
   },
   doneLine: {
     width: 60,
@@ -480,89 +488,69 @@ const styles = StyleSheet.create({
     letterSpacing: theme.swiss.letterSpacing.wide,
     textTransform: 'uppercase',
   },
-  doneAction: {
-    borderTopWidth: theme.swiss.border.heavy,
-    borderTopColor: theme.colors.text.primary,
-    paddingVertical: theme.swiss.layout.sectionGap,
-    alignItems: 'center',
-  },
-  doneActionText: {
-    fontSize: theme.swiss.fontSize.label + 2,
-    fontWeight: theme.swiss.fontWeight.semibold,
-    color: theme.colors.text.primary,
-    letterSpacing: theme.swiss.letterSpacing.xwide,
-  },
 
   // ============================================
-  // CATEGORY PROGRESS SECTION
+  // CATEGORY LIST SECTION (Combined Browse)
   // ============================================
-  categoryProgressSection: {
-    marginTop: theme.spacing[6],
+  categoryListSection: {
+    marginTop: theme.spacing[2],
     marginBottom: theme.spacing[10],
   },
-  categoryProgressTitle: {
+  categoryListTitle: {
     fontSize: theme.swiss.fontSize.small,
     fontWeight: theme.swiss.fontWeight.semibold,
     color: theme.colors.text.secondary,
     letterSpacing: theme.swiss.letterSpacing.wide,
     marginBottom: theme.spacing[4],
   },
-  categoryProgressRow: {
+  categoryRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: theme.spacing[3],
+    paddingVertical: theme.spacing[4],
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.light,
   },
-  categoryProgressRowNext: {
+  categoryRowNext: {
     backgroundColor: theme.colors.neutral[50],
     borderLeftWidth: 3,
     borderLeftColor: theme.colors.text.primary,
-    paddingLeft: theme.spacing[2],
-    marginLeft: -theme.spacing[2],
+    paddingLeft: theme.spacing[3],
+    marginLeft: -theme.spacing[3],
   },
-  nextBadgeSmall: {
-    backgroundColor: theme.colors.text.primary,
-    paddingHorizontal: theme.spacing[2],
-    paddingVertical: 2,
-    marginRight: theme.spacing[2],
-  },
-  nextBadgeTextSmall: {
-    fontSize: 10,
-    fontWeight: theme.swiss.fontWeight.bold,
-    color: theme.colors.text.inverse,
-    letterSpacing: theme.swiss.letterSpacing.wide,
-  },
-  categoryProgressLabel: {
-    flex: 1,
-    fontSize: theme.swiss.fontSize.body,
-    fontWeight: theme.swiss.fontWeight.medium,
-    color: theme.colors.text.primary,
-  },
-  categoryProgressLabelDone: {
-    color: theme.colors.text.secondary,
-  },
-  categoryProgressMeta: {
+  categoryRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: theme.spacing[2],
-    gap: theme.spacing[2],
+    flex: 1,
   },
-  categoryProgressCount: {
-    fontSize: theme.swiss.fontSize.small,
+  categoryRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing[3],
+  },
+  categoryLabel: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+  },
+  categoryLabelDone: {
+    color: theme.colors.text.secondary,
+  },
+  categoryCount: {
+    fontSize: theme.swiss.fontSize.label,
     fontWeight: theme.swiss.fontWeight.medium,
     color: theme.colors.text.secondary,
   },
-  categoryProgressCountDone: {
+  categoryCountDone: {
     color: theme.colors.text.disabled,
   },
-  categoryProgressBar: {
-    width: 40,
+  progressIndicator: {
+    width: 50,
     height: 4,
-    backgroundColor: theme.colors.neutral[200],
+    backgroundColor: theme.colors.border.light,
   },
-  categoryProgressFill: {
+  progressFill: {
     height: '100%',
-    backgroundColor: theme.colors.text.secondary,
+    backgroundColor: theme.colors.text.primary,
   },
 });

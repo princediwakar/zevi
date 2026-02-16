@@ -87,15 +87,15 @@ const QuickActionButton = ({
 export default function ProfileScreen() {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { user, loading: userLoading, reset: resetUser } = useUserStore();
-  const { signOut, isGuest, loading: authLoading } = useAuth();
+  const { signOut, loading: authLoading } = useAuth();
   const { progress, loading: progressLoading, fetchProgress } = useProgressStore();
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
     if (user?.id) {
-      await fetchProgress(user.id, isGuest);
+      await fetchProgress(user.id, false);
     }
-  }, [user?.id, isGuest, fetchProgress]);
+  }, [user?.id, fetchProgress]);
 
   useEffect(() => {
     loadData();
@@ -108,18 +108,13 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
-    const alertTitle = isGuest ? 'Clear Guest Data' : 'Sign Out';
-    const alertMessage = isGuest 
-      ? 'This will delete all your guest data and start fresh. Are you sure?' 
-      : 'Are you sure you want to sign out?';
-    
     Alert.alert(
-      alertTitle,
-      alertMessage,
+      'Sign Out',
+      'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: isGuest ? 'Clear Data' : 'Sign Out',
+          text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -197,11 +192,6 @@ export default function ProfileScreen() {
                 <SubscriptionBadge tier={user.subscription_tier} />
               </View>
               <Text style={styles.email}>{user.email}</Text>
-              {isGuest && (
-                <View style={styles.guestBadge}>
-                  <Text style={styles.guestText}>GUEST MODE</Text>
-                </View>
-              )}
             </View>
           </View>
 
@@ -281,19 +271,9 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>ACCOUNT</Text>
           <View style={styles.actionsCard}>
-            {isGuest && (
-              <>
-                <QuickActionButton
-                  code="NEW"
-                  label="Create Account"
-                  onPress={() => navigation.navigate('Auth' as any)}
-                />
-                <View style={styles.actionDivider} />
-              </>
-            )}
             <QuickActionButton
-              code={isGuest ? 'CLR' : 'OUT'}
-              label={isGuest ? 'Clear Guest Data' : 'Sign Out'}
+              code="OUT"
+              label="Sign Out"
               variant="danger"
               onPress={handleLogout}
             />
