@@ -255,14 +255,6 @@ function PathListSection({ onPathPress }: { onPathPress: (cat: QuestionCategory)
       };
     });
     
-    // Sort: incomplete first (by least completed), then completed (by most total)
-    progressData.sort((a, b) => {
-      if (a.completed < a.total && b.completed >= b.total) return -1;
-      if (b.completed < b.total && a.completed >= a.total) return 1;
-      if (a.completed < a.total && b.completed < b.total) return a.completed - b.completed;
-      return b.total - a.total;
-    });
-    
     return progressData;
   }, [units, progress]);
 

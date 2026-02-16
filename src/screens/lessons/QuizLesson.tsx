@@ -24,13 +24,22 @@ interface QuizLessonProps {
 const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) => {
   const content = lesson.content.quiz_content as QuizContent;
 
+  // Guard against missing or empty content
+  if (!content || !content.questions || content.questions.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>No quiz questions available</Text>
+      </View>
+    );
+  }
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>(Array(content.questions.length).fill(-1));
   const [showResults, setShowResults] = useState(false);
   const [score, setScore] = useState(0);
   const [submitted, setSubmitted] = useState(false);
 
-  const currentQuestion: QuizQuestion = content.questions[currentQuestionIndex];
+  const currentQuestion: QuizQuestion = content.questions[currentQuestionIndex] || content.questions[0];
 
   const handleAnswerSelect = (answerIndex: number) => {
     if (showResults || submitted) return;
@@ -266,6 +275,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  errorText: {
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    padding: theme.swiss.layout.screenPadding,
   },
   
   // Header - Swiss bordered
