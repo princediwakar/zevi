@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { logger } from '../utils/logger';
 import {
   View,
@@ -16,7 +16,6 @@ import { useQuestionsStore } from '../stores/questionsStore';
 import { usePracticeStore } from '../stores/practiceStore';
 import { useAuth } from '../hooks/useAuth';
 import { Question } from '../types';
-import * as practiceService from '../services/practiceService';
 import { theme } from '../theme';
 
 type QuestionDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'QuestionDetail'>;
@@ -39,8 +38,7 @@ export default function QuestionDetailScreen() {
   const [relatedQuestions, setRelatedQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(!question);
   const [showHint, setShowHint] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [checkingCompletion, setCheckingCompletion] = useState(true);
+  const [showAnswer, setShowAnswer] = useState(false);
 
   const loadData = useCallback(async () => {
       if (!questionId) return;
@@ -57,21 +55,8 @@ export default function QuestionDetailScreen() {
           const related = await getRelatedQuestions(currentQuestion.id, currentQuestion.category);
           setRelatedQuestions(related);
 
-          const userId = user?.id;
-          if (userId) {
-              try {
-                  setCheckingCompletion(true);
-                  const sessions = await practiceService.getQuestionSessions(userId, currentQuestion.id);
-                  const completedFn = sessions.some(s => s.completed);
-                  setIsCompleted(completedFn);
-              } catch (e) {
-                  logger.error("Failed to check completion", e);
-              } finally {
-                  setCheckingCompletion(false);
-              }
-          }
       }
-  }, [questionId, user, getQuestionById, getRelatedQuestions]);
+  }, [questionId, getQuestionById, getRelatedQuestions]);
 
   useFocusEffect(
     useCallback(() => {
@@ -203,20 +188,27 @@ export default function QuestionDetailScreen() {
 
         {/* Expert Answer */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>ANSWER</Text>
-          
-          {isCompleted || checkingCompletion ? (
-            question.expert_answer ? (
-              <View style={styles.answerBox}>
-                <Text style={styles.answerText}>{question.expert_answer}</Text>
+          {showAnswer ? (
+            <View style={styles.answerBox}>
+              <View style={styles.answerHeader}>
+                <Text style={styles.sectionLabel}>SAMPLE ANSWER</Text>
+                <TouchableOpacity onPress={() => setShowAnswer(false)}>
+                  <Text style={styles.hintHide}>HIDE</Text>
+                </TouchableOpacity>
               </View>
-            ) : (
-              <Text style={styles.noAnswer}>No answer available</Text>
-            )
-          ) : (
-            <View style={styles.lockedBox}>
-              <Text style={styles.lockedText}>COMPLETE TO UNLOCK</Text>
+              {question.expert_answer ? (
+                <Text style={styles.answerText}>{question.expert_answer}</Text>
+              ) : (
+                <Text style={styles.noAnswer}>No answer available</Text>
+              )}
             </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.showHintButton}
+              onPress={() => setShowAnswer(true)}
+            >
+              <Text style={styles.showHintText}>SHOW SAMPLE ANSWER</Text>
+            </TouchableOpacity>
           )}
         </View>
 
@@ -417,6 +409,11 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.text.primary,
     padding: theme.spacing[4],
   },
+  answerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing[3],
+  },
   answerText: {
     fontSize: theme.typography.body.md.fontSize,
     color: theme.colors.text.primary,
@@ -426,20 +423,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.body.md.fontSize,
     color: theme.colors.text.disabled,
     fontStyle: 'italic',
-  },
-  
-  // Locked box
-  lockedBox: {
-    borderWidth: theme.swiss.border.light,
-    borderColor: theme.colors.border.light,
-    padding: theme.swiss.layout.sectionGap,
-    alignItems: 'center',
-  },
-  lockedText: {
-    fontSize: theme.swiss.fontSize.label,
-    fontWeight: theme.swiss.fontWeight.semibold,
-    color: theme.colors.text.disabled,
-    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   
   // Related questions
