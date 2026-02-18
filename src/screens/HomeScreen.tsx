@@ -248,9 +248,9 @@ const styles = StyleSheet.create({
   questionCard: {
     borderWidth: theme.swiss.border.standard,
     borderColor: theme.colors.text.primary,
-    padding: theme.swiss.layout.sectionGap,
+    padding: theme.spacing[5],
     marginBottom: theme.swiss.layout.elementGap,
-    minHeight: 150,
+    minHeight: 130,
     justifyContent: 'center',
   },
   questionText: {

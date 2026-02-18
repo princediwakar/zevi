@@ -393,11 +393,11 @@ const styles = StyleSheet.create({
   lessonCard: {
     borderWidth: theme.swiss.border.standard,
     borderColor: theme.colors.text.primary,
-    padding: theme.swiss.layout.sectionGap,
+    padding: theme.spacing[5],
     marginBottom: theme.swiss.layout.elementGap,
   },
   lessonName: {
-    fontSize: theme.swiss.fontSize.heading,
+    fontSize: 22,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
     lineHeight: 30,
