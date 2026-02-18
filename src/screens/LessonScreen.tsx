@@ -70,13 +70,59 @@ export default function LessonScreen() {
     return null;
   };
 
-  const handleLessonComplete = async (xpEarned: number) => {
+  const handleLessonComplete = async (xpEarned: number, scorePercent?: number) => {
     setEarnedXp(xpEarned);
     
     if (lesson && userId) {
       try {
         // Mark the lesson as completed and advance to next lesson
         await useProgressStore.getState().completeCurrentLesson(userId, lesson.id);
+
+        // ── Mastery updates ──────────────────────────────────────────────────
+        // Read current mastery scores from the store (already populated by fetchProgress)
+        const { frameworkMastery, patternMastery, updateFrameworkMastery, updatePatternMastery } =
+          useProgressStore.getState();
+
+        const type = lesson.type;
+        const frameworkName: string | undefined = lesson.content?.framework_name;
+        const patternName: string | undefined =
+          lesson.content?.pattern_content?.pattern_name;
+
+        if (type === 'drill' || type === 'learn') {
+          if (frameworkName) {
+            const current = frameworkMastery[frameworkName] ?? 0;
+            const increment = type === 'drill' ? 25 : 10;
+            await updateFrameworkMastery(userId, frameworkName, Math.min(current + increment, 100));
+          }
+        } else if (type === 'pattern') {
+          if (patternName) {
+            const current = patternMastery[patternName] ?? 0;
+            await updatePatternMastery(userId, patternName, Math.min(current + 25, 100));
+          }
+        } else if (type === 'full_practice') {
+          const fpFramework = lesson.content?.full_practice_content?.framework_name ?? frameworkName;
+          if (fpFramework) {
+            const current = frameworkMastery[fpFramework] ?? 0;
+            // Use AI-scored value if provided, otherwise +20
+            const newScore = scorePercent !== undefined
+              ? Math.round(scorePercent)
+              : Math.min(current + 20, 100);
+            await updateFrameworkMastery(userId, fpFramework, Math.max(newScore, current));
+          }
+        } else if (type === 'quiz') {
+          if (frameworkName && scorePercent !== undefined) {
+            const current = frameworkMastery[frameworkName] ?? 0;
+            const quizScore = Math.round(scorePercent);
+            // Take the better of current score or quiz result
+            await updateFrameworkMastery(userId, frameworkName, Math.max(quizScore, current));
+          }
+          if (patternName && scorePercent !== undefined) {
+            const current = patternMastery[patternName] ?? 0;
+            const quizScore = Math.round(scorePercent);
+            await updatePatternMastery(userId, patternName, Math.max(quizScore, current));
+          }
+        }
+        // ────────────────────────────────────────────────────────────────────
       } catch (error) {
         console.error('Error updating progress:', error);
       }
@@ -265,7 +311,11 @@ export default function LessonScreen() {
         return (
           <FullPracticeLesson
             content={lesson.content.full_practice_content!}
-            onComplete={(xp) => handleLessonComplete(xp)}
+            onComplete={(xp, answerData) => {
+              const aiScore: number | undefined = answerData?.aiFeedback?.score;
+              const scorePercent = aiScore !== undefined ? (aiScore / 10) * 100 : undefined;
+              handleLessonComplete(xp, scorePercent);
+            }}
             onError={handleLessonError}
           />
         );
@@ -273,7 +323,10 @@ export default function LessonScreen() {
         return (
           <QuizLesson
             lesson={lesson}
-            onComplete={(score, xp) => handleLessonComplete(xp)}
+            onComplete={(score, xp) => {
+              const totalQ = lesson.content.quiz_content?.questions?.length || 1;
+              handleLessonComplete(xp, Math.round((score / totalQ) * 100));
+            }}
             onError={handleLessonError}
           />
         );
@@ -282,7 +335,11 @@ export default function LessonScreen() {
           return (
             <FullPracticeLesson
               content={lesson.content.full_practice_content!}
-              onComplete={(xp) => handleLessonComplete(xp)}
+              onComplete={(xp, answerData) => {
+                const aiScore: number | undefined = answerData?.aiFeedback?.score;
+                const scorePercent = aiScore !== undefined ? (aiScore / 10) * 100 : undefined;
+                handleLessonComplete(xp, scorePercent);
+              }}
               onError={handleLessonError}
             />
           );

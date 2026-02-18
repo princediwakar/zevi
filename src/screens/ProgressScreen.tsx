@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useProgressStore } from '../stores/progressStore';
+import { useLearningPathStore } from '../stores/learningPathStore';
 import { useAuth } from '../hooks/useAuth';
 import { theme } from '../theme';
 import { QUESTION_CATEGORIES } from '../types';
@@ -164,10 +165,14 @@ const PatternMasterySection = ({
 };
 
 // Category readiness section - Swiss bordered boxes
-const CategoryReadinessSection = ({ 
-    categoryProgress 
-}: { 
-    categoryProgress: Record<string, number>;
+// Readiness is based on lesson completion (completed / total lessons in that category),
+// NOT raw question counts, so it can't be inflated by doing MCQs.
+const CategoryReadinessSection = ({
+    completedLessons,
+    units,
+}: {
+    completedLessons: string[];
+    units: any[];
 }) => {
     const categoryInfo: Record<string, { name: string; code: string }> = {
         product_sense: { name: 'Product Sense', code: 'PS' },
@@ -180,9 +185,22 @@ const CategoryReadinessSection = ({
         ab_testing: { name: 'A/B Testing', code: 'AB' },
     };
 
-    const getCategoryReadiness = (category: string) => {
-        const count = categoryProgress[category] || 0;
-        return Math.min(Math.round((count / 10) * 100), 100);
+    // Build a map: category → all lesson IDs in that category (from learning path units)
+    const getCategoryLessons = (category: string): string[] => {
+        return units
+            .filter((u: any) => u.pathCategory === category)
+            .flatMap((u: any) => (u.lessons || []).map((l: any) => l.id));
+    };
+
+    const getCategoryReadiness = (category: string): { readiness: number; completed: number; total: number } => {
+        const lessonIds = getCategoryLessons(category);
+        const total = lessonIds.length;
+        if (total === 0) {
+            // Fallback: no curriculum data loaded for this category yet
+            return { readiness: 0, completed: 0, total: 0 };
+        }
+        const completed = lessonIds.filter(id => completedLessons.includes(id)).length;
+        return { readiness: Math.round((completed / total) * 100), completed, total };
     };
 
     const categories = QUESTION_CATEGORIES;
@@ -190,12 +208,12 @@ const CategoryReadinessSection = ({
     return (
         <View style={styles.section}>
             <Text style={styles.sectionLabel}>CATEGORY READINESS</Text>
-            
+
             <View style={styles.masteryCard}>
                 {categories.map(category => {
                     const info = categoryInfo[category] || { name: category, code: 'XX' };
-                    const readiness = getCategoryReadiness(category);
-                    
+                    const { readiness, completed, total } = getCategoryReadiness(category);
+
                     return (
                         <View key={category} style={styles.masteryItem}>
                             <View style={styles.masteryHeader}>
@@ -203,19 +221,21 @@ const CategoryReadinessSection = ({
                                     <Text style={styles.categoryCode}>{info.code}</Text>
                                 </View>
                                 <Text style={styles.categoryName}>{info.name}</Text>
-                                <Text style={styles.categoryCount}>
-                                    {categoryProgress[category] || 0}
-                                </Text>
+                                {total > 0 && (
+                                    <Text style={styles.categoryCount}>
+                                        {completed}/{total}
+                                    </Text>
+                                )}
                                 <Text style={[styles.masteryPercent, { color: getMasteryColor(readiness) }]}>
                                     {readiness}%
                                 </Text>
                             </View>
                             <View style={styles.masteryBarBg}>
-                                <View 
+                                <View
                                     style={[
-                                        styles.masteryBarFill, 
+                                        styles.masteryBarFill,
                                         { width: `${readiness}%`, backgroundColor: getMasteryColor(readiness) }
-                                    ]} 
+                                    ]}
                                 />
                             </View>
                         </View>
@@ -243,6 +263,8 @@ export default function ProgressScreen() {
     readinessScore,
     resetProgress,
   } = useProgressStore();
+  // Units are needed to compute per-category lesson readiness
+  const { units, fetchPath } = useLearningPathStore();
   const [refreshing, setRefreshing] = useState(false);
 
   // Reset and reload whenever the logged-in user changes
@@ -259,16 +281,19 @@ export default function ProgressScreen() {
         // fetchProgress already populates frameworkMastery, patternMastery,
         // readinessScore, and category_progress — no need to call fetchMastery
         // or getCategoryProgress separately.
+        // fetchPath (without args) loads ALL learning paths + their units/lessons,
+        // which is needed to compute per-category lesson readiness.
         await Promise.all([
           fetchProgress(userId),
           fetchHistory(userId),
           fetchActivity(userId),
+          units.length === 0 ? fetchPath() : Promise.resolve(),
         ]);
       } catch (err) {
         console.error('Error loading progress data:', err);
       }
     }
-  }, [user?.id, fetchProgress, fetchHistory, fetchActivity]);
+  }, [user?.id, fetchProgress, fetchHistory, fetchActivity, fetchPath, units.length]);
 
   useEffect(() => {
     loadData();
@@ -285,9 +310,8 @@ export default function ProgressScreen() {
   // Prefer the dedicated readinessScore from the store (set by fetchProgress),
   // fallback to the value nested inside the progress object.
   const displayReadiness = readinessScore || progress?.readiness_score || 0;
-  // Use category_progress directly from the already-fetched progress object
-  const categoryStats: Record<string, number> =
-    (progress?.category_progress as Record<string, number>) || {};
+  // Completed lesson IDs — used by CategoryReadinessSection
+  const completedLessons: string[] = progress?.completed_lessons || [];
 
   const calculateDaysToReadiness = () => {
     const questionsToGo = Math.max(0, 50 - totalCompleted);
@@ -442,8 +466,11 @@ export default function ProgressScreen() {
         {/* Heavy separator */}
         <View style={styles.separator} />
 
-        {/* Category Readiness Section */}
-        <CategoryReadinessSection categoryProgress={categoryStats} />
+        {/* Category Readiness Section — lesson-completion-based */}
+        <CategoryReadinessSection
+          completedLessons={completedLessons}
+          units={units}
+        />
 
         {/* Heavy separator */}
         <View style={styles.separator} />
