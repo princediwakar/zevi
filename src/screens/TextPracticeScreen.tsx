@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Text,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
@@ -32,6 +33,7 @@ export default function TextPracticeScreen() {
   const navigation = useNavigation<TextPracticeScreenNavigationProp>();
   const route = useRoute<TextPracticeScreenRouteProp>();
   const { questionId } = route.params;
+  const insets = useSafeAreaInsets();
 
   const { getQuestionById } = useQuestionsStore();
   const {
@@ -157,18 +159,19 @@ export default function TextPracticeScreen() {
 
       if (feedbackError) {
         console.error('Feedback generation error:', feedbackError);
-        resetPractice();
+        // Don't resetPractice() here — QuizResultsScreen reads feedback from store
         navigation.navigate('QuizResults');
         return;
       }
 
       await updateAfterCompletion(userId, 'text', question.category);
 
-      resetPractice();
+      // Don't resetPractice() here — QuizResultsScreen reads feedback/mode from store
+      // and calls resetPractice() on exit (handleContinue / handleTryAgain / handleGoHome)
       navigation.navigate('QuizResults');
     } catch (err) {
       console.error('Error generating feedback:', err);
-      resetPractice();
+      // Don't resetPractice() here either
       navigation.navigate('QuizResults');
     }
   };
@@ -205,7 +208,7 @@ export default function TextPracticeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.colors.border.light }]}>
+      <View style={[styles.header, { borderBottomColor: theme.colors.border.light, paddingTop: insets.top + theme.spacing[4] }]}>
         <TouchableOpacity onPress={handleSaveDraft}>
           <Text style={[styles.headerButton, { color: theme.colors.text.primary }]}>SAVE</Text>
         </TouchableOpacity>
