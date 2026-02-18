@@ -41,7 +41,6 @@ const CARD_TYPE_CONFIG: Record<LearnCardType, {
 
 export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) {
   const [currentCard, setCurrentCard] = useState(0);
-  const [revealedSections, setRevealedSections] = useState<Record<number, number>>({});
   const [sectionExercises, setSectionExercises] = useState<Record<string, {
     answered: boolean;
     correct: boolean;
@@ -122,14 +121,6 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
   }, [currentCardData]);
 
   const sections = getSections();
-  const revealedCount = revealedSections[currentCard] ?? 0;
-
-  const handleRevealSection = () => {
-    setRevealedSections(prev => ({
-      ...prev,
-      [currentCard]: (prev[currentCard] || 0) + 1,
-    }));
-  };
 
   const handleSectionExerciseAnswer = (sectionId: string, answer: number | string) => {
     const section = sections.find(s => s.id === sectionId);
@@ -159,7 +150,6 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
     }
 
     setCurrentCard(currentCard + 1);
-    setRevealedSections(prev => ({ ...prev, [currentCard + 1]: 0 }));
   };
 
   const handlePrevious = () => {
@@ -173,26 +163,7 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
   };
 
   const renderSection = (section: LearnSection, index: number) => {
-    const isRevealed = index <= revealedCount;
     const exerciseState = sectionExercises[section.id];
-
-    if (!isRevealed) {
-      if (index === revealedCount + 1 && index < sections.length) {
-        return (
-          <TouchableOpacity
-            key={section.id}
-            style={styles.revealMoreButton}
-            onPress={handleRevealSection}
-            activeOpacity={0.8}
-          >
-            <View style={styles.revealMoreContent}>
-              <Text style={styles.revealMoreText}>+ LEARN MORE</Text>
-            </View>
-          </TouchableOpacity>
-        );
-      }
-      return null;
-    }
 
     if (section.type === 'exercise' && section.exercise) {
       return (
@@ -298,23 +269,12 @@ export function LearnLesson({ content, onComplete, onError }: LearnLessonProps) 
         {/* Card Title */}
         <Text style={styles.cardTitle}>{currentCardData.title}</Text>
 
-        {/* Progressive Disclosure Sections */}
+        {/* All Sections - shown at once */}
         <View style={styles.sectionsContainer}>
-          {sections.slice(0, revealedCount + 1).map((section, index) =>
+          {sections.map((section, index) =>
             renderSection(section, index)
           )}
         </View>
-
-        {/* Show reveal button if there are more sections */}
-        {revealedCount < sections.length - 1 && (
-          <TouchableOpacity
-            style={styles.learnMoreButton}
-            onPress={handleRevealSection}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.learnMoreText}>+ LEARN MORE</Text>
-          </TouchableOpacity>
-        )}
       </Animated.View>
     );
   };
