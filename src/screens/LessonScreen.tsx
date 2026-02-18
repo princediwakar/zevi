@@ -41,15 +41,36 @@ export default function LessonScreen() {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [earnedXp, setEarnedXp] = useState(0);
 
-  const { units } = useLearningPathStore();
+  const { units, getNextLessonInPath } = useLearningPathStore();
   const { progress, readinessScore } = useProgressStore();
   const userId = user?.id;
 
+  // Find the unit and path for a lesson
+  const findLessonPath = (targetLessonId: string) => {
+    if (!units || units.length === 0) return null;
+
+    for (const unit of units) {
+      const lessons = unit.lessons || [];
+      if (lessons.some((l: any) => l.id === targetLessonId)) {
+        return unit.learning_path_id;
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (lessonId && units && units.length > 0) {
-      const allLessons = units.flatMap((u: any) => (u.lessons ? u.lessons : []));
-      const lessonData = allLessons.find((l: any) => l.id === lessonId);
-      setLesson(lessonData || null);
+      // Find lesson within its unit to preserve unit context
+      let foundLesson: Lesson | null = null;
+      for (const unit of units) {
+        const lessons = unit.lessons || [];
+        const lessonData = lessons.find((l: any) => l.id === lessonId);
+        if (lessonData) {
+          foundLesson = lessonData;
+          break;
+        }
+      }
+      setLesson(foundLesson);
       setLoading(false);
     } else if (lessonId) {
       // Units not loaded yet - keep loading
@@ -57,17 +78,16 @@ export default function LessonScreen() {
     }
   }, [lessonId, units]);
 
-  // Find next lesson in the path
+  // Find next lesson in the SAME learning path
   const getNextLesson = () => {
-    if (!lesson || !units || units.length === 0) return null;
-    
-    const allLessons = units.flatMap((u: any) => (u.lessons ? u.lessons : []));
-    const currentIndex = allLessons.findIndex((l: any) => l.id === lesson.id);
-    
-    if (currentIndex >= 0 && currentIndex < allLessons.length - 1) {
-      return allLessons[currentIndex + 1];
-    }
-    return null;
+    if (!lesson) return null;
+
+    // Find which learning path this lesson belongs to
+    const pathId = findLessonPath(lesson.id);
+    if (!pathId) return null;
+
+    // Use the store helper to get the next lesson within this path
+    return getNextLessonInPath(lesson.id, pathId);
   };
 
   const handleLessonComplete = async (xpEarned: number, scorePercent?: number) => {
@@ -419,21 +439,13 @@ export default function LessonScreen() {
   // Main render - Swiss Style header
   return (
     <View style={styles.container}>
-      {/* Swiss Header - bold bar */}
+      {/* Swiss Header - compact bar */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← BACK</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.headerContent}>
-          {/* Code box - bordered */}
-          <View style={styles.codeBox}>
-            <Text style={styles.codeText}>{lessonTypeInfo.code}</Text>
-          </View>
-          
-          <Text style={styles.headerTitle}>{lesson.name}</Text>
-          
-          {/* Meta row - bordered boxes */}
+        {/* Top row: back + meta pills */}
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← BACK</Text>
+          </TouchableOpacity>
           <View style={styles.metaRow}>
             <View style={styles.metaBox}>
               <Text style={styles.metaText}>{lessonTypeInfo.label}</Text>
@@ -446,6 +458,8 @@ export default function LessonScreen() {
             </View>
           </View>
         </View>
+
+        <Text style={styles.headerTitle}>{lesson.name}</Text>
       </View>
 
       {/* Lesson Content */}
@@ -464,18 +478,23 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   
-  // Header - Swiss bold bar
+  // Header - compact bar
   header: {
     paddingTop: theme.swiss.layout.headerPaddingTop,
     paddingHorizontal: theme.swiss.layout.screenPadding,
-    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    paddingBottom: theme.swiss.layout.elementGap,
     borderBottomWidth: theme.swiss.border.heavy,
     borderBottomColor: theme.colors.text.primary,
     backgroundColor: theme.colors.background,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing[2],
+  },
   backButton: {
     alignSelf: 'flex-start',
-    marginBottom: theme.spacing[2],
   },
   backButtonText: {
     fontSize: theme.swiss.fontSize.label,
@@ -501,11 +520,10 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
   },
   headerTitle: {
-    fontSize: theme.swiss.fontSize.heading,
+    fontSize: theme.swiss.fontSize.body,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
-    textAlign: 'center',
-    marginBottom: theme.spacing[2],
+    textAlign: 'left',
   },
   metaRow: {
     flexDirection: 'row',

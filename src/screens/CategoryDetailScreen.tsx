@@ -114,15 +114,18 @@ export default function CategoryDetailScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header - Swiss bordered */}
+      {/* Header - Swiss bordered, compact */}
       <View style={[styles.header, { backgroundColor: theme.colors.text.primary }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← BACK</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.categoryCodeContainer}>
-          <Text style={styles.categoryCode}>{info.code}</Text>
+        {/* Top row: back + code badge */}
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backText}>← BACK</Text>
+          </TouchableOpacity>
+          <View style={styles.categoryCodeBadge}>
+            <Text style={styles.categoryCode}>{info.code}</Text>
+          </View>
         </View>
+
         <Text style={styles.categoryTitle}>{info.label}</Text>
         <Text style={styles.categoryDescription}>{info.description}</Text>
         
@@ -247,49 +250,50 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   
-  // Header - Swiss bordered
+  // Header - Swiss bordered, compact
   header: {
     paddingTop: theme.swiss.layout.headerPaddingTop,
-    paddingBottom: theme.swiss.layout.sectionGap,
+    paddingBottom: theme.swiss.layout.elementGap,
     paddingHorizontal: theme.swiss.layout.screenPadding,
   },
-  backButton: {
-    marginBottom: theme.spacing[4],
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing[3],
   },
+  backButton: {},
   backText: {
     color: theme.colors.text.inverse,
     fontSize: theme.swiss.fontSize.label,
     fontWeight: theme.swiss.fontWeight.medium,
     letterSpacing: theme.swiss.letterSpacing.normal,
   },
-  categoryCodeContainer: {
-    width: 80,
-    height: 80,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: theme.spacing[3],
-    borderWidth: theme.swiss.border.heavy,
+  categoryCodeBadge: {
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[1],
+    borderWidth: theme.swiss.border.standard,
     borderColor: 'rgba(255,255,255,0.4)',
   },
   categoryCode: {
     color: theme.colors.text.inverse,
-    fontSize: 28,
+    fontSize: theme.swiss.fontSize.label,
     fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   categoryTitle: {
     color: theme.colors.text.inverse,
     fontSize: theme.swiss.fontSize.heading,
     fontWeight: theme.swiss.fontWeight.bold,
-    marginBottom: theme.spacing[2],
+    marginBottom: theme.spacing[1],
   },
   categoryDescription: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: theme.typography.body.md.fontSize,
-    marginBottom: theme.spacing[4],
+    fontSize: theme.swiss.fontSize.label,
+    marginBottom: theme.spacing[3],
   },
   progressContainer: {
-    marginTop: theme.spacing[2],
+    marginTop: 0,
   },
   progressBar: {
     height: 4,
