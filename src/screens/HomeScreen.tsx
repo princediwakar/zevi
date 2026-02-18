@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useRef } from 'react';
-import { View, StyleSheet, RefreshControl, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, RefreshControl, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
@@ -98,7 +98,13 @@ export default function HomeScreen() {
     }
   };
 
+  // Show skeleton during initial data load to prevent UI shifts
   if (isLoading) {
+    return <HomeScreenSkeleton />;
+  }
+
+  // Show skeleton while loading question to prevent layout shifts
+  if (loadingQuestion) {
     return <HomeScreenSkeleton />;
   }
 
@@ -149,11 +155,10 @@ export default function HomeScreen() {
       {/* Top bar - Swiss grid */}
       <View style={styles.topBar}>
         <Text style={styles.brand}>ZEVI</Text>
-        {streak > 0 && (
-          <View style={styles.streakBox}>
-            <Text style={styles.streakBoxText}>{streak}</Text>
-          </View>
-        )}
+        {/* Always reserve space for streak to prevent layout shift */}
+        <View style={[styles.streakBox, streak === 0 && styles.streakBoxHidden]}>
+          <Text style={styles.streakBoxText}>{streak > 0 ? streak : ''}</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -175,9 +180,7 @@ export default function HomeScreen() {
           
           {/* Question card - bordered */}
           <View style={styles.questionCard}>
-            {loadingQuestion ? (
-              <ActivityIndicator size="large" color={theme.colors.text.primary} />
-            ) : todaysQuestion ? (
+            {todaysQuestion ? (
               <Text style={styles.questionText}>
                 {todaysQuestion.question_text}
               </Text>
@@ -186,24 +189,24 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {/* Minimal metadata - bordered boxes */}
-          {todaysQuestion && (
-            <View style={styles.metaRow}>
-              <View style={styles.metaBox}>
-                <Text style={styles.metaText}>
-                  {todaysQuestion.category.replace('_', ' ')}
-                </Text>
-              </View>
-              <View style={styles.metaBox}>
-                <Text style={styles.metaText}>{todaysQuestion.difficulty}</Text>
-              </View>
-              {todaysQuestion.company && (
-                <View style={styles.metaBox}>
-                  <Text style={styles.metaText}>{todaysQuestion.company}</Text>
-                </View>
-              )}
+          {/* Minimal metadata - bordered boxes - always render to prevent shifts */}
+          <View style={styles.metaRow}>
+            <View style={[styles.metaBox, !todaysQuestion && styles.metaBoxEmpty]}>
+              <Text style={styles.metaText}>
+                {todaysQuestion ? todaysQuestion.category.replace('_', ' ') : ''}
+              </Text>
             </View>
-          )}
+            <View style={[styles.metaBox, !todaysQuestion && styles.metaBoxEmpty]}>
+              <Text style={styles.metaText}>
+                {todaysQuestion ? todaysQuestion.difficulty : ''}
+              </Text>
+            </View>
+            <View style={[styles.metaBox, !todaysQuestion && styles.metaBoxEmpty, !todaysQuestion?.company && styles.metaBoxHidden]}>
+              <Text style={styles.metaText}>
+                {todaysQuestion?.company || ''}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* START - Large bordered button */}
@@ -257,6 +260,9 @@ const styles = StyleSheet.create({
     fontSize: theme.swiss.fontSize.label,
     fontWeight: theme.swiss.fontWeight.semibold,
     color: theme.colors.text.primary,
+  },
+  streakBoxHidden: {
+    borderColor: 'transparent',
   },
   
   // Scroll View
@@ -327,7 +333,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: theme.swiss.letterSpacing.normal,
   },
-  
+  metaBoxEmpty: {
+    borderColor: theme.colors.border.light,
+  },
+  metaBoxHidden: {
+    opacity: 0,
+  },
+
   // START Button - bordered, sharp
   startButton: {
     borderWidth: theme.swiss.border.heavy,

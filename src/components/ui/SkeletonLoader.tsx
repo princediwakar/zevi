@@ -17,42 +17,95 @@ interface SkeletonLoaderProps {
  */
 export function HomeScreenSkeleton() {
   return (
-    <View style={styles.container}>
-      {/* Header Skeleton */}
-      <View style={styles.header}>
-        <Skeleton width="40%" height={14} borderRadius={4} />
-        <Skeleton width="70%" height={28} borderRadius={4} style={{ marginTop: 8 }} />
+    <View style={styles.homeContainer}>
+      {/* Top bar - Swiss grid */}
+      <View style={styles.homeTopBar}>
+        <Skeleton width={60} height={20} borderRadius={0} />
+        <Skeleton width={40} height={32} borderRadius={0} />
       </View>
 
-      {/* Stats Grid Skeleton */}
-      <View style={styles.statsGrid}>
-        <View style={styles.statBox}>
-          <Skeleton width="30%" height={24} borderRadius={4} />
-          <Skeleton width="50%" height={10} borderRadius={4} style={{ marginTop: 4 }} />
+      <View style={styles.homeContent}>
+        {/* TODAY'S QUESTION Section */}
+        <View style={styles.homeQuestionSection}>
+          <Skeleton width={140} height={14} borderRadius={0} style={{ marginBottom: 16 }} />
+          
+          {/* Question card - bordered */}
+          <View style={styles.homeQuestionCard}>
+            <Skeleton width="90%" height={28} borderRadius={0} style={{ marginBottom: 8 }} />
+            <Skeleton width="70%" height={28} borderRadius={0} />
+          </View>
+
+          {/* Meta row skeleton */}
+          <View style={styles.homeMetaRow}>
+            <Skeleton width={100} height={32} borderRadius={0} />
+            <Skeleton width={80} height={32} borderRadius={0} />
+            <Skeleton width={90} height={32} borderRadius={0} />
+          </View>
         </View>
-        <View style={styles.statBox}>
-          <Skeleton width="30%" height={24} borderRadius={4} />
-          <Skeleton width="50%" height={10} borderRadius={4} style={{ marginTop: 4 }} />
-        </View>
-        <View style={styles.statBox}>
-          <Skeleton width="30%" height={24} borderRadius={4} />
-          <Skeleton width="50%" height={10} borderRadius={4} style={{ marginTop: 4 }} />
+
+        {/* START Button skeleton */}
+        <Skeleton width="100%" height={56} borderRadius={0} style={{ marginBottom: 24 }} />
+
+        {/* Category List Section skeleton */}
+        <Skeleton width={180} height={14} borderRadius={0} style={{ marginBottom: 16 }} />
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <View key={i} style={styles.homeCategoryRow}>
+            <Skeleton width={120} height={20} borderRadius={0} />
+            <Skeleton width={50} height={16} borderRadius={0} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Learn Screen Skeleton - matches LearnScreen layout
+ */
+export function LearnScreenSkeleton() {
+  return (
+    <View style={styles.learnContainer}>
+      {/* Header - Swiss bold */}
+      <View style={styles.learnHeader}>
+        <Skeleton width={80} height={24} borderRadius={0} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Skeleton width={60} height={20} borderRadius={0} />
+          <Skeleton width={40} height={32} borderRadius={0} />
         </View>
       </View>
 
-      {/* Quick Actions Skeleton */}
-      <View style={styles.section}>
-        <Skeleton width="100%" height={80} borderRadius={0} />
-      </View>
+      <View style={styles.learnContent}>
+        {/* NEXT LESSON Section */}
+        <View style={styles.learnLessonSection}>
+          <Skeleton width={120} height={14} borderRadius={0} style={{ marginBottom: 16 }} />
+          
+          {/* Lesson card - stark bordered */}
+          <View style={styles.learnLessonCard}>
+            <Skeleton width="80%" height={28} borderRadius={0} style={{ marginBottom: 16 }} />
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <Skeleton width={60} height={18} borderRadius={0} />
+              <Skeleton width={60} height={18} borderRadius={0} />
+            </View>
+          </View>
 
-      {/* Practice Tracks Skeleton */}
-      <View style={styles.section}>
-        <Skeleton width="40%" height={12} borderRadius={4} />
-        <View style={styles.trackCards}>
-          <Skeleton width="100%" height={100} borderRadius={0} style={{ marginBottom: 12 }} />
-          <Skeleton width="100%" height={100} borderRadius={0} style={{ marginBottom: 12 }} />
-          <Skeleton width="100%" height={100} borderRadius={0} />
+          {/* START button skeleton */}
+          <Skeleton width="100%" height={56} borderRadius={0} />
         </View>
+
+        {/* Path List Section skeleton */}
+        <Skeleton width={200} height={14} borderRadius={0} style={{ marginBottom: 16 }} />
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <View key={i} style={styles.learnPathRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Skeleton width={40} height={40} borderRadius={0} style={{ marginRight: 12 }} />
+              <View style={{ flex: 1 }}>
+                <Skeleton width={120} height={20} borderRadius={0} style={{ marginBottom: 4 }} />
+                <Skeleton width="60%" height={14} borderRadius={0} />
+              </View>
+            </View>
+            <Skeleton width={50} height={16} borderRadius={0} />
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -216,5 +269,86 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface.primary,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border.light,
+  },
+  // Home Screen Skeleton Styles
+  homeContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  homeTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: theme.swiss?.layout?.headerPaddingTop || 60,
+    paddingHorizontal: theme.swiss?.layout?.screenPadding || 16,
+    paddingBottom: theme.swiss?.layout?.headerPaddingBottom || 12,
+    borderBottomWidth: 2,
+    borderBottomColor: theme.colors.text.primary,
+  },
+  homeContent: {
+    flex: 1,
+    paddingHorizontal: theme.swiss?.layout?.screenPadding || 16,
+    paddingTop: theme.swiss?.layout?.sectionGap || 24,
+  },
+  homeQuestionSection: {
+    marginBottom: theme.swiss?.layout?.elementGap || 16,
+  },
+  homeQuestionCard: {
+    borderWidth: 1,
+    borderColor: theme.colors.text.primary,
+    padding: theme.swiss?.layout?.sectionGap || 24,
+    marginBottom: theme.swiss?.layout?.elementGap || 16,
+    minHeight: 150,
+    justifyContent: 'center',
+  },
+  homeMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing[2],
+    marginBottom: theme.swiss?.layout?.sectionGap || 24,
+  },
+  homeCategoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: theme.spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
+  },
+  // Learn Screen Skeleton Styles
+  learnContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  learnHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: theme.swiss?.layout?.headerPaddingTop || 60,
+    paddingHorizontal: theme.swiss?.layout?.screenPadding || 16,
+    paddingBottom: theme.swiss?.layout?.headerPaddingBottom || 12,
+    borderBottomWidth: 2,
+    borderBottomColor: theme.colors.text.primary,
+  },
+  learnContent: {
+    flex: 1,
+    paddingHorizontal: theme.swiss?.layout?.screenPadding || 16,
+    paddingTop: theme.swiss?.layout?.sectionGap || 24,
+  },
+  learnLessonSection: {
+    marginBottom: theme.swiss?.layout?.elementGap || 16,
+  },
+  learnLessonCard: {
+    borderWidth: 1,
+    borderColor: theme.colors.text.primary,
+    padding: theme.swiss?.layout?.sectionGap || 24,
+    marginBottom: theme.swiss?.layout?.elementGap || 16,
+  },
+  learnPathRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: theme.spacing[4],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
   },
 });

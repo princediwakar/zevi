@@ -14,7 +14,7 @@ import { theme } from '../theme';
 import { useProgressStore } from '../stores/progressStore';
 import { useLearningPathStore } from '../stores/learningPathStore';
 import { useAuth } from '../hooks/useAuth';
-import { Spacer } from '../components';
+import { Spacer, LearnScreenSkeleton } from '../components';
 import { Lesson, QuestionCategory } from '../types';
 import { ArrowRight } from 'lucide-react-native';
 
@@ -104,6 +104,13 @@ export default function LearnScreen() {
   }, [userId, fetchPath, fetchProgress, fetchCurrentLesson, fetchWeakAreas]);
 
   const streak = progress?.current_streak || 0;
+  
+  // Show skeleton while loading initial data
+  const isLoading = !progress || !units;
+  
+  if (isLoading) {
+    return <LearnScreenSkeleton />;
+  }
 
   const handleStartLesson = () => {
     if (currentLesson && currentLesson.id) {
@@ -140,11 +147,10 @@ export default function LearnScreen() {
           <Text style={styles.headerCount}>
             {totalLessonsCompleted}/{totalLessons}
           </Text>
-          {streak > 0 && (
-            <View style={styles.streakBox}>
-              <Text style={styles.streakText}>{streak}</Text>
-            </View>
-          )}
+          {/* Always reserve space for streak to prevent layout shift */}
+          <View style={[styles.streakBox, streak === 0 && styles.streakBoxHidden]}>
+            <Text style={styles.streakText}>{streak > 0 ? streak : ''}</Text>
+          </View>
         </View>
       </View>
 
@@ -390,7 +396,10 @@ const styles = StyleSheet.create({
     fontWeight: theme.swiss.fontWeight.semibold,
     color: theme.colors.text.primary,
   },
-  
+  streakBoxHidden: {
+    borderColor: 'transparent',
+  },
+
   // Scroll View
   scrollView: {
     flex: 1,
