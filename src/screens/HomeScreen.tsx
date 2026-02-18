@@ -257,8 +257,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
-    lineHeight: 36,
-    letterSpacing: theme.swiss.letterSpacing.tight,
+    lineHeight: 30,
   },
   noQuestion: {
     fontSize: theme.swiss.fontSize.body,
