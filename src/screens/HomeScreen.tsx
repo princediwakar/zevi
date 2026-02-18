@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.text.primary,
   },
   brand: {
-    fontSize: theme.swiss.fontSize.heading,
+    fontSize: theme.swiss.fontSize.title,
     fontWeight: theme.swiss.fontWeight.black,
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,

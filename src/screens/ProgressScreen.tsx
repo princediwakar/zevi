@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useProgressStore } from '../stores/progressStore';
 import { useAuth } from '../hooks/useAuth';
@@ -238,32 +238,37 @@ export default function ProgressScreen() {
     fetchProgress, 
     fetchHistory, 
     fetchActivity, 
-    getCategoryProgress,
     frameworkMastery,
     patternMastery,
     readinessScore,
-    fetchMastery
+    resetProgress,
   } = useProgressStore();
-  const [categoryStats, setCategoryStats] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false);
+
+  // Reset and reload whenever the logged-in user changes
+  useEffect(() => {
+    if (!user?.id) {
+      resetProgress();
+    }
+  }, [user?.id]);
 
   const loadData = useCallback(async () => {
     const userId = user?.id;
     if (userId) {
       try {
+        // fetchProgress already populates frameworkMastery, patternMastery,
+        // readinessScore, and category_progress — no need to call fetchMastery
+        // or getCategoryProgress separately.
         await Promise.all([
           fetchProgress(userId),
           fetchHistory(userId),
           fetchActivity(userId),
-          fetchMastery(userId),
         ]);
-        const stats = await getCategoryProgress(userId);
-        setCategoryStats(stats);
       } catch (err) {
         console.error('Error loading progress data:', err);
       }
     }
-  }, [user]);
+  }, [user?.id, fetchProgress, fetchHistory, fetchActivity]);
 
   useEffect(() => {
     loadData();
@@ -277,7 +282,12 @@ export default function ProgressScreen() {
 
   const currentStreak = progress?.current_streak || 0;
   const totalCompleted = progress?.total_questions_completed || 0;
+  // Prefer the dedicated readinessScore from the store (set by fetchProgress),
+  // fallback to the value nested inside the progress object.
   const displayReadiness = readinessScore || progress?.readiness_score || 0;
+  // Use category_progress directly from the already-fetched progress object
+  const categoryStats: Record<string, number> =
+    (progress?.category_progress as Record<string, number>) || {};
 
   const calculateDaysToReadiness = () => {
     const questionsToGo = Math.max(0, 50 - totalCompleted);
@@ -303,6 +313,9 @@ export default function ProgressScreen() {
           <View style={styles.container}>
               <View style={styles.header}>
                   <Text style={styles.headerTitle}>PROGRESS</Text>
+                  <View style={[styles.streakBox, styles.streakBoxHidden]}>
+                      <Text style={styles.streakText}>{''}</Text>
+                  </View>
               </View>
               <View style={styles.loadingContainer}>
                   <Text style={styles.loadingText}>LOADING...</Text>
@@ -316,6 +329,9 @@ export default function ProgressScreen() {
       {/* Swiss Header - bold bar */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>PROGRESS</Text>
+        <View style={[styles.streakBox, currentStreak === 0 && styles.streakBoxHidden]}>
+          <Text style={styles.streakText}>{currentStreak > 0 ? currentStreak : ''}</Text>
+        </View>
       </View>
 
       <ScrollView 
@@ -330,9 +346,6 @@ export default function ProgressScreen() {
             />
         }
       >
-        {/* Heavy separator */}
-        <View style={styles.separator} />
-
         {/* Readiness Score - Hero Section - Swiss bordered */}
         <View style={styles.readinessCard}>
             <View style={styles.readinessHeader}>
@@ -495,6 +508,9 @@ const styles = StyleSheet.create({
   
   // Header - Swiss bold bar
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: theme.swiss.layout.headerPaddingTop,
     paddingHorizontal: theme.swiss.layout.screenPadding,
     paddingBottom: theme.swiss.layout.headerPaddingBottom,
@@ -508,6 +524,20 @@ const styles = StyleSheet.create({
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,
   },
+  streakBox: {
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[1],
+  },
+  streakText: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+  },
+  streakBoxHidden: {
+    borderColor: 'transparent',
+  },
   
   // Scroll view
   scrollView: {
@@ -516,7 +546,8 @@ const styles = StyleSheet.create({
   
   content: {
     paddingHorizontal: theme.swiss.layout.screenPadding,
-    paddingTop: theme.swiss.layout.sectionGap,
+    paddingTop: theme.swiss.layout.elementGap,
+    paddingBottom: theme.spacing[6],
   },
   
   // Loading
@@ -536,15 +567,15 @@ const styles = StyleSheet.create({
   separator: {
     height: theme.swiss.border.heavy,
     backgroundColor: theme.colors.text.primary,
-    marginVertical: theme.swiss.layout.sectionGap,
+    marginVertical: theme.spacing[5],
   },
   
   // Readiness Card - Swiss bordered
   readinessCard: {
     borderWidth: theme.swiss.border.standard,
     borderColor: theme.colors.text.primary,
-    padding: theme.swiss.layout.sectionGap,
-    marginBottom: theme.swiss.layout.sectionGap,
+    padding: theme.swiss.layout.elementGap,
+    marginBottom: theme.spacing[4],
   },
   readinessHeader: {
     flexDirection: 'row',
@@ -601,8 +632,8 @@ const styles = StyleSheet.create({
   heatmapCard: {
     borderWidth: theme.swiss.border.standard,
     borderColor: theme.colors.text.primary,
-    padding: theme.swiss.layout.sectionGap,
-    marginBottom: theme.swiss.layout.sectionGap,
+    padding: theme.swiss.layout.elementGap,
+    marginBottom: theme.spacing[4],
   },
   heatmapContainer: {
     alignItems: 'center',
@@ -644,7 +675,7 @@ const styles = StyleSheet.create({
   },
   
   section: {
-    marginBottom: theme.swiss.layout.sectionGap,
+    marginBottom: theme.spacing[4],
   },
   sectionLabel: {
     fontSize: theme.swiss.fontSize.small,
@@ -688,7 +719,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing[4],
   },
   masteryItem: {
-    marginBottom: theme.spacing[4],
+    marginBottom: theme.spacing[3],
   },
   masteryHeader: {
     flexDirection: 'row',
@@ -831,6 +862,6 @@ const styles = StyleSheet.create({
   },
   
   bottomSpacer: {
-    height: theme.spacing[10],
+    height: theme.spacing[6],
   },
 });

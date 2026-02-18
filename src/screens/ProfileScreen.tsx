@@ -146,6 +146,9 @@ export default function ProfileScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>PROFILE</Text>
+          <View style={[styles.streakBox, styles.streakBoxHidden]}>
+            <Text style={styles.streakText}>{''}</Text>
+          </View>
         </View>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>LOADING...</Text>
@@ -168,6 +171,9 @@ export default function ProfileScreen() {
       {/* Header - Swiss bold bar */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>PROFILE</Text>
+        <View style={[styles.streakBox, userStreak === 0 && styles.streakBoxHidden]}>
+          <Text style={styles.streakText}>{userStreak > 0 ? userStreak : ''}</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -298,12 +304,14 @@ const styles = StyleSheet.create({
   },
   
   content: {
-    paddingTop: theme.swiss.layout.sectionGap,
-    paddingBottom: theme.swiss.layout.sectionGap + theme.spacing[8],
+    paddingBottom: theme.spacing[8],
   },
   
   // Header - Swiss bold bar
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: theme.swiss.layout.headerPaddingTop,
     paddingHorizontal: theme.swiss.layout.screenPadding,
     paddingBottom: theme.swiss.layout.headerPaddingBottom,
@@ -316,6 +324,20 @@ const styles = StyleSheet.create({
     fontWeight: theme.swiss.fontWeight.black,
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,
+  },
+  streakBox: {
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[1],
+  },
+  streakText: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    color: theme.colors.text.primary,
+  },
+  streakBoxHidden: {
+    borderColor: 'transparent',
   },
   
   // Loading
@@ -342,13 +364,12 @@ const styles = StyleSheet.create({
     borderWidth: theme.swiss.border.standard,
     borderColor: theme.colors.text.primary,
     margin: theme.swiss.layout.screenPadding,
-    marginTop: theme.swiss.layout.sectionGap,
-    padding: theme.swiss.layout.sectionGap,
+    padding: theme.swiss.layout.elementGap,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.swiss.layout.sectionGap,
+    marginBottom: theme.swiss.layout.elementGap,
   },
   // Avatar - sharp corners for Swiss style
   avatar: {
@@ -436,7 +457,8 @@ const styles = StyleSheet.create({
   // Section
   section: {
     marginHorizontal: theme.swiss.layout.screenPadding,
-    marginTop: theme.swiss.layout.sectionGap,
+    marginTop: theme.swiss.layout.elementGap,
+    marginBottom: theme.spacing[2],
   },
   sectionLabel: {
     fontSize: theme.swiss.fontSize.small,
@@ -619,6 +641,6 @@ const styles = StyleSheet.create({
     fontWeight: theme.swiss.fontWeight.medium,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginTop: theme.swiss.layout.sectionGap,
+    marginVertical: theme.spacing[5],
   },
 });

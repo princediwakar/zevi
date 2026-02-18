@@ -198,6 +198,18 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
   },
 
   resetProgress: () => {
-    set({ progress: null, error: null, frameworkMastery: {}, patternMastery: {}, readinessScore: 0 });
+    set({
+      progress: null,
+      currentLesson: null,
+      loading: false,
+      error: null,
+      history: [],
+      activityData: [],
+      frameworkMastery: {},
+      patternMastery: {},
+      readinessScore: 0,
+      weakAreas: [],
+      incorrectQuestions: [],
+    });
   },
 }));

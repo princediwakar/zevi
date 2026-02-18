@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserStore } from '../stores/userStore';
+import { useProgressStore } from '../stores/progressStore';
 import { createUserProfile } from '../services/authService';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -301,9 +302,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setSession(null);
       
-      // Force reset the user store
+      // Force reset the user and progress stores
       const { reset: resetUserStore } = useUserStore.getState();
       resetUserStore();
+      const { resetProgress } = useProgressStore.getState();
+      resetProgress();
     } finally {
       // Allow auth state changes to process again after a short delay
       setTimeout(() => {
