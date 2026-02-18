@@ -441,24 +441,9 @@ export default function LessonScreen() {
     <View style={styles.container}>
       {/* Swiss Header - compact bar */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        {/* Top row: back + meta pills */}
-        <View style={styles.headerTopRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← BACK</Text>
-          </TouchableOpacity>
-          <View style={styles.metaRow}>
-            <View style={styles.metaBox}>
-              <Text style={styles.metaText}>{lessonTypeInfo.label}</Text>
-            </View>
-            <View style={styles.metaBox}>
-              <Text style={styles.metaText}>{lesson.estimated_minutes || 5} MIN</Text>
-            </View>
-            <View style={styles.metaBox}>
-              <Text style={styles.metaText}>+{lesson.xp_reward} XP</Text>
-            </View>
-          </View>
-        </View>
-
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← BACK</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>{lesson.name}</Text>
       </View>
 
