@@ -193,7 +193,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <View style={s.sep} />
 
         {/* ── NOTIFICATIONS ── */}
         <View style={s.section}>
@@ -227,14 +226,14 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           </Animated.View>
+
         </View>
 
-        <View style={s.sep} />
 
         {/* ── ACCOUNT ── */}
         <View style={s.section}>
           <Text style={s.sectionLabel}>ACCOUNT</Text>
-          <View style={s.actionsCard}>
+          <View>
             <TouchableOpacity
               style={s.action}
               onPress={() => Alert.alert('Coming Soon', 'Help center will be available soon!')}
@@ -390,12 +389,11 @@ const s = StyleSheet.create({
   },
 
   // Account actions
-  actionsCard: { borderWidth: theme.swiss.border.standard, borderColor: theme.colors.text.primary },
-  action: { paddingVertical: theme.spacing[4], paddingHorizontal: theme.swiss.layout.screenPadding },
+  action: { paddingVertical: theme.spacing[4] },
   actionDanger: { backgroundColor: theme.colors.semantic.error + '05' },
   actionLabel: { fontSize: theme.swiss.fontSize.body, fontWeight: theme.swiss.fontWeight.medium, color: theme.colors.text.primary },
   actionLabelDanger: { color: theme.colors.semantic.error },
-  actionDivider: { height: theme.swiss.border.light, backgroundColor: theme.colors.text.primary, marginHorizontal: theme.swiss.layout.screenPadding },
+  actionDivider: { height: theme.swiss.border.light, backgroundColor: theme.colors.text.primary},
 
   version: {
     fontSize: theme.swiss.fontSize.small,

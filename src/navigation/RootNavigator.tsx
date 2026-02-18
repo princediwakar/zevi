@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as Notifications from 'expo-notifications';
 import type { RootStackParamList } from './types';
 
 // Screens
@@ -66,6 +67,17 @@ export default function RootNavigator() {
       determineRoute();
     }
   }, [authLoading, user]);
+
+  // Navigate to the home/practice tab when the user taps a daily reminder notification
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(() => {
+      // Only navigate if the user is authenticated and the navigator is ready
+      if (navigationRef.current?.isReady() && user) {
+        navigationRef.current.navigate('MainTabs');
+      }
+    });
+    return () => subscription.remove();
+  }, [user]);
 
   // Handle navigation when user state changes (e.g., after login)
   useEffect(() => {

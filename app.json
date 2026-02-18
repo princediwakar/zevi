@@ -37,6 +37,16 @@
         {
           "keychainServiceName": "com.zevi.app"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#000000",
+          "defaultChannel": "daily-reminders",
+          "sounds": [],
+          "iosDisplayInForeground": true
+        }
       ]
     ]
   }
