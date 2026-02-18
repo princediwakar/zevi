@@ -163,46 +163,19 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   };
 
   const transcribeAudio = async (base64Audio: string, fileType: string): Promise<string> => {
-    try {
-      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY;
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Missing Supabase configuration');
-      }
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token || supabaseKey;
-      
-      const response = await fetch(`${supabaseUrl}/functions/v1/transcribe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'apikey': supabaseKey,
-        },
-        body: JSON.stringify({ 
-          audioBase64: base64Audio,
-          fileType: fileType 
-        }),
-      });
+    const { data, error } = await supabase.functions.invoke('transcribe', {
+      body: { audioBase64: base64Audio, fileType },
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Transcription failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (!data.transcription) {
-        throw new Error('No transcription returned from API');
-      }
-
-      return data.transcription;
-    } catch (error) {
-      console.error('Transcription error:', error);
-      return `Transcription service unavailable. Please try again.`;
+    if (error) {
+      throw new Error(`Transcription failed: ${error.message}`);
     }
+
+    if (!data?.transcription) {
+      throw new Error('No transcription returned from API');
+    }
+
+    return data.transcription;
   };
 
   const formatTime = (seconds: number) => {

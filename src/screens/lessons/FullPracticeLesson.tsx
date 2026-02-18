@@ -131,24 +131,40 @@ export function FullPracticeLesson({ content, questionId, onComplete, onError }:
         xpEarned += 20;
       }
 
-      // Get AI feedback if we have a question with rubric
-      if (questionId && (inputMode === 'voice' || voiceTranscription)) {
+      // Get AI feedback — requires an actual answer to evaluate
+      const hasVoiceAnswer = inputMode === 'voice' && voiceTranscription && voiceTranscription.length >= 10;
+      const hasOutlineAnswer = inputMode === 'outline' && content.framework_steps.some(step => outline[step]?.some(p => p.trim()));
+
+      if (hasVoiceAnswer || hasOutlineAnswer) {
         setIsAnalyzing(true);
         try {
-          // Build a mock question object with the content
           const mockQuestion = {
             question_text: content.question,
-            expert_answer: '', // Could be fetched from DB
-            evaluation_rubric: {}, // Could be fetched from DB
+            expert_answer: content.expert_outline
+              ? Object.entries(content.expert_outline)
+                  .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+                  .join('\n')
+              : '',
+            rubric: null,
           };
 
-          // Use transcription if voice mode, otherwise use outline
-          const answerText = inputMode === 'voice' ? voiceTranscription : outline;
+          // Use transcription if voice mode, otherwise use outline text
+          const answerText = inputMode === 'voice'
+            ? voiceTranscription
+            : content.framework_steps
+                .map(step => `${step}:\n${(outline[step] || []).map(p => `  • ${p}`).join('\n')}`)
+                .join('\n\n');
+
           feedback = await evaluateAnswer(mockQuestion as any, answerText);
           setAiFeedback(feedback);
         } catch (error) {
           console.error('AI Feedback error:', error);
-          // Continue without feedback - not critical
+          // Non-critical — continue without feedback but inform the user
+          Alert.alert(
+            'Feedback Unavailable',
+            'Could not get AI feedback right now. Your answer has been saved.',
+            [{ text: 'OK' }]
+          );
         } finally {
           setIsAnalyzing(false);
         }
