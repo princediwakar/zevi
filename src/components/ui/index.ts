@@ -80,18 +80,18 @@ export {
   QuestionDetailSkeleton,
 } from './SkeletonLoader';
 
-// Swiss Layout Components
-export {
-  SwissHeader,
-  SwissStreakBox,
-  SwissSeparator,
-  SwissMetaBox,
-  SwissMetaRow,
-  SwissSectionLabel,
-  SwissButton,
-  SwissLink,
-  SwissCard,
-  SwissLabel,
-  SwissHeading,
-  SwissBody,
-} from './SwissLayout';
+// Swiss Layout Components - all currently unused but preserved for future reference
+// export {
+//   SwissHeader,
+//   SwissStreakBox,
+//   SwissSeparator,
+//   SwissMetaBox,
+//   SwissMetaRow,
+//   SwissSectionLabel,
+//   SwissButton,
+//   SwissLink,
+//   SwissCard,
+//   SwissLabel,
+//   SwissHeading,
+//   SwissBody,
+// } from './SwissLayout';

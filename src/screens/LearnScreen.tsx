@@ -426,12 +426,6 @@ const styles = StyleSheet.create({
     padding: theme.swiss.layout.sectionGap,
     marginBottom: theme.swiss.layout.elementGap,
   },
-  lessonNumber: {
-    fontSize: 48,
-    fontWeight: theme.swiss.fontWeight.black,
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing[4],
-  },
   lessonName: {
     fontSize: theme.swiss.fontSize.heading,
     fontWeight: theme.swiss.fontWeight.bold,
@@ -490,20 +484,6 @@ const styles = StyleSheet.create({
     letterSpacing: theme.swiss.letterSpacing.wide,
     textTransform: 'uppercase',
   },
-  doneAction: {
-    marginTop: theme.swiss.layout.sectionGap,
-    paddingVertical: theme.spacing[3],
-    paddingHorizontal: theme.swiss.layout.screenPadding,
-    borderWidth: theme.swiss.border.standard,
-    borderColor: theme.colors.text.primary,
-  },
-  doneActionText: {
-    fontSize: theme.swiss.fontSize.small + 2,
-    fontWeight: theme.swiss.fontWeight.semibold,
-    letterSpacing: theme.swiss.letterSpacing.wide,
-    color: theme.colors.text.primary,
-  },
-  
   // Empty State
   emptyContent: {
     alignItems: 'center',
@@ -523,18 +503,6 @@ const styles = StyleSheet.create({
     letterSpacing: theme.swiss.letterSpacing.normal,
   },
   
-  // Browse Link
-  browseLink: {
-    alignItems: 'center',
-    paddingVertical: theme.swiss.layout.sectionGap,
-  },
-  browseLinkText: {
-    fontSize: theme.swiss.fontSize.label,
-    fontWeight: theme.swiss.fontWeight.medium,
-    color: theme.colors.text.secondary,
-    letterSpacing: theme.swiss.letterSpacing.wide,
-  },
-
   // ============================================
   // PATH LIST SECTION (Combined Browse)
   // ============================================
