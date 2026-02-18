@@ -58,27 +58,24 @@ export default function LearnScreen() {
   // Determine if all lessons are complete
   const allLessonsComplete = totalLessons > 0 && totalLessonsCompleted >= totalLessons;
 
-  // Get the next uncompleted lesson (not just currentLesson)
+  // Get the next lesson to continue - trust currentLesson from progress store
+  // which is path-aware and set by database functions
   const nextLesson = React.useMemo(() => {
-    if (!units || units.length === 0) return null;
-    
-    // If currentLesson exists and is NOT completed, use it
+    // currentLesson is set by the database and is already path-aware
+    // It represents the lesson the user should do next in their active path
     if (currentLesson && !completedLessonIds.has(currentLesson.id)) {
       return currentLesson;
     }
-    
-    // Find the first uncompleted lesson from all units
-    for (const unit of units) {
-      const lessons = unit.lessons || [];
-      for (const lesson of lessons) {
-        if (!completedLessonIds.has(lesson.id)) {
-          return lesson;
-        }
-      }
+
+    // If currentLesson is completed (edge case), we need to advance it
+    // This shouldn't happen normally, but handle it gracefully
+    if (currentLesson && completedLessonIds.has(currentLesson.id)) {
+      // Return null to trigger re-initialization
+      return null;
     }
-    
+
     return null;
-  }, [units, currentLesson, completedLessonIds]);
+  }, [currentLesson, completedLessonIds]);
 
   // Fetch data on focus
   useFocusEffect(
@@ -113,10 +110,11 @@ export default function LearnScreen() {
   }
 
   const handleStartLesson = () => {
-    if (currentLesson && currentLesson.id) {
-      navigation.navigate('LessonScreen', { lessonId: currentLesson.id });
+    // Use nextLesson which is the computed, path-aware lesson to continue
+    if (nextLesson && nextLesson.id) {
+      navigation.navigate('LessonScreen', { lessonId: nextLesson.id });
     } else if (!allLessonsComplete && userId) {
-      // If no current lesson but not all complete, initialize it
+      // If no next lesson but not all complete, initialize it
       initializeCurrentLesson(userId).then(() => {
         const lesson = useProgressStore.getState().currentLesson;
         if (lesson && lesson.id) {
@@ -296,11 +294,12 @@ function PathListSection({ onPathPress }: { onPathPress: (cat: QuestionCategory)
             
             {/* Path Info */}
             <View style={styles.pathInfo}>
-              <View style={styles.pathRowLeft}>
-                {/* Always reserve space for NEXT badge to prevent row height shifts */}
-                <View style={[styles.nextBadgeSmall, !(isNext && path.completed > 0) && styles.nextBadgeHidden]}>
-                  <Text style={styles.nextBadgeTextSmall}>NEXT</Text>
-                </View>
+              <View style={styles.pathNameRow}>
+                {isNext && path.completed > 0 && (
+                  <View style={styles.nextBadgeSmall}>
+                    <Text style={styles.nextBadgeTextSmall}>NEXT</Text>
+                  </View>
+                )}
                 <Text style={[
                   styles.pathLabel,
                   path.completed >= path.total && path.total > 0 && styles.pathLabelDone,
@@ -544,10 +543,17 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: theme.spacing[2],
   },
+  pathNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing[2],
+  },
   pathLabel: {
     fontSize: theme.swiss.fontSize.body,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
+    textAlign: 'left',
+    flex: 1,
   },
   pathLabelDone: {
     color: theme.colors.text.secondary,
@@ -558,11 +564,14 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginTop: 2,
   },
+  nextBadgeContainer: {
+    width: 50,
+    marginRight: theme.spacing[2],
+  },
   nextBadgeSmall: {
     backgroundColor: theme.colors.text.primary,
     paddingHorizontal: theme.spacing[2],
     paddingVertical: 2,
-    marginRight: theme.spacing[2],
   },
   nextBadgeTextSmall: {
     fontSize: 10,
