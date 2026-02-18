@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   questionText: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
     lineHeight: 36,
