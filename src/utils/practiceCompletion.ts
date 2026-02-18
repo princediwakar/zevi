@@ -18,35 +18,34 @@ export async function completePracticeSession(
   category: QuestionCategory,
   frameworkName?: FrameworkName,
   patternType?: PatternType,
-  aiScore?: number,
-  isGuest: boolean = false
+  aiScore?: number
 ): Promise<PracticeCompletionResult> {
   try {
     // Get previous readiness
-    const previousProgress = await progressService.getUserProgress(userId, isGuest);
+    const previousProgress = await progressService.getUserProgress(userId);
     const previousReadiness = previousProgress?.readiness_score || 0;
 
     // Calculate XP earned based on mode
     const xpEarned = calculateXP(mode);
 
     // Update basic progress
-    await progressService.updateProgressAfterCompletion(userId, mode, category, isGuest);
+    await progressService.updateProgressAfterCompletion(userId, mode, category);
 
     // Update framework mastery if framework is provided and we have a score
     if (frameworkName && aiScore !== undefined) {
       // Convert AI score (1-10) to mastery (0-100)
       const masteryScore = aiScore * 10;
-      await progressService.updateFrameworkMastery(userId, frameworkName, masteryScore, isGuest);
+      await progressService.updateFrameworkMastery(userId, frameworkName, masteryScore);
     }
 
     // Update pattern mastery if pattern is provided
     if (patternType && aiScore !== undefined) {
       const masteryScore = aiScore * 10;
-      await progressService.updatePatternMastery(userId, patternType, masteryScore, isGuest);
+      await progressService.updatePatternMastery(userId, patternType, masteryScore);
     }
 
     // Recalculate readiness
-    const newReadiness = await progressService.calculateAndUpdateReadiness(userId, isGuest);
+    const newReadiness = await progressService.calculateAndUpdateReadiness(userId);
 
     // Check for readiness milestones
     const readinessMilestones = [50, 80, 100];

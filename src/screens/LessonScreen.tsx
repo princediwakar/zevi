@@ -40,23 +40,26 @@ export default function LessonScreen() {
   const [earnedXp, setEarnedXp] = useState(0);
 
   const { units } = useLearningPathStore();
-  const { updateAfterCompletion, progress, readinessScore } = useProgressStore();
+  const { progress, readinessScore } = useProgressStore();
   const userId = user?.id;
 
   useEffect(() => {
-    if (lessonId) {
-      const allLessons = units.flatMap((u: any) => u.lessons);
+    if (lessonId && units && units.length > 0) {
+      const allLessons = units.flatMap((u: any) => (u.lessons ? u.lessons : []));
       const lessonData = allLessons.find((l: any) => l.id === lessonId);
       setLesson(lessonData || null);
       setLoading(false);
+    } else if (lessonId) {
+      // Units not loaded yet - keep loading
+      setLoading(true);
     }
   }, [lessonId, units]);
 
   // Find next lesson in the path
   const getNextLesson = () => {
-    if (!lesson || units.length === 0) return null;
+    if (!lesson || !units || units.length === 0) return null;
     
-    const allLessons = units.flatMap((u: any) => u.lessons);
+    const allLessons = units.flatMap((u: any) => (u.lessons ? u.lessons : []));
     const currentIndex = allLessons.findIndex((l: any) => l.id === lesson.id);
     
     if (currentIndex >= 0 && currentIndex < allLessons.length - 1) {
@@ -67,25 +70,18 @@ export default function LessonScreen() {
 
   const handleLessonComplete = async (xpEarned: number) => {
     setEarnedXp(xpEarned);
-    setShowCompletionModal(true);
     
     if (lesson && userId) {
       try {
-        const category = (lesson as any).category || 'product_sense';
-        
-        let mode: 'mcq' | 'text' | 'guided' | 'mock' = 'mcq';
-        if (lesson.type === 'full_practice' || lesson.type === 'pattern') {
-          mode = 'text';
-        } else if (lesson.type === 'learn') {
-          mode = 'guided';
-        }
-        
-        await updateAfterCompletion(userId, mode, category);
-        await useProgressStore.getState().fetchProgress(userId);
+        // Mark the lesson as completed and advance to next lesson
+        await useProgressStore.getState().completeCurrentLesson(userId, lesson.id);
       } catch (error) {
         console.error('Error updating progress:', error);
       }
     }
+    
+    // Show completion modal after completion is processed
+    setShowCompletionModal(true);
   };
 
   const handleContinueToNext = () => {
@@ -176,10 +172,12 @@ export default function LessonScreen() {
   };
 
   // Check if content exists for the lesson type
+  // Also handles both nested (pattern_content) and flat content structures
   const hasContent = () => {
+    const patternContent = lesson.content.pattern_content || lesson.content;
     if (lesson.type === 'learn' && !lesson.content.learn_content) return false;
     if (lesson.type === 'drill' && !lesson.content.drill_content) return false;
-    if (lesson.type === 'pattern' && !lesson.content.pattern_content) return false;
+    if (lesson.type === 'pattern' && !patternContent.questions && !lesson.content.questions) return false;
     if (lesson.type === 'full_practice' && !lesson.content.full_practice_content) return false;
     if (lesson.type === 'quiz' && !lesson.content.quiz_content) return false;
     return true;
@@ -195,22 +193,18 @@ export default function LessonScreen() {
     }
     
     setEarnedXp(lesson.xp_reward || 10);
-    setShowCompletionModal(true);
     
     if (lesson && userId) {
       try {
-        const category = (lesson as any).category || 'product_sense';
-        let mode: 'mcq' | 'text' | 'guided' | 'mock' = 'guided';
-        if (lesson.type === 'full_practice' || lesson.type === 'pattern') {
-          mode = 'text';
-        }
-        
-        await updateAfterCompletion(userId, mode, category);
-        await useProgressStore.getState().fetchProgress(userId);
+        // Mark the lesson as completed and advance to next lesson
+        await useProgressStore.getState().completeCurrentLesson(userId, lesson.id);
       } catch (error) {
         console.error('Error marking complete:', error);
       }
     }
+    
+    // Show completion modal after completion is processed
+    setShowCompletionModal(true);
   };
 
   // Render lesson based on type
@@ -256,9 +250,11 @@ export default function LessonScreen() {
           />
         );
       case 'pattern':
+        // Handle both nested (pattern_content) and flat content structures
+        const patternContent = lesson.content.pattern_content || lesson.content;
         return (
           <PatternLesson
-            content={lesson.content.pattern_content!}
+            content={patternContent}
             onComplete={() => handleLessonComplete(lesson.xp_reward)}
             onError={handleLessonError}
           />
@@ -313,7 +309,6 @@ export default function LessonScreen() {
       <View style={styles.completionContainer}>
         <View style={styles.completionContent}>
           {/* Heavy separator */}
-          <View style={styles.separator} />
           
           <Text style={styles.completionCode}>DONE</Text>
           
@@ -334,14 +329,6 @@ export default function LessonScreen() {
           {/* Heavy separator */}
           <View style={styles.separator} />
 
-          {/* Practice Now Button - bordered, filled */}
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handlePracticeNow}
-          >
-            <Text style={styles.actionButtonText}>PRACTICE NOW</Text>
-            <Text style={styles.actionButtonSubtext}>{lessonCategory.replace('_', ' ').toUpperCase()}</Text>
-          </TouchableOpacity>
 
           {/* Continue Button */}
           {nextLesson ? (

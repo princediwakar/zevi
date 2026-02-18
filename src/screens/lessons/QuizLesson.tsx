@@ -193,11 +193,6 @@ const QuizLesson: React.FC<QuizLessonProps> = ({ lesson, onComplete, onError }) 
 
   return (
     <View style={styles.container}>
-      {/* Header - Swiss bordered */}
-      <View style={styles.header}>
-        <Text style={styles.headerText}>{lesson.name}</Text>
-      </View>
-
       {/* Progress - Swiss bordered */}
       {renderProgress()}
 

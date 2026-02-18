@@ -10,7 +10,7 @@ import { QuestionCategory, QUESTION_CATEGORIES } from '../types';
 import { theme } from '../theme';
 import { ArrowRight } from 'lucide-react-native';
 
-type CategoryBrowseScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CategoryBrowse'>;
+type CategoryBrowseScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'QuestionList'>;
 
 // Swiss design - all black
 const CATEGORY_INFO: Record<QuestionCategory, { label: string; color: string }> = {

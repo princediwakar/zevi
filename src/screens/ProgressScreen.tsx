@@ -252,12 +252,12 @@ export default function ProgressScreen() {
     if (userId) {
       try {
         await Promise.all([
-          fetchProgress(userId, false),
-          fetchHistory(userId, false),
-          fetchActivity(userId, false),
-          fetchMastery(userId, false),
+          fetchProgress(userId),
+          fetchHistory(userId),
+          fetchActivity(userId),
+          fetchMastery(userId),
         ]);
-        const stats = await getCategoryProgress(userId, false);
+        const stats = await getCategoryProgress(userId);
         setCategoryStats(stats);
       } catch (err) {
         console.error('Error loading progress data:', err);

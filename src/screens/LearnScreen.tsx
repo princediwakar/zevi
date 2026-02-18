@@ -37,7 +37,7 @@ const PATH_INFO: Record<QuestionCategory, { label: string; description: string }
 export default function LearnScreen() {
   const navigation = useNavigation<LearnScreenNavigationProp>();
   const { user } = useAuth();
-  const { progress, fetchProgress, fetchWeakAreas } = useProgressStore();
+  const { progress, currentLesson, fetchProgress, fetchCurrentLesson, initializeCurrentLesson, fetchWeakAreas } = useProgressStore();
   const { units, fetchPath } = useLearningPathStore();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -48,25 +48,6 @@ export default function LearnScreen() {
     return new Set(progress?.completed_lessons || []);
   }, [progress?.completed_lessons]);
 
-  // Get the next uncompleted lesson (today's lesson)
-  const todaysLesson = React.useMemo((): Lesson | null => {
-    if (!units || units.length === 0) return null;
-    
-    const allLessons: Lesson[] = [];
-    units.forEach((unit) => {
-      if (unit.lessons) {
-        allLessons.push(...unit.lessons);
-      }
-    });
-    
-    for (const lesson of allLessons) {
-      if (!completedLessonIds.has(lesson.id)) {
-        return lesson;
-      }
-    }
-    return null;
-  }, [units, completedLessonIds]);
-
   // Calculate totals
   const totalLessonsCompleted = completedLessonIds.size;
   const totalLessons = React.useMemo(() => {
@@ -74,15 +55,41 @@ export default function LearnScreen() {
     return units.reduce((sum, unit) => sum + (unit.lessons?.length || 0), 0);
   }, [units]);
 
+  // Determine if all lessons are complete
+  const allLessonsComplete = totalLessons > 0 && totalLessonsCompleted >= totalLessons;
+
+  // Get the next uncompleted lesson (not just currentLesson)
+  const nextLesson = React.useMemo(() => {
+    if (!units || units.length === 0) return null;
+    
+    // If currentLesson exists and is NOT completed, use it
+    if (currentLesson && !completedLessonIds.has(currentLesson.id)) {
+      return currentLesson;
+    }
+    
+    // Find the first uncompleted lesson from all units
+    for (const unit of units) {
+      const lessons = unit.lessons || [];
+      for (const lesson of lessons) {
+        if (!completedLessonIds.has(lesson.id)) {
+          return lesson;
+        }
+      }
+    }
+    
+    return null;
+  }, [units, currentLesson, completedLessonIds]);
+
   // Fetch data on focus
   useFocusEffect(
     useCallback(() => {
       fetchPath();
       if (userId) {
         fetchProgress(userId);
+        fetchCurrentLesson(userId);
         fetchWeakAreas(userId);
       }
-    }, [userId, fetchPath, fetchProgress, fetchWeakAreas])
+    }, [userId, fetchPath, fetchProgress, fetchCurrentLesson, fetchWeakAreas])
   );
 
   const onRefresh = useCallback(async () => {
@@ -90,16 +97,25 @@ export default function LearnScreen() {
     await Promise.all([
       fetchPath(),
       userId ? fetchProgress(userId) : Promise.resolve(),
+      userId ? fetchCurrentLesson(userId) : Promise.resolve(),
       userId ? fetchWeakAreas(userId) : Promise.resolve(),
     ]);
     setRefreshing(false);
-  }, [userId, fetchPath, fetchProgress, fetchWeakAreas]);
+  }, [userId, fetchPath, fetchProgress, fetchCurrentLesson, fetchWeakAreas]);
 
   const streak = progress?.current_streak || 0;
 
   const handleStartLesson = () => {
-    if (todaysLesson) {
-      navigation.navigate('LessonScreen', { lessonId: todaysLesson.id });
+    if (currentLesson && currentLesson.id) {
+      navigation.navigate('LessonScreen', { lessonId: currentLesson.id });
+    } else if (!allLessonsComplete && userId) {
+      // If no current lesson but not all complete, initialize it
+      initializeCurrentLesson(userId).then(() => {
+        const lesson = useProgressStore.getState().currentLesson;
+        if (lesson && lesson.id) {
+          navigation.navigate('LessonScreen', { lessonId: lesson.id });
+        }
+      });
     }
   };
 
@@ -148,7 +164,7 @@ export default function LearnScreen() {
         {/* ============================================ */}
         {/* ALL DONE STATE */}
         {/* ============================================ */}
-        {totalLessonsCompleted > 0 && !todaysLesson && (
+        {allLessonsComplete && (
           <View style={styles.doneContent}>
             <View style={styles.doneLine} />
             <Text style={styles.doneTitle}>COMPLETE</Text>
@@ -158,29 +174,24 @@ export default function LearnScreen() {
         )}
 
         {/* ============================================ */}
-        {/* TODAY'S LESSON */}
+        {/* NEXT LESSON */}
         {/* ============================================ */}
-        {todaysLesson && (
+        {currentLesson && !allLessonsComplete && (
           <View style={styles.lessonSection}>
-            <Text style={styles.sectionLabel}>TODAY'S LESSON</Text>
+            <Text style={styles.sectionLabel}>NEXT LESSON</Text>
             
             {/* Lesson card - stark bordered */}
-            <View style={styles.lessonCard}>
-              {/* Number indicator */}
-              <Text style={styles.lessonNumber}>
-                {getLessonNumber(todaysLesson.type)}
-              </Text>
-              
+            <View style={styles.lessonCard}>            
               {/* Lesson name - heavy */}
-              <Text style={styles.lessonName}>{todaysLesson.name}</Text>
+              <Text style={styles.lessonName}>{currentLesson.name}</Text>
               
               {/* Meta info */}
               <View style={styles.lessonMeta}>
                 <Text style={styles.lessonMetaText}>
-                  {todaysLesson.estimated_minutes || 5} MIN
+                  {currentLesson.estimated_minutes || 5} MIN
                 </Text>
                 <Text style={styles.lessonMetaText}>
-                  +{todaysLesson.xp_reward || 10} XP
+                  +{currentLesson.xp_reward || 10} XP
                 </Text>
               </View>
             </View>
@@ -197,9 +208,25 @@ export default function LearnScreen() {
         )}
 
         {/* ============================================ */}
+        {/* CURRENT LESSON NULL - INITIALIZE */}
+        {/* ============================================ */}
+        {!currentLesson && !allLessonsComplete && totalLessons > 0 && (
+          <View style={styles.lessonSection}>
+            <Text style={styles.sectionLabel}>NEXT LESSON</Text>
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={() => userId && initializeCurrentLesson(userId)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.startButtonText}>START LEARNING</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ============================================ */}
         {/* NO LESSONS */}
         {/* ============================================ */}
-        {!todaysLesson && totalLessonsCompleted === 0 && (
+        {!currentLesson && !allLessonsComplete && totalLessons === 0 && (
           <View style={styles.emptyContent}>
             <Text style={styles.emptyTitle}>NO LESSONS</Text>
             <Text style={styles.emptySubtitle}>Browse learning paths below</Text>

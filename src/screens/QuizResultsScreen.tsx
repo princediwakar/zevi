@@ -39,6 +39,7 @@ export default function QuizResultsScreen() {
     resetPractice();
     
     if (sourceQuestionId) {
+      // For text practice from a question, go back to question detail
       navigation.navigate('QuestionDetail', { questionId: sourceQuestionId });
     } else {
       navigation.navigate('MainTabs');
@@ -48,10 +49,16 @@ export default function QuizResultsScreen() {
   const handleTryAgain = () => {
     resetPractice();
     if (sourceQuestionId) {
-      navigation.navigate('QuickQuiz', { sourceQuestionId });
+      // Retry the same text practice question
+      navigation.navigate('TextPractice', { questionId: sourceQuestionId });
     } else {
-      navigation.navigate('QuickQuiz');
+      navigation.navigate('MainTabs');
     }
+  };
+  
+  const handleGoHome = () => {
+    resetPractice();
+    navigation.navigate('MainTabs');
   };
 
   const getScoreMessage = () => {
@@ -201,25 +208,51 @@ export default function QuizResultsScreen() {
 
         {/* Action Buttons - Swiss bordered */}
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleContinue}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.primaryButtonText}>
-              {sourceQuestionId ? 'START ANSWERING' : 'CONTINUE TO APP'}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={handleTryAgain}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.secondaryButtonText}>
-              {sourceQuestionId ? 'TRY AGAIN' : 'TRY ANOTHER QUIZ'}
-            </Text>
-          </TouchableOpacity>
+          {currentMode === 'text' && sourceQuestionId ? (
+            <>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={handleContinue}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.primaryButtonText}>
+                  VIEW EXPERT ANSWER
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={handleTryAgain}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.secondaryButtonText}>
+                  PRACTICE AGAIN
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={handleContinue}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {sourceQuestionId ? 'VIEW QUESTION' : 'CONTINUE'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={handleTryAgain}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.secondaryButtonText}>
+                  {sourceQuestionId ? 'TRY AGAIN' : 'TRY ANOTHER QUIZ'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </ScrollView>
     </View>

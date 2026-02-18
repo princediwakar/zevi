@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Text,
+  Alert,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -101,9 +102,10 @@ export default function QuestionDetailScreen() {
   }
 
   const handleStartPractice = async (mode: 'mcq' | 'text') => {
-    const userId = user?.id;
-    if (!userId) {
-      logger.error('No user ID available');
+    // Require login to practice
+    if (!user) {
+      Alert.alert('LOGIN REQUIRED', 'Please sign in to practice.');
+      navigation.navigate('Auth');
       return;
     }
 
@@ -113,7 +115,7 @@ export default function QuestionDetailScreen() {
     }
     
     try {
-      await startPractice(question, mode, userId);
+      await startPractice(question, mode, user.id);
       
       if (mode === 'mcq') {
          navigation.navigate('QuickQuiz', { questions: [question], sourceQuestionId: question.id });
@@ -122,6 +124,7 @@ export default function QuestionDetailScreen() {
       }
     } catch (error) {
       logger.error('Failed to start practice session:', error);
+      Alert.alert('ERROR', 'Failed to start practice. Please try again.');
     }
   };
 

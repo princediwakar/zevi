@@ -93,7 +93,7 @@ export default function ProfileScreen() {
 
   const loadData = useCallback(async () => {
     if (user?.id) {
-      await fetchProgress(user.id, false);
+      await fetchProgress(user.id);
     }
   }, [user?.id, fetchProgress]);
 
@@ -165,6 +165,11 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Header - Swiss bold bar */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>PROFILE</Text>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -173,11 +178,6 @@ export default function ProfileScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header - Swiss bold bar */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>PROFILE</Text>
-        </View>
-
         {/* Heavy separator */}
         <View style={styles.separator} />
 
@@ -302,6 +302,7 @@ const styles = StyleSheet.create({
   },
   
   content: {
+    paddingTop: theme.swiss.layout.sectionGap,
     paddingBottom: theme.swiss.layout.sectionGap + theme.spacing[8],
   },
   

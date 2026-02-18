@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, Modal, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../theme';
-import { FullPracticeContent, UserOutline } from '../../types';
-import { ChevronRight, ChevronLeft, Clock, Eye, EyeOff, CheckCircle, HelpCircle, Send } from 'lucide-react-native';
+import { FullPracticeContent, UserOutline, AIFeedback } from '../../types';
+import { Clock, Eye, EyeOff, CheckCircle, Send, Mic, MicOff } from 'lucide-react-native';
 import { OutlineBuilder } from '../../components/OutlineBuilder';
+import { VoiceRecorder } from '../../components/VoiceRecorder';
+import { evaluateAnswer } from '../../services/aiService';
 
 interface FullPracticeLessonProps {
   content: FullPracticeContent;
+  questionId?: string;
   onComplete: (xpEarned: number, answerData?: any) => void;
   onError: (error: string) => void;
 }
 
-export function FullPracticeLesson({ content, onComplete, onError }: FullPracticeLessonProps) {
+export function FullPracticeLesson({ content, questionId, onComplete, onError }: FullPracticeLessonProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [outline, setOutline] = useState<UserOutline>({});
   const [timeLeft, setTimeLeft] = useState<number>(content.time_limit ? content.time_limit * 60 : 0); // seconds
@@ -20,6 +23,13 @@ export function FullPracticeLesson({ content, onComplete, onError }: FullPractic
   const [showExpertOutline, setShowExpertOutline] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
+  
+  // Voice mode state
+  const [inputMode, setInputMode] = useState<'outline' | 'voice'>('outline');
+  const [voiceTranscription, setVoiceTranscription] = useState<string>('');
+  const [voiceAudioUrl, setVoiceAudioUrl] = useState<string>('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState<AIFeedback | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -64,51 +74,105 @@ export function FullPracticeLesson({ content, onComplete, onError }: FullPractic
     setCurrentStepIndex(step);
   };
 
+  const handleVoiceRecordingComplete = (audioUri: string, transcription: string) => {
+    setVoiceAudioUrl(audioUri);
+    setVoiceTranscription(transcription);
+  };
+
   const handleSubmit = () => {
-    // Validate that all steps have some content
-    const emptySteps = content.framework_steps.filter(step => {
-      const points = outline[step];
-      return !points || points.length === 0 || points.every(p => !p.trim());
-    });
-    if (emptySteps.length > 0) {
-      Alert.alert(
-        'Incomplete Outline',
-        `You haven't filled out: ${emptySteps.join(', ')}. Do you want to submit anyway?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Submit Anyway', onPress: () => setShowSubmissionModal(true) }
-        ]
-      );
-      return;
+    if (inputMode === 'outline') {
+      // Validate that all steps have some content
+      const emptySteps = content.framework_steps.filter(step => {
+        const points = outline[step];
+        return !points || points.length === 0 || points.every(p => !p.trim());
+      });
+      if (emptySteps.length > 0) {
+        Alert.alert(
+          'Incomplete Outline',
+          `You haven't filled out: ${emptySteps.join(', ')}. Do you want to submit anyway?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Submit Anyway', onPress: () => setShowSubmissionModal(true) }
+          ]
+        );
+        return;
+      }
+    } else {
+      // Voice mode - need transcription
+      if (!voiceTranscription || voiceTranscription.length < 10) {
+        Alert.alert(
+          'No Recording',
+          'Please record your answer before submitting.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
     }
     setShowSubmissionModal(true);
   };
 
-  const confirmSubmission = () => {
+  const confirmSubmission = async () => {
     setIsSubmitting(true);
     setShowSubmissionModal(false);
 
-    // Simulate API call for evaluation
-    setTimeout(() => {
-      // Calculate XP: base XP + bonus for completeness
-      const baseXp = 100; // Could be from lesson.xp_reward
-      const completenessBonus = content.framework_steps.filter(step => {
-        const points = outline[step];
-        return points && points.length > 0 && points.some(p => p.trim());
-      }).length * 10;
-      const xpEarned = baseXp + completenessBonus;
+    try {
+      let feedback: AIFeedback | null = null;
+      
+      // Calculate XP
+      let xpEarned = 100; // Base XP
+      if (inputMode === 'outline') {
+        const completenessBonus = content.framework_steps.filter(step => {
+          const points = outline[step];
+          return points && points.length > 0 && points.some(p => p.trim());
+        }).length * 10;
+        xpEarned += completenessBonus;
+      } else {
+        // Voice mode bonus
+        xpEarned += 20;
+      }
 
-      // Prepare answer data for AI evaluation
+      // Get AI feedback if we have a question with rubric
+      if (questionId && (inputMode === 'voice' || voiceTranscription)) {
+        setIsAnalyzing(true);
+        try {
+          // Build a mock question object with the content
+          const mockQuestion = {
+            question_text: content.question,
+            expert_answer: '', // Could be fetched from DB
+            evaluation_rubric: {}, // Could be fetched from DB
+          };
+
+          // Use transcription if voice mode, otherwise use outline
+          const answerText = inputMode === 'voice' ? voiceTranscription : outline;
+          feedback = await evaluateAnswer(mockQuestion as any, answerText);
+          setAiFeedback(feedback);
+        } catch (error) {
+          console.error('AI Feedback error:', error);
+          // Continue without feedback - not critical
+        } finally {
+          setIsAnalyzing(false);
+        }
+      }
+
+      // Prepare answer data
       const answerData = {
-        outline,
+        outline: inputMode === 'outline' ? outline : null,
+        transcription: inputMode === 'voice' ? voiceTranscription : null,
+        audioUrl: inputMode === 'voice' ? voiceAudioUrl : null,
+        answerType: inputMode,
         framework: content.framework_name,
         timeSpent: content.time_limit ? (content.time_limit * 60 - timeLeft) : null,
-        submittedAt: new Date().toISOString()
+        submittedAt: new Date().toISOString(),
+        aiFeedback: feedback,
       };
 
       onComplete(xpEarned, answerData);
+    } catch (error) {
+      console.error('Submission error:', error);
+      onError('Failed to submit. Please try again.');
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -118,8 +182,22 @@ export function FullPracticeLesson({ content, onComplete, onError }: FullPractic
   };
 
   const currentStep = content.framework_steps[currentStepIndex];
-  const currentExpertOutline = content.expert_outline[currentStep] || [];
   const progress = ((currentStepIndex + 1) / content.framework_steps.length) * 100;
+
+  // Show loading while analyzing
+  if (isAnalyzing) {
+    return (
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary[500]} />
+        <Text style={[styles.loadingText, { color: theme.colors.text.primary }]}>
+          Analyzing your answer with AI...
+        </Text>
+        <Text style={[styles.loadingSubtext, { color: theme.colors.text.secondary }]}>
+          This may take a few seconds
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -137,7 +215,7 @@ export function FullPracticeLesson({ content, onComplete, onError }: FullPractic
         />
       </View>
 
-      {/* Header with Timer and Expert Toggle */}
+      {/* Header with Timer and Mode Toggle */}
       <LinearGradient
         colors={[theme.colors.primary[500], theme.colors.primary[600]]}
         style={styles.headerGradient}
@@ -145,7 +223,9 @@ export function FullPracticeLesson({ content, onComplete, onError }: FullPractic
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <Text style={styles.headerText}>
-              Step {currentStepIndex + 1} of {content.framework_steps.length}
+              {inputMode === 'outline' 
+                ? `Step ${currentStepIndex + 1} of ${content.framework_steps.length}`
+                : 'Voice Practice'}
             </Text>
             <Text style={styles.frameworkText}>{content.framework_name}</Text>
           </View>
@@ -168,10 +248,44 @@ export function FullPracticeLesson({ content, onComplete, onError }: FullPractic
                 <Eye size={20} color="white" />
               )}
               <Text style={styles.expertToggleText}>
-                {showExpertOutline ? 'Hide Expert' : 'Expert'}
+                {showExpertOutline ? 'Hide' : 'Expert'}
               </Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Mode Toggle */}
+        <View style={styles.modeToggle}>
+          <TouchableOpacity
+            style={[
+              styles.modeButton,
+              inputMode === 'outline' && styles.modeButtonActive
+            ]}
+            onPress={() => setInputMode('outline')}
+          >
+            <MicOff size={16} color={inputMode === 'outline' ? 'white' : theme.colors.text.secondary} />
+            <Text style={[
+              styles.modeButtonText,
+              inputMode === 'outline' && styles.modeButtonTextActive
+            ]}>
+              Outline
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.modeButton,
+              inputMode === 'voice' && styles.modeButtonActive
+            ]}
+            onPress={() => setInputMode('voice')}
+          >
+            <Mic size={16} color={inputMode === 'voice' ? 'white' : theme.colors.text.secondary} />
+            <Text style={[
+              styles.modeButtonText,
+              inputMode === 'voice' && styles.modeButtonTextActive
+            ]}>
+              Voice
+            </Text>
+          </TouchableOpacity>
         </View>
       </LinearGradient>
 
@@ -187,67 +301,92 @@ export function FullPracticeLesson({ content, onComplete, onError }: FullPractic
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        {/* Current Step Header */}
-        <View style={styles.stepHeader}>
-          <Text style={[styles.stepNumber, { color: theme.colors.primary[500] }]}>
-            {currentStepIndex + 1}
-          </Text>
-          <Text style={[styles.stepTitle, { color: theme.colors.text.primary }]}>{currentStep}</Text>
-        </View>
+        {inputMode === 'outline' ? (
+          <>
+            {/* Current Step Header */}
+            <View style={styles.stepHeader}>
+              <Text style={[styles.stepNumber, { color: theme.colors.primary[500] }]}>
+                {currentStepIndex + 1}
+              </Text>
+              <Text style={[styles.stepTitle, { color: theme.colors.text.primary }]}>{currentStep}</Text>
+            </View>
 
-        <OutlineBuilder
-          sections={content.framework_steps}
-          value={outline}
-          onChange={handleOutlineChange}
-          expertOutline={content.expert_outline}
-          showExpertOutline={showExpertOutline}
-          onExpertOutlineToggle={setShowExpertOutline}
-          currentStep={currentStepIndex}
-          onStepChange={handleStepChangeIndex}
-          mode="full_practice"
-          variant="outline"
-          size="md"
-          placeholder="Add bullet point..."
-        />
+            <OutlineBuilder
+              sections={content.framework_steps}
+              value={outline}
+              onChange={handleOutlineChange}
+              expertOutline={content.expert_outline}
+              showExpertOutline={showExpertOutline}
+              onExpertOutlineToggle={setShowExpertOutline}
+              currentStep={currentStepIndex}
+              onStepChange={handleStepChangeIndex}
+              mode="full_practice"
+              variant="outline"
+              size="md"
+              placeholder="Add bullet point..."
+            />
 
-
-        {/* Outline Progress */}
-        <View style={styles.outlineProgress}>
-          <Text style={[styles.outlineProgressTitle, { color: theme.colors.text.primary }]}>
-            Outline Progress
-          </Text>
-          <View style={styles.stepsProgress}>
-            {content.framework_steps.map((step, index) => (
-              <TouchableOpacity
-                key={step}
-                style={[
-                  styles.stepIndicator,
-                  {
-                    backgroundColor: outline[step]?.some(point => point.trim())
-                      ? theme.colors.semantic.success
-                      : index === currentStepIndex
-                      ? theme.colors.primary[500]
-                      : theme.colors.border.light,
-                  },
-                ]}
-                onPress={() => setCurrentStepIndex(index)}
-              >
-                <Text
-                  style={[
-                    styles.stepIndicatorText,
-                    {
-                      color: outline[step]?.length > 0 || index === currentStepIndex
-                        ? theme.colors.text.inverse
-                        : theme.colors.text.secondary,
-                    },
-                  ]}
-                >
-                  {index + 1}
+            {/* Outline Progress */}
+            <View style={styles.outlineProgress}>
+              <Text style={[styles.outlineProgressTitle, { color: theme.colors.text.primary }]}>
+                Outline Progress
+              </Text>
+              <View style={styles.stepsProgress}>
+                {content.framework_steps.map((step, index) => (
+                  <TouchableOpacity
+                    key={step}
+                    style={[
+                      styles.stepIndicator,
+                      {
+                        backgroundColor: outline[step]?.some(point => point.trim())
+                          ? theme.colors.semantic.success
+                          : index === currentStepIndex
+                          ? theme.colors.primary[500]
+                          : theme.colors.border.light,
+                      },
+                    ]}
+                    onPress={() => setCurrentStepIndex(index)}
+                  >
+                    <Text
+                      style={[
+                        styles.stepIndicatorText,
+                        {
+                          color: outline[step]?.length > 0 || index === currentStepIndex
+                            ? theme.colors.text.inverse
+                            : theme.colors.text.secondary,
+                        },
+                      ]}
+                    >
+                      {index + 1}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </>
+        ) : (
+          /* Voice Mode */
+          <View style={styles.voiceModeContainer}>
+            <VoiceRecorder
+              onRecordingComplete={handleVoiceRecordingComplete}
+              maxDuration={300} // 5 minutes
+              mode="practice"
+            />
+            
+            {voiceTranscription && (
+              <View style={styles.transcriptionPreview}>
+                <Text style={[styles.transcriptionLabel, { color: theme.colors.text.secondary }]}>
+                  Your Answer:
                 </Text>
-              </TouchableOpacity>
-            ))}
+                <ScrollView style={styles.transcriptionScroll}>
+                  <Text style={[styles.transcriptionText, { color: theme.colors.text.primary }]}>
+                    {voiceTranscription}
+                  </Text>
+                </ScrollView>
+              </View>
+            )}
           </View>
-        </View>
+        )}
       </ScrollView>
 
       {/* Submit Button */}
@@ -257,14 +396,22 @@ export function FullPracticeLesson({ content, onComplete, onError }: FullPractic
           onPress={handleSubmit}
           disabled={isSubmitting}
         >
-          <Send size={20} color="white" />
-          <Text style={styles.submitButtonText}>
-            {isSubmitting ? 'Submitting...' : 'Submit Practice'}
-          </Text>
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <>
+              <Send size={20} color="white" />
+              <Text style={styles.submitButtonText}>
+                {inputMode === 'voice' && voiceTranscription 
+                  ? 'Submit & Get Feedback' 
+                  : 'Submit Practice'}
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* Submission Modal - placed outside KeyboardAvoidingView for proper modal behavior */}
+      {/* Submission Modal */}
       <Modal
         visible={showSubmissionModal}
         transparent
@@ -278,7 +425,9 @@ export function FullPracticeLesson({ content, onComplete, onError }: FullPractic
               Submit Your Practice?
             </Text>
             <Text style={[styles.modalText, { color: theme.colors.text.secondary }]}>
-              Your outline will be evaluated using AI feedback. You'll receive detailed scores on structure, completeness, and framework adherence.
+              {inputMode === 'voice'
+                ? 'Your voice answer will be transcribed and evaluated by AI. You\'ll receive detailed feedback on structure, depth, and completeness.'
+                : 'Your outline will be evaluated using AI feedback. You\'ll receive detailed scores on structure, completeness, and framework adherence.'}
             </Text>
 
             <View style={styles.modalActions}>
@@ -306,6 +455,18 @@ export function FullPracticeLesson({ content, onComplete, onError }: FullPractic
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  loadingSubtext: {
+    fontSize: 14,
   },
   progressBar: {
     height: 4,
@@ -363,6 +524,33 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.label.sm.fontSize,
     color: theme.colors.text.inverse,
   },
+  modeToggle: {
+    flexDirection: 'row',
+    marginTop: theme.spacing[4],
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: theme.spacing.borderRadius.sm,
+    padding: 2,
+  },
+  modeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing[2],
+    paddingVertical: theme.spacing[2],
+    borderRadius: theme.spacing.borderRadius.sm - 2,
+  },
+  modeButtonActive: {
+    backgroundColor: 'white',
+  },
+  modeButtonText: {
+    fontSize: theme.typography.label.md.fontSize,
+    fontWeight: '600',
+    color: theme.colors.text.secondary,
+  },
+  modeButtonTextActive: {
+    color: theme.colors.primary[500],
+  },
   questionSection: {
     padding: theme.spacing[5],
     borderBottomWidth: 1,
@@ -403,83 +591,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
   },
-  expertSection: {
-    borderRadius: theme.spacing.borderRadius.md,
-    padding: theme.spacing[4],
-    marginBottom: theme.spacing[6],
-  },
-  expertHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[2],
-    marginBottom: theme.spacing[3],
-  },
-  expertTitle: {
-    fontSize: theme.typography.body.lg.fontSize,
-    fontWeight: '600',
-  },
-  expertList: {
-    gap: theme.spacing[2],
-  },
-  expertPoint: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.spacing[2],
-  },
-  bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: theme.spacing[2],
-    flexShrink: 0,
-  },
-  expertPointText: {
-    fontSize: theme.typography.body.md.fontSize,
-    lineHeight: 20,
-    flex: 1,
-  },
-  inputSection: {
-    marginBottom: theme.spacing[8],
-  },
-  inputLabel: {
-    fontSize: theme.typography.body.lg.fontSize,
-    fontWeight: '600',
-    marginBottom: theme.spacing[3],
-  },
-  textInput: {
-    borderRadius: theme.spacing.borderRadius.md,
-    borderWidth: 2,
-    padding: theme.spacing[4],
-    fontSize: theme.typography.body.lg.fontSize,
-    lineHeight: 24,
-    minHeight: 150,
-  },
-  inputHint: {
-    fontSize: theme.typography.label.sm.fontSize,
-    marginTop: theme.spacing[2],
-    fontStyle: 'italic',
-  },
-  stepNavigation: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing[8],
-  },
-  stepNavButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing[2],
-    paddingVertical: theme.spacing[3],
-    paddingHorizontal: theme.spacing[5],
-    borderRadius: theme.spacing.borderRadius.sm,
-    backgroundColor: theme.colors.surface.secondary,
-  },
-  stepNavButtonNext: {
-    backgroundColor: theme.colors.primary[500],
-  },
-  stepNavButtonText: {
-    fontSize: theme.typography.body.lg.fontSize,
-    fontWeight: '500',
-  },
   outlineProgress: {
     marginBottom: theme.spacing[5],
   },
@@ -502,6 +613,27 @@ const styles = StyleSheet.create({
   stepIndicatorText: {
     fontSize: theme.typography.label.md.fontSize,
     fontWeight: '600',
+  },
+  voiceModeContainer: {
+    marginBottom: theme.spacing[4],
+  },
+  transcriptionPreview: {
+    marginTop: theme.spacing[4],
+  },
+  transcriptionLabel: {
+    fontSize: theme.typography.label.md.fontSize,
+    fontWeight: '600',
+    marginBottom: theme.spacing[2],
+  },
+  transcriptionScroll: {
+    maxHeight: 200,
+    backgroundColor: theme.colors.surface.secondary,
+    borderRadius: theme.spacing.borderRadius.md,
+    padding: theme.spacing[4],
+  },
+  transcriptionText: {
+    fontSize: theme.typography.body.md.fontSize,
+    lineHeight: 22,
   },
   submitSection: {
     padding: theme.spacing[5],

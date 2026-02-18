@@ -83,10 +83,10 @@ export default function QuickQuizScreen() {
     } else if (initialQuestions && initialQuestions.length > 0) {
       queue = initialQuestions;
     } else {
-      try {
-        if (userId) {
-          queue = await getRecommendedQuestions(userId, false, questionCount);
-        }
+        try {
+          if (userId) {
+            queue = await getRecommendedQuestions(userId, questionCount);
+          }
       } catch (error) {
         console.error('Error getting personalized questions:', error);
       }
@@ -105,12 +105,12 @@ export default function QuickQuizScreen() {
 
     if (queue.length > 0) {
       try {
-        await startQuiz(queue, userId || '', false);
+        await startQuiz(queue, userId || '');
       } catch (error) {
         console.error('Error starting quiz:', error);
         try {
           const mcqQuestions = sampleQuestions.filter(q => q.mcq_version?.enabled);
-          await startQuiz(mcqQuestions.slice(0, questionCount), 'error', false);
+          await startQuiz(mcqQuestions.slice(0, questionCount), 'error');
         } catch (e) {
           console.error('Fatal error starting quiz:', e);
         }
@@ -135,7 +135,7 @@ export default function QuickQuizScreen() {
     answerMCQSubQuestion(currentQuestionIndex, optionIndex, isCorrect);
 
     const userId = user?.id || '';
-    await submitAnswer(userId, false);
+    await submitAnswer(userId);
 
     setShowFeedback(true);
   };
@@ -144,7 +144,7 @@ export default function QuickQuizScreen() {
     if (!currentQuestion) return;
 
     const userId = user?.id || '';
-    const hasNext = await nextQuizQuestion(userId, false);
+    const hasNext = await nextQuizQuestion(userId);
       
     if (hasNext) {
       setSelectedOption(null);

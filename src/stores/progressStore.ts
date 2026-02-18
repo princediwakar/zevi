@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { UserProgress, PracticeMode, QuestionCategory, SessionWithQuestion } from '../types';
+import { UserProgress, PracticeMode, QuestionCategory, SessionWithQuestion, Lesson } from '../types';
 import * as progressService from '../services/progressService';
 
 interface WeakArea {
@@ -10,6 +10,7 @@ interface WeakArea {
 
 interface ProgressState {
   progress: UserProgress | null;
+  currentLesson: Lesson | null; // The user's current lesson in the course
   loading: boolean;
   error: string | null;
   history: SessionWithQuestion[];
@@ -22,6 +23,9 @@ interface ProgressState {
   
   // Actions
   fetchProgress: (userId: string) => Promise<void>;
+  fetchCurrentLesson: (userId: string) => Promise<void>;
+  initializeCurrentLesson: (userId: string) => Promise<void>;
+  completeCurrentLesson: (userId: string, lessonId: string) => Promise<void>;
   fetchHistory: (userId: string) => Promise<void>;
   fetchActivity: (userId: string) => Promise<void>;
   fetchMastery: (userId: string) => Promise<void>;
@@ -37,6 +41,7 @@ interface ProgressState {
 
 export const useProgressStore = create<ProgressState>((set, get) => ({
   progress: null,
+  currentLesson: null,
   loading: false,
   error: null,
   history: [],
@@ -46,6 +51,38 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
   readinessScore: 0,
   weakAreas: [],
   incorrectQuestions: [],
+
+  fetchCurrentLesson: async (userId: string) => {
+    try {
+      const lesson = await progressService.getCurrentLesson(userId);
+      set({ currentLesson: lesson });
+    } catch (error) {
+      console.error('Error fetching current lesson:', error);
+    }
+  },
+
+  initializeCurrentLesson: async (userId: string) => {
+    try {
+      const lesson = await progressService.initializeCurrentLesson(userId);
+      set({ currentLesson: lesson });
+    } catch (error) {
+      console.error('Error initializing current lesson:', error);
+    }
+  },
+
+  completeCurrentLesson: async (userId: string, lessonId: string) => {
+    try {
+      // Mark lesson as completed
+      await progressService.markLessonCompleted(userId, lessonId);
+      // Advance to next lesson
+      const nextLesson = await progressService.advanceToNextLesson(userId, lessonId);
+      set({ currentLesson: nextLesson });
+      // Also refresh progress to update completed_lessons
+      await get().fetchProgress(userId);
+    } catch (error) {
+      console.error('Error completing current lesson:', error);
+    }
+  },
 
   fetchProgress: async (userId: string) => {
     set({ loading: true, error: null });

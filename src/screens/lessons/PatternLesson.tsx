@@ -18,14 +18,21 @@ export function PatternLesson({ content, onComplete, onError }: PatternLessonPro
   const [answers, setAnswers] = useState<UserOutline>({});
   const [isComplete, setIsComplete] = useState(false);
 
-  const progress = ((currentQuestion + 1) / content.questions.length) * 100;
+  // Handle missing content - check both top-level and nested pattern_content
+  const patternContent = content?.pattern_content || content;
+  const questions = content?.questions || patternContent?.questions || [];
+  const template = content?.template || patternContent?.template || [];
+  const patternName = content?.pattern_name || patternContent?.pattern_name || 'Pattern';
+  const totalQuestions = questions.length || 1;
+  
+  const progress = ((currentQuestion + 1) / totalQuestions) * 100;
 
 
   const handleSubmitAnswer = () => {
     setIsComplete(true);
 
     setTimeout(() => {
-      if (currentQuestion < content.questions.length - 1) {
+      if (currentQuestion < totalQuestions - 1) {
         setCurrentQuestion(currentQuestion + 1);
         setAnswers({});
         setIsComplete(false);
@@ -36,13 +43,26 @@ export function PatternLesson({ content, onComplete, onError }: PatternLessonPro
   };
 
   const renderTemplate = () => {
+    if (template.length === 0) {
+      return (
+        <View style={styles.templateContainer}>
+          <Text style={[styles.templateTitle, { color: theme.colors.text.primary }]}>
+            Template
+          </Text>
+          <Text style={[styles.templateStepText, { color: theme.colors.text.secondary }]}>
+            No template available
+          </Text>
+        </View>
+      );
+    }
+    
     return (
       <View style={styles.templateContainer}>
         <Text style={[styles.templateTitle, { color: theme.colors.text.primary }]}>
-          {content.pattern_name} Template
+          {patternName} Template
         </Text>
         <ScrollView style={styles.templateSteps}>
-          {content.template.map((step, index) => (
+          {template.map((step, index) => (
             <View key={index} style={styles.templateStep}>
               <Text style={[styles.templateStepText, { color: theme.colors.text.primary }]}>
                 {index + 1}. {step}
@@ -55,7 +75,17 @@ export function PatternLesson({ content, onComplete, onError }: PatternLessonPro
   };
 
   const renderQuestion = () => {
-    const question = content.questions[currentQuestion];
+    if (questions.length === 0) {
+      return (
+        <View style={styles.questionContainer}>
+          <Text style={[styles.questionText, { color: theme.colors.text.primary }]}>
+            No questions available for this lesson.
+          </Text>
+        </View>
+      );
+    }
+    
+    const question = questions[currentQuestion];
 
     return (
       <View style={styles.questionContainer}>
@@ -66,7 +96,7 @@ export function PatternLesson({ content, onComplete, onError }: PatternLessonPro
         {renderTemplate()}
 
         <OutlineBuilder
-          sections={content.template}
+          sections={template}
           value={answers}
           onChange={setAnswers}
           mode="pattern"
@@ -97,7 +127,7 @@ export function PatternLesson({ content, onComplete, onError }: PatternLessonPro
           Pattern Practice
         </Text>
         <Text style={[styles.headerSubtext, { color: theme.colors.text.secondary }]}>
-          {currentQuestion + 1} of {content.questions.length} questions
+          {currentQuestion + 1} of {totalQuestions} questions
         </Text>
       </View>
 

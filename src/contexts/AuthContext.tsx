@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserStore } from '../stores/userStore';
+import { createUserProfile } from '../services/authService';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Initialize user store with authenticated user
         if (session?.user) {
-          await initializeUser(session.user, false);
+          await initializeUser(session.user);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -75,16 +76,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (isSigningOut.current) {
         console.log('Skipping auth state change during sign out');
         return;
-      }
-
-      console.log('Auth state changed:', event, session?.user?.email);
-      
+      }      
       setSession(session);
       setUser(session?.user ?? null);
 
       // Initialize user store
       if (session?.user) {
-        await initializeUser(session.user, false);
+        await initializeUser(session.user);
       }
 
       setLoading(false);
@@ -107,9 +105,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      // If sign up successful, update state
+      // If sign up successful, create user profile
       if (data.user) {
         setUser(data.user);
+        // Create profile in database
+        try {
+          await createUserProfile(data.user.id, email, fullName);
+          console.log('User profile created successfully');
+        } catch (profileError) {
+          console.warn('Failed to create user profile:', profileError);
+          // Don't fail signup if profile creation fails
+        }
       }
 
       return { error: null };
@@ -127,9 +133,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      // If sign in successful, update state
+      // If sign in successful, ensure user profile exists
       if (data.user) {
         setUser(data.user);
+        
+        // Create profile if it doesn't exist
+        try {
+          const { getUserProfile } = await import('../services/authService');
+          const existingProfile = await getUserProfile(data.user.id);
+          if (!existingProfile) {
+            await createUserProfile(data.user.id, email);
+            console.log('User profile created on sign in');
+          }
+        } catch (profileError) {
+          console.warn('Failed to create profile on sign in:', profileError);
+        }
       }
 
       return { error: null };
@@ -221,6 +239,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (sessionData.user && sessionData.session) {
               setUser(sessionData.user);
               setSession(sessionData.session);
+              
+              // Create user profile if it doesn't exist
+              try {
+                const { getUserProfile } = await import('../services/authService');
+                const existingProfile = await getUserProfile(sessionData.user.id);
+                if (!existingProfile) {
+                  await createUserProfile(
+                    sessionData.user.id, 
+                    sessionData.user.email || '', 
+                    sessionData.user.user_metadata?.full_name
+                  );
+                  console.log('Google OAuth: User profile created');
+                }
+              } catch (profileError) {
+                console.warn('Failed to create profile on OAuth:', profileError);
+              }
             }
 
             // Clean up stored code verifier

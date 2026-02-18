@@ -5,6 +5,8 @@ import {
   Alert,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  Text,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,56 +15,98 @@ import { useQuestionsStore } from '../stores/questionsStore';
 import { usePracticeStore } from '../stores/practiceStore';
 import { useProgressStore } from '../stores/progressStore';
 import { useAuth } from '../hooks/useAuth';
-import {
-  Container,
-  DisplayLG,
-  BodyLG,
-  BodyXL,
-  LabelSM,
-  PrimaryButton,
-  GhostButton,
-  OutlineButton,
-  Row,
-  Spacer
-} from '../components/ui';
-import { VoiceRecorder } from '../components/VoiceRecorder';
+import * as practiceService from '../services/practiceService';
 import { theme } from '../theme';
+import { VoiceRecorder } from '../components/VoiceRecorder';
 
 type TextPracticeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'TextPractice'>;
 type TextPracticeScreenRouteProp = RouteProp<RootStackParamList, 'TextPractice'>;
+
+interface PreviousAttempt {
+  id: string;
+  created_at: string;
+  user_answer: string;
+}
 
 export default function TextPracticeScreen() {
   const navigation = useNavigation<TextPracticeScreenNavigationProp>();
   const route = useRoute<TextPracticeScreenRouteProp>();
   const { questionId } = route.params;
 
-  const { questions } = useQuestionsStore();
+  const { getQuestionById } = useQuestionsStore();
   const {
-    textAnswer,
+    textAnswer = '',
     setTextAnswer,
     saveDraft,
     loadDraft,
     submitAnswer,
     loading,
     resetPractice,
+    startPractice,
   } = usePracticeStore();
   const { user } = useAuth();
   const { updateAfterCompletion } = useProgressStore();
   
-  const question = questions.find((q) => q.id === questionId);
-  
+  const [question, setQuestion] = useState<any>(null);
+  const [loadingQuestion, setLoadingQuestion] = useState(true);
   const [showHint, setShowHint] = useState(false);
+  const [previousAttempts, setPreviousAttempts] = useState<PreviousAttempt[]>([]);
+  const [loadingAttempts, setLoadingAttempts] = useState(true);
   
-  // refs for Store functions to avoid effect re-runs
   const loadDraftRef = useRef(loadDraft);
+  loadDraftRef.current = loadDraft;
   
-  // Keep refs updated
-  useEffect(() => {
-    loadDraftRef.current = loadDraft;
-  }, [loadDraft]);
+  const handleRecordingComplete = useCallback((audioUri: string, transcription: string) => {
+    setTextAnswer(transcription);
+  }, [setTextAnswer]);
 
   useEffect(() => {
-    // Load draft if user is logged in
+    async function loadQuestion() {
+      try {
+        const fetched = await getQuestionById(questionId);
+        setQuestion(fetched);
+        
+        // Start practice session with 'text' mode
+        if (fetched && user?.id) {
+          await startPractice(fetched, 'text', user.id);
+        }
+      } catch (e) {
+        console.error('Failed to load question:', e);
+      } finally {
+        setLoadingQuestion(false);
+      }
+    }
+    loadQuestion();
+  }, [questionId, getQuestionById, user?.id, startPractice]);
+
+  useEffect(() => {
+    async function loadAttempts() {
+      if (!user?.id) {
+        setLoadingAttempts(false);
+        return;
+      }
+      
+      try {
+        const sessions = await practiceService.getQuestionSessions(user.id, questionId);
+        const attempts = sessions
+          .filter(s => s.completed && s.user_answer)
+          .map(s => ({
+            id: s.id,
+            created_at: s.created_at,
+            user_answer: typeof s.user_answer === 'string' ? s.user_answer : JSON.stringify(s.user_answer)
+          }));
+        setPreviousAttempts(attempts);
+      } catch (e) {
+        console.error('Failed to load previous attempts:', e);
+      } finally {
+        setLoadingAttempts(false);
+      }
+    }
+    
+    loadAttempts();
+  }, [questionId, user]);
+
+  useEffect(() => {
     const userId = user?.id;
     if (userId) {
       loadDraftRef.current(userId, questionId);
@@ -92,11 +136,9 @@ export default function TextPracticeScreen() {
     const userId = user?.id;
 
     if (userId && question) {
-      // First, submit the answer to create/update the session
       const sessionSubmitted = await submitAnswer(userId);
 
       if (sessionSubmitted) {
-        // Now generate AI feedback using the practice store method
         await generateFeedbackAndComplete(userId);
       } else {
         Alert.alert('ERROR', 'Failed to submit answer. Please try again.');
@@ -104,7 +146,6 @@ export default function TextPracticeScreen() {
     }
   };
 
-  // Generate AI feedback and update progress
   const generateFeedbackAndComplete = async (userId: string) => {
     if (!question) return;
 
@@ -116,169 +157,326 @@ export default function TextPracticeScreen() {
 
       if (feedbackError) {
         console.error('Feedback generation error:', feedbackError);
-        // Continue anyway - show results without feedback
         resetPractice();
         navigation.navigate('QuizResults');
         return;
       }
 
-      // Update progress after successful completion
       await updateAfterCompletion(userId, 'text', question.category);
 
-      // Navigate to results which shows feedback
       resetPractice();
       navigation.navigate('QuizResults');
     } catch (err) {
       console.error('Error generating feedback:', err);
-      // Fallback - still navigate to results
       resetPractice();
       navigation.navigate('QuizResults');
     }
   };
 
-  if (!question) return null;
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
 
-  // Handle transcription from VoiceRecorder
-  const handleRecordingComplete = useCallback((audioUri: string, transcription: string) => {
-    setTextAnswer(transcription);
-  }, [setTextAnswer]);
+  if (loadingQuestion) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={theme.colors.text.primary} />
+      </View>
+    );
+  }
+
+  if (!question) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.errorText}>Question not found</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.errorButton}>GO BACK</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
-    <Container variant="screen" padding="none" safeArea>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-          <GhostButton size="sm" onPress={handleSaveDraft}>
-              SAVE DRAFT
-          </GhostButton>
+      <View style={[styles.header, { borderBottomColor: theme.colors.border.light }]}>
+        <TouchableOpacity onPress={handleSaveDraft}>
+          <Text style={[styles.headerButton, { color: theme.colors.text.primary }]}>SAVE</Text>
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>PRACTICE</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={[styles.headerButton, { color: theme.colors.text.primary }]}>BACK</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Main Content - Scrollable */}
       <ScrollView 
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-         {/* Massive Question Text */}
-         {question.question_text.length > 100 ? (
-             <BodyXL style={styles.questionText}>{question.question_text}</BodyXL>
-         ) : (
-             <DisplayLG style={styles.questionText}>{question.question_text}</DisplayLG>
-         )}
-         
-         <Spacer size={theme.spacing[6]} />
+        {/* Question */}
+        <Text style={[styles.questionText, { color: theme.colors.text.primary }]}>
+          {question.question_text}
+        </Text>
 
-          {/* Framework Hint Section */}
-          <View style={styles.section}>
-              {showHint ? (
-                  <View style={styles.hintContainer}>
-                      <Row style={styles.hintHeader}>
-                      <LabelSM>FRAMEWORK HINT</LabelSM>
-                      <TouchableOpacity onPress={() => setShowHint(false)}>
-                          <LabelSM style={{ color: theme.colors.primary[500] }}>HIDE</LabelSM>
-                      </TouchableOpacity>
-                      </Row>
-                      <BodyLG style={styles.hintText}>
-                      {question.framework_hint || 'No specific framework hint for this question.'}
-                      </BodyLG>
-                  </View>
-              ) : (
-                  <OutlineButton 
-                      size="sm" 
-                      onPress={() => setShowHint(true)}
-                      style={styles.hintButton}
-                  >
-                      SHOW FRAMEWORK HINT
-                  </OutlineButton>
-              )}
+        {/* Hint Toggle */}
+        <TouchableOpacity 
+          style={[styles.hintToggle, { borderColor: theme.colors.border.light }]}
+          onPress={() => setShowHint(!showHint)}
+        >
+          <Text style={[styles.hintToggleText, { color: theme.colors.text.secondary }]}>
+            {showHint ? '− HIDE HINT' : '+ SHOW HINT'}
+          </Text>
+        </TouchableOpacity>
+
+        {showHint && (
+          <View style={[styles.hintBox, { borderLeftColor: theme.colors.primary[500] }]}>
+            <Text style={[styles.hintText, { color: theme.colors.text.primary }]}>
+              {question.framework_hint || 'No hint available.'}
+            </Text>
           </View>
+        )}
 
-          <Spacer size={theme.spacing[8]} />
+        {/* Divider */}
+        <View style={[styles.divider, { backgroundColor: theme.colors.text.primary }]} />
+
+        {/* Voice Recorder - PROMINENT */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: theme.colors.text.primary }]}>
+            🎤 RECORD YOUR ANSWER
+          </Text>
+          
+          <VoiceRecorder 
+            onRecordingComplete={handleRecordingComplete}
+            maxDuration={300}
+            mode="practice"
+          />
+        </View>
+
+        {/* Current Answer */}
+        {textAnswer ? (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.text.primary }]}>
+              YOUR ANSWER
+            </Text>
+            <View style={[styles.currentAnswerBox, { borderColor: theme.colors.text.primary }]}>
+              <ScrollView style={styles.answerScroll} nestedScrollEnabled>
+                <Text style={[styles.currentAnswerText, { color: theme.colors.text.primary }]}>
+                  {textAnswer}
+                </Text>
+              </ScrollView>
+            </View>
+            <View style={styles.statsRow}>
+              <Text style={[styles.statText, { color: theme.colors.text.secondary }]}>
+                {textAnswer.length} characters
+              </Text>
+              <Text style={[styles.statText, { color: theme.colors.text.secondary }]}>
+                ~{Math.ceil(textAnswer.length / 5)} words
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Previous Attempts - at the bottom */}
+        {!loadingAttempts && previousAttempts.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
+              PREVIOUS ATTEMPTS ({previousAttempts.length})
+            </Text>
+            
+            {previousAttempts.map((attempt, index) => (
+              <View 
+                key={attempt.id} 
+                style={[styles.attemptCard, { borderColor: theme.colors.border.light }]}
+              >
+                <View style={styles.attemptHeader}>
+                  <Text style={[styles.attemptNumber, { color: theme.colors.text.secondary }]}>
+                    ATTEMPT {previousAttempts.length - index}
+                  </Text>
+                  <Text style={[styles.attemptDate, { color: theme.colors.text.secondary }]}>
+                    {formatDate(attempt.created_at)}
+                  </Text>
+                </View>
+                <Text style={[styles.attemptText, { color: theme.colors.text.primary }]}>
+                  {attempt.user_answer}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
-      {/* Voice Recorder - Fixed position below scroll */}
-      <View style={styles.recorderContainer}>
-        <VoiceRecorder 
-          onRecordingComplete={handleRecordingComplete}
-          maxDuration={300} // 5 minutes
-          mode="practice"
-        />
+      {/* Submit Button */}
+      <View style={[styles.footer, { borderTopColor: theme.colors.border.light }]}>
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            { 
+              backgroundColor: textAnswer.trim() ? theme.colors.text.primary : theme.colors.border.light 
+            }
+          ]}
+          onPress={handleSubmit}
+          disabled={loading || !textAnswer.trim()}
+        >
+          <Text style={styles.submitButtonText}>
+            {loading ? 'SUBMITTING...' : 'SUBMIT ANSWER'}
+          </Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-           <Row style={styles.footerHeader}>
-              <LabelSM color="secondary">
-                  {textAnswer.length} CHARACTERS
-              </LabelSM>
-              <LabelSM color="secondary">
-                  {Math.ceil(textAnswer.length / 5)} WORDS (EST)
-              </LabelSM>
-           </Row>
-           <Spacer size={theme.spacing[3]} />
-           <PrimaryButton
-             size="lg"
-             fullWidth
-             onPress={handleSubmit}
-             loading={loading}
-             disabled={loading || !textAnswer.trim()}
-           >
-               SUBMIT ANSWER
-           </PrimaryButton>
-      </View>
-    </Container>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[4],
+  },
+  errorButton: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.primary[500],
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: theme.spacing[6], // 24px
+    paddingHorizontal: theme.spacing[4],
+    paddingVertical: theme.spacing[4],
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
-    backgroundColor: theme.colors.background,
   },
-  content: {
+  headerButton: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  headerTitle: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.xwide,
+  },
+  scrollView: {
     flex: 1,
   },
-  contentContainer: {
-    padding: theme.spacing[6], // 24px
-    flexGrow: 1,
+  scrollContent: {
+    padding: theme.spacing[6],
   },
   questionText: {
-    color: theme.colors.text.primary,
-  },
-  section: {
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    lineHeight: 32,
     marginBottom: theme.spacing[4],
   },
-  hintContainer: {
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.primary[500],
-    paddingLeft: theme.spacing[4],
+  hintToggle: {
+    alignSelf: 'flex-start',
     paddingVertical: theme.spacing[2],
-    backgroundColor: theme.colors.surface.secondary,
+    paddingHorizontal: theme.spacing[4],
+    borderWidth: 1,
+    marginBottom: theme.spacing[4],
   },
-  hintHeader: {
-    justifyContent: 'space-between',
+  hintToggleText: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  hintBox: {
+    borderLeftWidth: 3,
+    paddingLeft: theme.spacing[4],
+    paddingVertical: theme.spacing[3],
     marginBottom: theme.spacing[4],
   },
   hintText: {
-    color: theme.colors.text.primary,
+    fontSize: theme.swiss.fontSize.body,
+    lineHeight: 22,
   },
-  hintButton: {
-    alignSelf: 'flex-start',
+  divider: {
+    height: 2,
+    marginVertical: theme.spacing[6],
+  },
+  section: {
+    marginBottom: theme.spacing[6],
+  },
+  sectionLabel: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    marginBottom: theme.spacing[3],
+  },
+  instructionText: {
+    fontSize: theme.swiss.fontSize.body,
+    marginBottom: theme.spacing[4],
+  },
+  attemptCard: {
+    borderWidth: 1,
+    padding: theme.spacing[4],
+    marginBottom: theme.spacing[3],
+  },
+  attemptHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing[2],
+  },
+  attemptNumber: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  attemptDate: {
+    fontSize: theme.swiss.fontSize.small,
+  },
+  attemptText: {
+    fontSize: theme.swiss.fontSize.body,
+    lineHeight: 22,
+  },
+  currentAnswerBox: {
+    borderWidth: 2,
+    padding: theme.spacing[4],
+    minHeight: 100,
+    maxHeight: 200,
+  },
+  answerScroll: {
+    maxHeight: 160,
+  },
+  currentAnswerText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    lineHeight: 24,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: theme.spacing[2],
+  },
+  statText: {
+    fontSize: theme.swiss.fontSize.small,
   },
   footer: {
-    padding: theme.spacing[6], // 24px
+    padding: theme.spacing[4],
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
-    backgroundColor: theme.colors.surface.primary,
   },
-  footerHeader: {
-      justifyContent: 'space-between',
+  submitButton: {
+    paddingVertical: theme.spacing[4],
+    alignItems: 'center',
   },
-  recorderContainer: {
-    paddingHorizontal: theme.spacing[4],
+  submitButtonText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.inverse,
+    letterSpacing: theme.swiss.letterSpacing.xwide,
   },
 });

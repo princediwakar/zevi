@@ -3,8 +3,6 @@ export * from './UnitHeader';
 export * from './LessonNode';
 export * from './PathConnector';
 export * from './LearningPathHeader';
-export * from './CelebrationModal';
-export * from './StreakBadge';
 export * from './QuestionTrackCard';
 export * from './QuickActions';
 export * from './QuestionCard';

@@ -50,9 +50,9 @@ export function CategoryListSection({
 
   const isLoading = progressLoading || statsLoading;
 
-  // Get category progress - show all categories, sorted by completion
+  // Get category progress - maintain fixed order from CATEGORIES array
   const categoryProgress = useMemo(() => {
-    const progressData = CATEGORIES.map(cat => {
+    return CATEGORIES.map(cat => {
       const completed = progress?.category_progress?.[cat] ?? 0;
       const total = categoryStats[cat] || 0;
       // Cap completed at total to avoid display issues (data integrity bug workaround)
@@ -64,16 +64,7 @@ export function CategoryListSection({
         percent: total > 0 ? Math.round((displayCompleted / total) * 100) : 0,
       };
     });
-    
-    // Sort: incomplete first (by least completed), then completed (by most total)
-    progressData.sort((a, b) => {
-      if (a.completed < a.total && b.completed >= b.total) return -1;
-      if (b.completed < b.total && a.completed >= a.total) return 1;
-      if (a.completed < a.total && b.completed < b.total) return a.completed - b.completed;
-      return b.total - a.total;
-    });
-    
-    return progressData;
+    // No sorting - keep the fixed order: product_sense, execution, strategy, behavioral, technical, estimation, pricing, ab_testing
   }, [progress, categoryStats]);
 
   const handleCategoryPress = (category: QuestionCategory) => {

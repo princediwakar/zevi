@@ -2,6 +2,9 @@
   "functions": {
     "evaluate-answer": {
       "verifyJWT": true
+    },
+    "transcribe": {
+      "verifyJWT": true
     }
   },
   "imports": {

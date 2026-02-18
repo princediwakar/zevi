@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { View, StyleSheet, RefreshControl, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -26,6 +26,9 @@ export default function HomeScreen() {
   const [todaysQuestion, setTodaysQuestion] = useState<Question | null>(null);
   const [loadingQuestion, setLoadingQuestion] = useState(true);
   
+  // Track the date when today's question was loaded
+  const loadedDateRef = useRef<string | null>(null);
+  
   const userId = user?.id;
 
   // Check if user has practiced today
@@ -42,17 +45,32 @@ export default function HomeScreen() {
       await fetchCategoryStats();
       
       if (!hasPracticedToday) {
-        try {
-          setLoadingQuestion(true);
-          const question = await getPersonalizedQuestion(userId);
-          setTodaysQuestion(question);
-        } catch (error) {
-          console.error('Error loading question:', error);
-        } finally {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Only fetch a new question if:
+        // 1. We haven't loaded a question today yet, OR
+        // 2. The loaded question is from a previous day
+        const needsNewQuestion = !loadedDateRef.current || loadedDateRef.current !== today;
+        
+        if (needsNewQuestion) {
+          try {
+            setLoadingQuestion(true);
+            const question = await getPersonalizedQuestion(userId);
+            setTodaysQuestion(question);
+            loadedDateRef.current = today; // Store the date when we loaded this question
+          } catch (error) {
+            console.error('Error loading question:', error);
+          } finally {
+            setLoadingQuestion(false);
+          }
+        } else {
+          // Already have today's question, just keep it
           setLoadingQuestion(false);
         }
       } else {
         setLoadingQuestion(false);
+        // Reset the loaded date when user has practiced
+        loadedDateRef.current = null;
       }
     }
   }, [userId, fetchProgress, fetchQuestions, fetchCategoryStats, hasPracticedToday]);
@@ -224,7 +242,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.text.primary,
   },
   brand: {
-    fontSize: 24,
+    fontSize: theme.swiss.fontSize.heading,
     fontWeight: theme.swiss.fontWeight.black,
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,
@@ -356,7 +374,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.text.primary,
   },
   doneHeaderText: {
-    fontSize: 24,
+    fontSize: theme.swiss.fontSize.heading,
     fontWeight: theme.swiss.fontWeight.black,
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,

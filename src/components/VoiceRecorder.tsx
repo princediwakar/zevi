@@ -21,38 +21,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabaseClient';
 import { useUserStore } from '../stores/userStore';
 
-// Note: AssemblyAI SDK requires Node.js stream module which doesn't work in React Native
-// For production, use a server-side API endpoint for transcription instead
-
 interface VoiceRecorderProps {
   onRecordingComplete?: (audioUri: string, transcription: string) => void;
-  maxDuration?: number; // in seconds
+  maxDuration?: number;
   mode?: 'practice' | 'mock';
 }
 
 export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   onRecordingComplete,
-  maxDuration = 300, // 5 minutes
+  maxDuration = 300,
   mode = 'practice',
 }) => {
   const { user } = useUserStore();
   const [isRecording, setIsRecording] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [transcription, setTranscription] = useState<string>('');
-  const [audioUri, setAudioUri] = useState<string>('');
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Use expo-audio's useAudioRecorder hook
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
 
   useEffect(() => {
-    // Check permissions on mount
     checkPermissions();
-
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -61,10 +53,8 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   }, []);
 
   useEffect(() => {
-    // Update recording state based on recorder state
     if (recorderState.isRecording && !isRecording) {
       setIsRecording(true);
-      // Start timer when recording begins
       timerRef.current = setInterval(() => {
         setRecordTime(prev => {
           if (prev >= maxDuration) {
@@ -75,7 +65,6 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         });
       }, 1000);
     } else if (!recorderState.isRecording && isRecording) {
-      // Recording stopped
       setIsRecording(false);
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -115,7 +104,6 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
       setRecordTime(0);
       setTranscription('');
-      setAudioUri('');
     } catch (error) {
       console.error('Failed to start recording', error);
       Alert.alert('Recording Error', 'Could not start recording. Please try again.');
@@ -129,7 +117,6 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       await recorder.stop();
       
       if (recorder.uri) {
-        setAudioUri(recorder.uri);
         await processRecording(recorder.uri);
       }
     } catch (error) {
@@ -139,63 +126,83 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   };
 
   const processRecording = async (uri: string) => {
-    if (!user) {
-      Alert.alert('Authentication required', 'Please sign in to use voice features.');
-      return;
-    }
-
-    setIsUploading(true);
+    setIsProcessing(true);
     try {
-      // Upload to Supabase Storage
-      const fileName = `voice_${user.id}_${Date.now()}.m4a`;
-      // Convert URI to Blob
       const response = await fetch(uri);
       const blob = await response.blob();
+      const base64 = await blobToBase64(blob);
+      
+      const fileType = uri.includes('.mp3') ? 'mp3' : 
+                       uri.includes('.webm') ? 'webm' : 'm4a';
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('voice_recordings')
-        .upload(fileName, blob, {
-          contentType: 'audio/m4a',
-        });
-
-      if (uploadError) throw uploadError;
-
-      const publicUrl = supabase.storage
-        .from('voice_recordings')
-        .getPublicUrl(fileName).data.publicUrl;
-
-      // Call Whisper API for transcription (placeholder)
-      setIsTranscribing(true);
-      const transcript = await transcribeAudio(uri);
+      const transcript = await transcribeAudio(base64, fileType);
       setTranscription(transcript);
 
-      // Notify parent component
       if (onRecordingComplete) {
-        onRecordingComplete(publicUrl, transcript);
+        onRecordingComplete(uri, transcript);
       }
-
-      // TODO: Send to Claude for analysis
-      // analyzeDelivery(transcript);
-
-      Alert.alert(
-        'Recording Complete',
-        `Your ${formatTime(recordTime)} recording has been transcribed.`
-      );
     } catch (error) {
       console.error('Processing error:', error);
       Alert.alert('Processing Error', 'Could not process recording. Please try again.');
     } finally {
-      setIsUploading(false);
-      setIsTranscribing(false);
+      setIsProcessing(false);
     }
   };
 
-  const transcribeAudio = async (uri: string): Promise<string> => {
-    // Note: AssemblyAI SDK doesn't work in React Native - it requires Node.js stream module
-    // For production, create a server-side API endpoint to handle transcription
-    // This is a placeholder that returns a message about the feature
-    console.log('Transcription requested for:', uri);
-    return `Voice transcription is a premium feature. Your ${formatTime(recordTime)} recording has been saved.`;
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        const base64Data = base64.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const transcribeAudio = async (base64Audio: string, fileType: string): Promise<string> => {
+    try {
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Missing Supabase configuration');
+      }
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token || supabaseKey;
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/transcribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': supabaseKey,
+        },
+        body: JSON.stringify({ 
+          audioBase64: base64Audio,
+          fileType: fileType 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Transcription failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.transcription) {
+        throw new Error('No transcription returned from API');
+      }
+
+      return data.transcription;
+    } catch (error) {
+      console.error('Transcription error:', error);
+      return `Transcription service unavailable. Please try again.`;
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -204,123 +211,60 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const getRecordingStatus = () => {
-    if (isRecording) return `Recording... ${formatTime(recordTime)}`;
-    if (isUploading) return 'Uploading...';
-    if (isTranscribing) return 'Transcribing...';
-    if (audioUri) return 'Recording complete';
-    return 'Ready to record';
-  };
-
-  const getStatusColor = () => {
-    if (isRecording) return theme.colors.semantic.error;
-    if (isUploading || isTranscribing) return theme.colors.semantic.warning;
-    if (audioUri) return theme.colors.semantic.success;
-    return theme.colors.text.secondary;
-  };
-
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surface.primary }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Ionicons name="mic" size={24} color={theme.colors.primary[500]} />
-        <Text style={[styles.headerText, { color: theme.colors.text.primary }]}>
-          Voice Practice
+    <View style={[styles.container, { backgroundColor: theme.colors.surface.secondary, borderColor: theme.colors.border.light }]}>
+      {/* Status */}
+      <View style={styles.statusRow}>
+        <View style={[styles.statusDot, { backgroundColor: isRecording ? theme.colors.semantic.error : theme.colors.text.primary }]} />
+        <Text style={[styles.statusText, { color: theme.colors.text.primary }]}>
+          {isRecording ? 'RECORDING' : isProcessing ? 'PROCESSING' : transcription ? 'COMPLETED' : 'TAP TO RECORD'}
         </Text>
-        <Text style={[styles.headerSubtext, { color: theme.colors.text.secondary }]}>
-          Record your answer, get AI feedback on delivery
-        </Text>
-      </View>
-
-      {/* Recording Status */}
-      <View style={styles.statusContainer}>
-        <View style={[styles.statusIndicator, { backgroundColor: getStatusColor() + '20' }]}>
-          <Text style={[styles.statusText, { color: getStatusColor() }]}>
-            {getRecordingStatus()}
-          </Text>
-        </View>
-
-        {isRecording && (
-          <View style={styles.recordingAnimation}>
-            <View style={[styles.recordingDot, { backgroundColor: theme.colors.semantic.error }]} />
-            <Text style={[styles.recordingText, { color: theme.colors.semantic.error }]}>
-              LIVE
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Timer Display */}
-      <View style={styles.timerContainer}>
-        <Text style={[styles.timerText, { color: theme.colors.text.primary }]}>
+        <Text style={[styles.timerText, { color: isRecording ? theme.colors.semantic.error : theme.colors.text.secondary }]}>
           {formatTime(recordTime)}
         </Text>
-        <Text style={[styles.timerLabel, { color: theme.colors.text.secondary }]}>
-          / {formatTime(maxDuration)}
-        </Text>
       </View>
 
-      {/* Record Button */}
+      {/* Large Record Button */}
       <TouchableOpacity
         style={[
           styles.recordButton,
           {
-            backgroundColor: isRecording
-              ? theme.colors.semantic.error
-              : theme.colors.primary[500],
-          },
+            backgroundColor: isRecording ? theme.colors.semantic.error : theme.colors.text.primary,
+          }
         ]}
         onPress={isRecording ? stopRecording : startRecording}
-        disabled={isUploading || isTranscribing}
+        disabled={isProcessing}
+        activeOpacity={0.7}
       >
         <Ionicons
           name={isRecording ? 'stop' : 'mic'}
-          size={32}
+          size={48}
           color={theme.colors.text.inverse}
         />
-        <Text style={[styles.recordButtonText, { color: theme.colors.text.inverse }]}>
-          {isRecording ? 'Stop Recording' : 'Start Recording'}
-        </Text>
       </TouchableOpacity>
 
-      {/* Transcription Preview */}
-      {transcription ? (
-        <View style={styles.transcriptionContainer}>
-          <Text style={[styles.transcriptionLabel, { color: theme.colors.text.secondary }]}>
-            Transcription Preview:
-          </Text>
-          <ScrollView style={styles.transcriptionScroll}>
-            <Text style={[styles.transcriptionText, { color: theme.colors.text.primary }]}>
-              {transcription}
-            </Text>
-          </ScrollView>
-        </View>
-      ) : (
-        <View style={styles.placeholderContainer}>
-          <Ionicons name="document-text" size={48} color={theme.colors.border.light} />
-          <Text style={[styles.placeholderText, { color: theme.colors.text.secondary }]}>
-            Your transcription will appear here after recording
-          </Text>
-        </View>
-      )}
+      {/* Button Label */}
+      <Text style={[styles.buttonLabel, { color: theme.colors.text.secondary }]}>
+        {isRecording ? 'TAP TO STOP' : 'TAP TO START RECORDING'}
+      </Text>
 
-      {/* Loading States */}
-      {(isUploading || isTranscribing) && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-          <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
-            {isUploading ? 'Uploading to secure storage...' : 'Transcribing with AI...'}
-          </Text>
-        </View>
-      )}
-
-      {/* Premium Badge */}
-      {mode === 'mock' && (
-        <View style={styles.premiumBadge}>
-          <Ionicons name="star" size={16} color={theme.colors.semantic.warning} />
-          <Text style={[styles.premiumText, { color: theme.colors.semantic.warning }]}>
-            Premium Feature
-          </Text>
+      {/* Transcription */}
+      {(transcription || isProcessing) && (
+        <View style={[styles.transcriptionBox, { borderColor: theme.colors.border.light, backgroundColor: theme.colors.background }]}>
+          {isProcessing ? (
+            <View style={styles.processingRow}>
+              <ActivityIndicator size="small" color={theme.colors.text.primary} />
+              <Text style={[styles.processingText, { color: theme.colors.text.secondary }]}>
+                Transcribing your answer...
+              </Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.transcriptionScroll} nestedScrollEnabled>
+              <Text style={[styles.transcriptionText, { color: theme.colors.text.primary }]}>
+                {transcription}
+              </Text>
+            </ScrollView>
+          )}
         </View>
       )}
     </View>
@@ -329,143 +273,72 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 20,
-    padding: 24,
-    marginVertical: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: theme.spacing[6],
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  headerText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  headerSubtext: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  statusContainer: {
+  statusRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing[6],
   },
-  statusIndicator: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: theme.spacing[2],
   },
   statusText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  recordingAnimation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  recordingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  recordingText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  timerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'baseline',
-    marginBottom: 24,
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    flex: 1,
   },
   timerText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-  },
-  timerLabel: {
-    fontSize: 20,
-    fontWeight: '500',
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.bold,
+    fontVariant: ['tabular-nums'],
   },
   recordButton: {
-    flexDirection: 'row',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 12,
-    marginBottom: 24,
+    alignSelf: 'center',
+    marginBottom: theme.spacing[4],
   },
-  recordButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
+  buttonLabel: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.medium,
+    textAlign: 'center',
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
-  transcriptionContainer: {
-    marginTop: 16,
-  },
-  transcriptionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+  transcriptionBox: {
+    marginTop: theme.spacing[6],
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: theme.spacing[4],
+    maxHeight: 180,
   },
   transcriptionScroll: {
-    maxHeight: 150,
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-    borderRadius: 12,
-    padding: 12,
+    maxHeight: 140,
   },
   transcriptionText: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    lineHeight: 24,
   },
-  placeholderContainer: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    borderColor: theme.colors.border.light,
-    marginTop: 16,
-  },
-  placeholderText: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 12,
-    paddingHorizontal: 20,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: 24,
-  },
-  loadingText: {
-    fontSize: 14,
-    marginTop: 12,
-  },
-  premiumBadge: {
+  processingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    marginTop: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: 'rgba(251, 191, 36, 0.1)',
-    alignSelf: 'center',
+    paddingVertical: theme.spacing[4],
   },
-  premiumText: {
-    fontSize: 12,
-    fontWeight: '600',
+  processingText: {
+    fontSize: theme.swiss.fontSize.body,
+    marginLeft: theme.spacing[3],
   },
 });
-
 
 export default VoiceRecorder;

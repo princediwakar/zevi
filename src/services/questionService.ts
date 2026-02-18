@@ -244,8 +244,7 @@ export async function getUnpracticedQuestions(
     // Get all available questions
     const { data: allQuestions, error: questionsError } = await supabase
       .from('questions')
-      .select('*')
-      .not('mcq_version', 'is', null); // Only questions with MCQ version
+      .select('*');
 
     if (questionsError) {
       logger.error('Error fetching questions:', questionsError);
@@ -317,8 +316,7 @@ export async function getWeakCategoryQuestions(
     // Get all categories
     const { data: allQuestions, error } = await supabase
       .from('questions')
-      .select('*, practice_sessions!inner(id)')
-      .not('mcq_version', 'is', null);
+      .select('*, practice_sessions!inner(id)');
 
     if (error || !allQuestions) {
       logger.error('Error fetching questions:', error);
@@ -352,7 +350,6 @@ export async function getWeakCategoryQuestions(
         .from('questions')
         .select('*')
         .eq('category', category)
-        .not('mcq_version', 'is', null)
         .limit(limit - result.length);
 
       if (categoryQuestions) {
@@ -430,7 +427,6 @@ export async function getPersonalizedQuizQuestions(
       const { data: reviewQuestions } = await supabase
         .from('questions')
         .select('*')
-        .not('mcq_version', 'is', null)
         .limit(reviewCount * 2); // Get extra to filter duplicates
       
       if (reviewQuestions) {
@@ -465,7 +461,6 @@ async function getRandomQuestions(limit: number): Promise<Question[]> {
     const { data, error } = await supabase
       .from('questions')
       .select('*')
-      .not('mcq_version', 'is', null)
       .limit(limit * 2); // Get extra to filter
 
     if (error || !data) return [];
@@ -481,8 +476,7 @@ async function getRandomQuestions(limit: number): Promise<Question[]> {
 // Helper: Get single random question (for store fallback)
 function getRandomQuestion(): Question | undefined {
   // Use sample questions as fallback when database is unavailable
-  const mcqQuestions = sampleQuestions.filter(q => q.mcq_version?.enabled);
-  if (mcqQuestions.length === 0) return undefined;
-  const randomIndex = Math.floor(Math.random() * mcqQuestions.length);
-  return mcqQuestions[randomIndex];
+  if (sampleQuestions.length === 0) return undefined;
+  const randomIndex = Math.floor(Math.random() * sampleQuestions.length);
+  return sampleQuestions[randomIndex];
 }

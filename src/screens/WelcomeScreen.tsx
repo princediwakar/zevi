@@ -49,7 +49,7 @@ export default function WelcomeScreen() {
         </View>
 
         <View style={styles.footer}>
-          <BodyMD color="secondary" align="center" style={styles.footerText}>
+          <BodyMD color="secondary" align="center">
             By continuing, you agree to our Terms of Service
           </BodyMD>
         </View>

@@ -10,13 +10,16 @@ interface DrillLessonProps {
   onError: (error: string) => void;
 }
 
+// SWISS STYLE: Sharp edges, bold typography, high contrast
+
 export function DrillLesson({ content, onComplete, onError }: DrillLessonProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<Set<string>>(new Set());
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
-  const progress = ((currentQuestion + 1) / content.questions.length) * 100;
+  const totalQuestions = content.questions.length || 1;
+  const progress = ((currentQuestion + 1) / totalQuestions) * 100;
 
   const handleOptionSelect = (option: string) => {
     const newSelected = new Set(selectedOptions);
@@ -37,7 +40,7 @@ export function DrillLesson({ content, onComplete, onError }: DrillLessonProps) 
     setShowResult(true);
 
     setTimeout(() => {
-      if (currentQuestion < content.questions.length - 1) {
+      if (currentQuestion < totalQuestions - 1) {
         setCurrentQuestion(currentQuestion + 1);
         setSelectedOptions(new Set());
         setShowResult(false);
@@ -51,21 +54,30 @@ export function DrillLesson({ content, onComplete, onError }: DrillLessonProps) 
   const renderQuestion = () => {
     const question = content.questions[currentQuestion];
 
+    // Get unique options
+    const allOptions = Array.from(
+      new Set([
+        ...(question.correct_options || []),
+        ...(question.incorrect_options || []),
+      ])
+    );
+
     return (
       <View style={styles.questionContainer}>
+        {/* Question Code Box */}
+        <View style={styles.questionCodeBox}>
+          <Text style={styles.questionCodeText}>Q{currentQuestion + 1}</Text>
+        </View>
+        
         <Text style={[styles.questionText, { color: theme.colors.text.primary }]}>
           {question.text}
         </Text>
 
+        {/* Options - Swiss bordered boxes */}
         <View style={styles.optionsContainer}>
-          {Array.from(
-            new Set([
-              ...question.correct_options,
-              ...question.incorrect_options,
-            ])
-          ).map((option, index) => {
+          {allOptions.map((option, index) => {
             const isSelected = selectedOptions.has(option);
-            const isCorrectOption = question.correct_options.includes(option);
+            const isCorrectOption = (question.correct_options || []).includes(option);
             const showCorrectness = showResult;
 
             return (
@@ -74,40 +86,51 @@ export function DrillLesson({ content, onComplete, onError }: DrillLessonProps) 
                 style={[
                   styles.optionButton,
                   {
-                    backgroundColor:
-                      showCorrectness && isCorrectOption
-                        ? theme.colors.semantic.success + '20'
-                        : isSelected
-                        ? theme.colors.primary[100]
-                        : theme.colors.surface.primary,
-                    borderColor:
-                      showCorrectness && isCorrectOption
-                        ? theme.colors.semantic.success
-                        : isSelected
-                        ? theme.colors.primary[500]
-                        : theme.colors.border.light,
+                    backgroundColor: showCorrectness && isCorrectOption
+                      ? theme.colors.semantic.success + '10'
+                      : isSelected
+                      ? theme.colors.text.primary
+                      : theme.colors.background,
+                    borderColor: showCorrectness && isCorrectOption
+                      ? theme.colors.semantic.success
+                      : isSelected
+                      ? theme.colors.text.primary
+                      : theme.colors.text.primary,
                   },
                 ]}
                 onPress={() => !showResult && handleOptionSelect(option)}
                 disabled={showResult}
+                activeOpacity={0.8}
               >
                 <View style={styles.optionContent}>
+                  {/* Option letter */}
+                  <View style={[
+                    styles.optionLetter,
+                    {
+                      borderColor: isSelected ? theme.colors.background : theme.colors.text.primary,
+                      backgroundColor: isSelected ? theme.colors.background : 'transparent',
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.optionLetterText,
+                      { color: isSelected ? theme.colors.text.primary : theme.colors.text.primary }
+                    ]}>
+                      {String.fromCharCode(65 + index)}
+                    </Text>
+                  </View>
+                  
                   <Text
                     style={[
                       styles.optionText,
                       {
-                        color:
-                          showCorrectness && isCorrectOption
-                            ? theme.colors.semantic.success
-                            : isSelected
-                            ? theme.colors.primary[700]
-                            : theme.colors.text.primary,
+                        color: isSelected ? theme.colors.background : theme.colors.text.primary,
                       },
                     ]}
                   >
                     {option}
                   </Text>
-                  {showResult && (
+                  
+                  {showCorrectness && (
                     <View>
                       {isCorrectOption ? (
                         <CheckCircle size={20} color={theme.colors.semantic.success} />
@@ -122,36 +145,60 @@ export function DrillLesson({ content, onComplete, onError }: DrillLessonProps) 
           })}
         </View>
 
+        {/* Feedback - Swiss bordered */}
         {showResult && (
-          <View style={styles.feedbackContainer}>
+          <View style={[
+            styles.feedbackContainer,
+            {
+              borderColor: isCorrect ? theme.colors.semantic.success : theme.colors.semantic.error,
+              backgroundColor: isCorrect ? theme.colors.semantic.success + '10' : theme.colors.semantic.error + '10',
+            }
+          ]}>
             <Text
               style={[
-                styles.feedbackText,
+                styles.feedbackTitle,
                 {
                   color: isCorrect ? theme.colors.semantic.success : theme.colors.semantic.error,
                 },
               ]}
             >
+              {isCorrect ? '✓ CORRECT' : '✗ INCORRECT'}
+            </Text>
+            <Text
+              style={[
+                styles.feedbackText,
+                {
+                  color: theme.colors.text.primary,
+                },
+              ]}
+            >
               {isCorrect
-                ? question.feedback.correct
-                : question.feedback.incorrect}
+                ? question.feedback?.correct || 'Well done!'
+                : question.feedback?.incorrect || 'Review this topic.'}
             </Text>
           </View>
         )}
 
+        {/* Submit Button - Swiss bordered, filled */}
         {!showResult && (
           <TouchableOpacity
             style={[
               styles.submitButton,
               {
-                backgroundColor:
-                  selectedOptions.size > 0 ? theme.colors.primary[500] : theme.colors.primary[300],
+                backgroundColor: selectedOptions.size > 0 
+                  ? theme.colors.text.primary 
+                  : theme.colors.neutral[300],
+                borderColor: theme.colors.text.primary,
               },
             ]}
             onPress={handleSubmitAnswer}
             disabled={selectedOptions.size === 0}
+            activeOpacity={0.8}
           >
-            <Text style={styles.submitButtonText}>Submit</Text>
+            <Text style={[
+              styles.submitButtonText,
+              { color: selectedOptions.size > 0 ? theme.colors.background : theme.colors.neutral[500] }
+            ]}>SUBMIT</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -160,23 +207,23 @@ export function DrillLesson({ content, onComplete, onError }: DrillLessonProps) 
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Progress Bar */}
+      {/* Progress Bar - Swiss heavy */}
       <View style={styles.progressBar}>
         <View
           style={[
             styles.progressFill,
-            { width: `${progress}%`, backgroundColor: theme.colors.primary[500] },
+            { width: `${progress}%`, backgroundColor: theme.colors.text.primary },
           ]}
         />
       </View>
 
-      {/* Header */}
+      {/* Header - Swiss bold */}
       <View style={styles.header}>
         <Text style={[styles.headerText, { color: theme.colors.text.primary }]}>
-          Drill: {content.focus_step}
+          {content.focus_step?.toUpperCase() || 'DRILL'}
         </Text>
         <Text style={[styles.headerSubtext, { color: theme.colors.text.secondary }]}>
-          Question {currentQuestion + 1} of {content.questions.length}
+          {currentQuestion + 1} / {totalQuestions}
         </Text>
       </View>
 
@@ -188,89 +235,117 @@ export function DrillLesson({ content, onComplete, onError }: DrillLessonProps) 
   );
 }
 
+// SWISS STYLE: Sharp edges, bold typography, no gradients, high contrast
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  heartsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingVertical: theme.spacing[2],
-    backgroundColor: theme.colors.backgroundPaper,
-  },
   progressBar: {
-    height: 4,
-    backgroundColor: theme.colors.border.light,
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.neutral[200],
   },
   progressFill: {
     height: '100%',
-    backgroundColor: theme.colors.primary[500],
   },
   header: {
-    padding: theme.spacing[5],
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.light,
+    paddingTop: theme.swiss.layout.headerPaddingTop,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    borderBottomWidth: theme.swiss.border.heavy,
+    borderBottomColor: theme.colors.text.primary,
   },
   headerText: {
-    fontSize: theme.typography.heading.h3.fontSize,
-    fontWeight: theme.typography.heading.h3.fontWeight,
-    marginBottom: theme.spacing[1],
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
   },
   headerSubtext: {
-    fontSize: theme.typography.body.lg.fontSize,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    marginTop: theme.spacing[1],
   },
   content: {
     flex: 1,
-    padding: theme.spacing[5],
+    padding: theme.swiss.layout.screenPadding,
   },
   questionContainer: {
-    gap: theme.spacing[5],
+    gap: theme.swiss.layout.sectionGap,
+  },
+  questionCodeBox: {
+    width: 48,
+    height: 48,
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  questionCodeText: {
+    fontSize: theme.swiss.fontSize.title,
+    fontWeight: theme.swiss.fontWeight.black,
+    color: theme.colors.text.primary,
   },
   questionText: {
-    fontSize: theme.typography.heading.h4.fontSize,
-    fontWeight: '600',
-    lineHeight: 28,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    lineHeight: 26,
   },
   optionsContainer: {
     gap: theme.spacing[3],
+    marginTop: theme.spacing[2],
   },
   optionButton: {
     padding: theme.spacing[4],
-    borderRadius: theme.spacing.borderRadius.md,
-    borderWidth: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
   },
   optionContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    flex: 1,
+    gap: theme.spacing[3],
+  },
+  optionLetter: {
+    width: 28,
+    height: 28,
+    borderWidth: 2,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  optionLetterText: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.bold,
   },
   optionText: {
-    fontSize: theme.typography.body.lg.fontSize,
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
     flex: 1,
-    marginRight: theme.spacing[2],
+    lineHeight: 22,
   },
   feedbackContainer: {
-    padding: theme.spacing[4],
-    borderRadius: theme.spacing.borderRadius.sm,
-    marginTop: theme.spacing[4],
+    padding: theme.swiss.layout.sectionGap,
+    borderWidth: theme.swiss.border.standard,
+    marginTop: theme.spacing[2],
+  },
+  feedbackTitle: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+    marginBottom: theme.spacing[2],
   },
   feedbackText: {
-    fontSize: theme.typography.body.lg.fontSize,
-    fontWeight: '500',
-    lineHeight: 24,
+    fontSize: theme.swiss.fontSize.body,
+    lineHeight: 22,
   },
   submitButton: {
     paddingVertical: theme.spacing[4],
-    borderRadius: theme.spacing.borderRadius.md,
+    borderWidth: theme.swiss.border.heavy,
     alignItems: 'center',
-    marginTop: theme.spacing[5],
+    marginTop: theme.swiss.layout.elementGap,
   },
   submitButtonText: {
-    color: theme.colors.text.inverse,
-    fontSize: theme.typography.body.lg.fontSize,
-    fontWeight: '600',
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.xwide3,
   },
 });

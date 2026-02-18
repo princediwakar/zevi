@@ -21,7 +21,7 @@ export async function evaluateAnswer(
         question: question.question_text,
         userAnswer: answerText,
         expertAnswer: question.expert_answer,
-        rubric: question.evaluation_rubric,
+        rubric: question.rubric,
       },
     });
 

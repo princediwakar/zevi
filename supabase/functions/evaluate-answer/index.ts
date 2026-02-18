@@ -69,17 +69,22 @@ serve(async (req) => {
       throw new Error(`User answer must not exceed ${MAX_USER_ANSWER_LENGTH} characters`);
     }
 
-    if (!expertAnswer || typeof expertAnswer !== 'string' || expertAnswer.trim().length === 0) {
-      throw new Error('Expert answer is required and must be a non-empty string');
-    }
-    if (expertAnswer.length > MAX_EXPERT_ANSWER_LENGTH) {
+    // Expert answer is optional - provide a default if not available
+    const finalExpertAnswer = expertAnswer || 'No expert answer provided. Evaluate based on structure, clarity, and completeness.';
+    
+    if (finalExpertAnswer.length > MAX_EXPERT_ANSWER_LENGTH) {
       throw new Error(`Expert answer must not exceed ${MAX_EXPERT_ANSWER_LENGTH} characters`);
     }
 
-    if (!rubric || typeof rubric !== 'object') {
-      throw new Error('Rubric is required and must be a valid JSON object');
-    }
-    if (JSON.stringify(rubric).length > MAX_RUBRIC_LENGTH) {
+    // Rubric is optional - provide a default if not available
+    const finalRubric = rubric || {
+      "structure": { "weight": 0.3, "criteria": ["Clear structure", "Logical flow", "Organized points"] },
+      "depth": { "weight": 0.3, "criteria": ["In-depth analysis", "Specific examples", "Data-driven"] },
+      "completeness": { "weight": 0.2, "criteria": ["All aspects covered", "Comprehensive", "No gaps"] },
+      "clarity": { "weight": 0.2, "criteria": ["Clear communication", "Concise", "Easy to understand"] }
+    };
+    
+    if (JSON.stringify(finalRubric).length > MAX_RUBRIC_LENGTH) {
       throw new Error(`Rubric must not exceed ${MAX_RUBRIC_LENGTH} characters when stringified`);
     }
 
@@ -107,16 +112,22 @@ serve(async (req) => {
 
     // Retrieve OpenRouter API Key from environment variables
     const apiKey = Deno.env.get('OPENROUTER_API_KEY');
-    if (!apiKey) {
-      throw new Error('OPENROUTER_API_KEY is not set');
+    const openAiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    // Use OPENROUTER_API_KEY if available, fallback to OPENAI_API_KEY
+    const finalApiKey = apiKey || openAiKey;
+    const useOpenRouter = !!apiKey;
+    
+    if (!finalApiKey) {
+      throw new Error('No API key configured. Please set OPENROUTER_API_KEY or OPENAI_API_KEY');
     }
 
     const prompt = `
     You are an expert Product Manager interviewer. Evaluate this PM interview answer.
 
     Question: ${question}
-    Expert Answer (Reference): ${expertAnswer}
-    Rubric: ${JSON.stringify(rubric)}
+    Expert Answer (Reference): ${finalExpertAnswer}
+    Rubric: ${JSON.stringify(finalRubric)}
 
     User's Answer: ${userAnswer}
 
@@ -136,23 +147,45 @@ serve(async (req) => {
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), TIMEOUT_MS);
 
+    let response;
     try {
-      const response = await fetch('https://openrouter.ai/api', {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'z-z-ai/glm-4.5-air:free', // Updated to latest model
-          max_tokens: 1024,
-          messages: [
-            { role: 'user', content: prompt }
-          ],
-        }),
-        signal: abortController.signal,
-      });
+      if (useOpenRouter) {
+        // Use OpenRouter API - use meta-llama which is reliable and free
+        response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${finalApiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://zevi.app',
+            'X-Title': 'Zevi PM Interview Prep'
+          },
+          body: JSON.stringify({
+            model: 'meta-llama/llama-3.1-8b-instruct:free',
+            max_tokens: 1024,
+            messages: [
+              { role: 'user', content: prompt }
+            ],
+          }),
+          signal: abortController.signal,
+        });
+      } else {
+        // Use OpenAI API directly
+        response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${finalApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            max_tokens: 1024,
+            messages: [
+              { role: 'user', content: prompt }
+            ],
+          }),
+          signal: abortController.signal,
+        });
+      }
 
       clearTimeout(timeoutId);
 
@@ -164,12 +197,16 @@ serve(async (req) => {
       const data = await response.json();
 
       if (data.error) {
-        throw new Error(data.error.message || 'Anthropic API Error');
+        throw new Error(data.error.message || 'AI API Error');
       }
 
-      const content = data.content[0]?.text;
+      // Handle both OpenRouter and OpenAI response formats
+      const content = useOpenRouter 
+        ? data.choices?.[0]?.message?.content 
+        : data.choices?.[0]?.message?.content;
+        
       if (!content) {
-        throw new Error('No response content from Anthropic API');
+        throw new Error('No response content from AI API');
       }
 
       // Basic cleanup if model adds markdown fence

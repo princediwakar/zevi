@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { UserProgress, PracticeMode, QuestionCategory, SessionWithQuestion, FrameworkName, MCQAnswer } from '../types';
+import { UserProgress, PracticeMode, QuestionCategory, SessionWithQuestion, FrameworkName, MCQAnswer, Lesson } from '../types';
 import { getUserSessions } from './practiceService';
 import { logger } from '../utils/logger';
 
@@ -467,5 +467,329 @@ export async function getIncorrectQuestions(
   } catch (error) {
     logger.error('Error fetching incorrect questions:', error);
     return [];
+  }
+}
+
+// ============================================
+// CURRENT LESSON FUNCTIONS
+// ============================================
+
+// Get current lesson details for a user
+export async function getCurrentLesson(userId: string): Promise<Lesson | null> {
+  try {
+    // First get the current_lesson_id from progress
+    const { data: progress, error: progressError } = await supabase
+      .from('user_progress')
+      .select('current_lesson_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (progressError || !progress?.current_lesson_id) {
+      // No current lesson set - return null
+      return null;
+    }
+
+    // Get the lesson details
+    const { data: lesson, error: lessonError } = await supabase
+      .from('lessons')
+      .select('*')
+      .eq('id', progress.current_lesson_id)
+      .single();
+
+    if (lessonError || !lesson) {
+      return null;
+    }
+
+    return lesson as Lesson;
+  } catch (error) {
+    logger.error('Error fetching current lesson:', error);
+    return null;
+  }
+}
+
+// Set current lesson for a user
+export async function setCurrentLesson(userId: string, lessonId: string): Promise<void> {
+  try {
+    // First check if user_progress exists
+    const { data: existing } = await supabase
+      .from('user_progress')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    if (existing) {
+      // Update existing record
+      const { error } = await supabase
+        .from('user_progress')
+        .update({ current_lesson_id: lessonId, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    } else {
+      // Insert new record with all required fields
+      const { error } = await supabase
+        .from('user_progress')
+        .insert({
+          user_id: userId,
+          current_lesson_id: lessonId,
+          completed_lessons: [],
+          current_streak: 0,
+          longest_streak: 0,
+          total_questions_completed: 0,
+          total_mcq_completed: 0,
+          total_text_completed: 0,
+          category_progress: {},
+          framework_mastery: {},
+          pattern_mastery: {},
+          readiness_score: 0,
+          readiness_by_category: {},
+          weekly_questions_used: 0,
+          week_reset_date: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+    }
+  } catch (error) {
+    logger.error('Error setting current lesson:', error);
+    throw error;
+  }
+}
+
+// Get the first lesson in the entire course (for initialization)
+// Optionally filter by category (defaults to product_sense)
+export async function getFirstLesson(category: string = 'product_sense'): Promise<Lesson | null> {
+  try {
+    // First try to get the first unit from the specified category's learning path
+    const { data: paths, error: pathsError } = await supabase
+      .from('learning_paths')
+      .select('id')
+      .eq('category', category)
+      .order('order_index', { ascending: true })
+      .limit(1);
+
+    if (!pathsError && paths && paths.length > 0) {
+      // Get the first unit from this learning path
+      const { data: units, error: unitsError } = await supabase
+        .from('units')
+        .select('id')
+        .eq('learning_path_id', paths[0].id)
+        .order('order_index', { ascending: true })
+        .limit(1);
+
+      if (!unitsError && units && units.length > 0) {
+        // Get the first lesson in that unit
+        const { data: lessons, error: lessonsError } = await supabase
+          .from('lessons')
+          .select('*')
+          .eq('unit_id', units[0].id)
+          .order('order_index', { ascending: true })
+          .limit(1);
+
+        if (!lessonsError && lessons && lessons.length > 0) {
+          return lessons[0] as Lesson;
+        }
+      }
+    }
+
+    // Fallback: get the first unit (lowest order_index) from any learning path
+    const { data: fallbackUnits, error: fallbackUnitsError } = await supabase
+      .from('units')
+      .select('id')
+      .order('order_index', { ascending: true })
+      .limit(1);
+
+    if (fallbackUnitsError || !fallbackUnits || fallbackUnits.length === 0) {
+      return null;
+    }
+
+    // Get the first lesson in that unit
+    const { data: fallbackLessons, error: fallbackLessonsError } = await supabase
+      .from('lessons')
+      .select('*')
+      .eq('unit_id', fallbackUnits[0].id)
+      .order('order_index', { ascending: true })
+      .limit(1);
+
+    if (fallbackLessonsError || !fallbackLessons || fallbackLessons.length === 0) {
+      return null;
+    }
+
+    return fallbackLessons[0] as Lesson;
+  } catch (error) {
+    logger.error('Error fetching first lesson:', error);
+    return null;
+  }
+}
+
+// Initialize current lesson for a user (should be called when user starts learning)
+export async function initializeCurrentLesson(userId: string): Promise<Lesson | null> {
+  try {
+    // Check if user already has a current lesson
+    const { data: progress } = await supabase
+      .from('user_progress')
+      .select('current_lesson_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (progress?.current_lesson_id) {
+      // Already has a current lesson
+      return await getCurrentLesson(userId);
+    }
+
+    // Get first lesson and set it
+    const firstLesson = await getFirstLesson();
+    if (firstLesson) {
+      await setCurrentLesson(userId, firstLesson.id);
+      return firstLesson;
+    }
+
+    return null;
+  } catch (error) {
+    logger.error('Error initializing current lesson:', error);
+    return null;
+  }
+}
+
+// Advance to next lesson after completing current lesson
+export async function advanceToNextLesson(userId: string, completedLessonId: string): Promise<Lesson | null> {
+  try {
+    // Call the database function to get and set next lesson
+    const { error } = await supabase.rpc('advance_to_next_lesson', {
+      p_user_id: userId,
+      p_completed_lesson_id: completedLessonId,
+    });
+
+    if (error) {
+      // Fallback: manual calculation if RPC fails
+      logger.warn('RPC advance_to_next_lesson failed, using fallback');
+      
+      // Get the completed lesson's unit and order
+      const { data: completedLesson } = await supabase
+        .from('lessons')
+        .select('unit_id, order_index')
+        .eq('id', completedLessonId)
+        .single();
+
+      if (!completedLesson) return null;
+
+      // Try to find next lesson in same unit
+      const { data: nextInUnit } = await supabase
+        .from('lessons')
+        .select('id')
+        .eq('unit_id', completedLesson.unit_id)
+        .gt('order_index', completedLesson.order_index)
+        .order('order_index', { ascending: true })
+        .limit(1)
+        .single();
+
+      if (nextInUnit) {
+        await setCurrentLesson(userId, nextInUnit.id);
+        return nextInUnit as Lesson;
+      }
+
+      // Try next unit
+      const { data: currentUnit } = await supabase
+        .from('units')
+        .select('learning_path_id, order_index')
+        .eq('id', completedLesson.unit_id)
+        .single();
+
+      if (!currentUnit) return null;
+
+      const { data: nextUnit } = await supabase
+        .from('units')
+        .select('id')
+        .eq('learning_path_id', currentUnit.learning_path_id)
+        .gt('order_index', currentUnit.order_index)
+        .order('order_index', { ascending: true })
+        .limit(1)
+        .single();
+
+      if (!nextUnit) {
+        // No more lessons - course complete!
+        return null;
+      }
+
+      // Get first lesson of next unit
+      const { data: firstOfNextUnit } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('unit_id', nextUnit.id)
+        .order('order_index', { ascending: true })
+        .limit(1)
+        .single();
+
+      if (firstOfNextUnit) {
+        await setCurrentLesson(userId, firstOfNextUnit.id);
+        return firstOfNextUnit as Lesson;
+      }
+
+      return null;
+    }
+
+    // Fetch and return the new current lesson
+    return await getCurrentLesson(userId);
+  } catch (error) {
+    logger.error('Error advancing to next lesson:', error);
+    return null;
+  }
+}
+
+// Mark a lesson as completed and add to completed_lessons
+export async function markLessonCompleted(userId: string, lessonId: string): Promise<void> {
+  try {
+    // First check if user_progress exists
+    const { data: existingProgress } = await supabase
+      .from('user_progress')
+      .select('id, completed_lessons')
+      .eq('user_id', userId)
+      .single();
+
+    let completedLessons: string[] = [];
+    
+    if (existingProgress) {
+      // Update existing record
+      completedLessons = existingProgress.completed_lessons || [];
+      
+      // Add lesson if not already in the array
+      if (!completedLessons.includes(lessonId)) {
+        completedLessons = [...completedLessons, lessonId];
+        
+        const { error } = await supabase
+          .from('user_progress')
+          .update({ 
+            completed_lessons: completedLessons,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+      }
+    } else {
+      // Create new progress record with the completed lesson
+      const { error } = await supabase
+        .from('user_progress')
+        .insert({
+          user_id: userId,
+          completed_lessons: [lessonId],
+          current_streak: 0,
+          longest_streak: 0,
+          total_questions_completed: 0,
+          total_mcq_completed: 0,
+          total_text_completed: 0,
+          category_progress: {},
+          framework_mastery: {},
+          pattern_mastery: {},
+          readiness_score: 0,
+          readiness_by_category: {},
+          weekly_questions_used: 0,
+          week_reset_date: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+    }
+  } catch (error) {
+    logger.error('Error marking lesson completed:', error);
+    throw error;
   }
 }
