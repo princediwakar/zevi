@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
@@ -10,249 +17,267 @@ type QuizResultsNavigationProp = NativeStackNavigationProp<RootStackParamList, '
 type QuizResultsRouteProp = RouteProp<RootStackParamList, 'QuizResults'>;
 
 // ============================================
-// SWISS DESIGN: Sharp, bold, minimal, high contrast
-// Using centralized theme tokens for consistency
+// SWISS DESIGN: Dual-mode screen
+//   • Text/Voice mode  → AI FEEDBACK
+//   • MCQ / Quiz mode  → QUIZ RESULTS
 // ============================================
 
 export default function QuizResultsScreen() {
   const navigation = useNavigation<QuizResultsNavigationProp>();
   const route = useRoute<QuizResultsRouteProp>();
+  const insets = useSafeAreaInsets();
   const sourceQuestionId = route.params?.sourceQuestionId;
-  
-  const { 
-    quizAnswers, 
-    calculateQuizScore, 
-    resetPractice, 
-    feedback, 
-    currentMode, 
+
+  const {
+    quizAnswers,
+    calculateQuizScore,
+    resetPractice,
+    feedback,
+    currentMode,
     currentQuestion,
-    textAnswer 
+    textAnswer,
   } = usePracticeStore();
-  const [scoreData, setScoreData] = useState({ correct: 0, total: 0, percentage: 0 });
+
+  const [quizScore, setQuizScore] = useState({ correct: 0, total: 0, percentage: 0 });
 
   useEffect(() => {
-    const score = calculateQuizScore();
-    setScoreData(score);
+    if (currentMode !== 'text') {
+      setQuizScore(calculateQuizScore());
+    }
   }, []);
 
-  const handleContinue = () => {
+  const isTextMode = currentMode === 'text';
+
+  // ── Navigation helpers ──────────────────────────────────────────────────
+  const goBack = () => {
     resetPractice();
-    
     if (sourceQuestionId) {
-      // For text practice from a question, go back to question detail
       navigation.navigate('QuestionDetail', { questionId: sourceQuestionId });
     } else {
       navigation.navigate('MainTabs');
     }
   };
 
-  const handleTryAgain = () => {
+  const tryAgain = () => {
     resetPractice();
     if (sourceQuestionId) {
-      // Retry the same text practice question
       navigation.navigate('TextPractice', { questionId: sourceQuestionId });
     } else {
       navigation.navigate('MainTabs');
     }
   };
-  
-  const handleGoHome = () => {
+
+  const goHome = () => {
     resetPractice();
     navigation.navigate('MainTabs');
   };
 
-  const getScoreMessage = () => {
-    if (scoreData.percentage >= 80) return 'EXCELLENT';
-    if (scoreData.percentage >= 60) return 'GOOD JOB';
-    return 'KEEP LEARNING';
-  };
-
-  const getScoreColor = () => {
-    if (currentMode === 'text' && feedback) {
-       if (feedback.score >= 8) return theme.colors.semantic.success;
-       if (feedback.score >= 6) return theme.colors.semantic.warning;
-       return theme.colors.semantic.error;
+  // ── Score colour ────────────────────────────────────────────────────────
+  const scoreColor = () => {
+    if (isTextMode && feedback) {
+      if (feedback.score >= 8) return theme.colors.semantic.success;
+      if (feedback.score >= 5) return theme.colors.semantic.warning;
+      return theme.colors.semantic.error;
     }
-
-    if (scoreData.percentage >= 80) return theme.colors.semantic.success;
-    if (scoreData.percentage >= 60) return theme.colors.semantic.warning;
+    if (quizScore.percentage >= 80) return theme.colors.semantic.success;
+    if (quizScore.percentage >= 60) return theme.colors.semantic.warning;
     return theme.colors.semantic.error;
   };
 
-  return (
-    <View style={styles.container}>
-      {/* Swiss Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>{currentMode === 'text' ? 'FEEDBACK' : 'QUIZ RESULTS'}</Text>
-      </View>
+  // ── Render: AI FEEDBACK (text / voice practice) ─────────────────────────
+  if (isTextMode) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>AI FEEDBACK</Text>
+          <TouchableOpacity onPress={goHome} style={styles.closeBtn}>
+            <Text style={styles.closeBtnText}>✕</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Score Section - Swiss bordered */}
-      <View style={styles.scoreContainer}>
-        {currentMode === 'text' && feedback ? (
-          <View style={styles.scoreContent}>
-            <Text style={[styles.scorePercentage, { color: getScoreColor() }]}>
-              {feedback.score}/10
-            </Text>
-            <Text style={styles.scoreLabel}>AI EVALUATION</Text>
-            <Text style={[styles.scoreMessage, { color: getScoreColor() }]}>
-              {feedback.score >= 8 ? 'EXCELLENT' : feedback.score >= 6 ? 'GOOD JOB' : 'KEEP PRACTICING'}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.scoreContent}>
-            <Text style={[styles.scorePercentage, { color: getScoreColor() }]}>
-              {scoreData.percentage}%
-            </Text>
-            <Text style={styles.scoreLabel}>
-              {scoreData.correct} / {scoreData.total} CORRECT
-            </Text>
-            <Text style={[styles.scoreMessage, { color: getScoreColor() }]}>
-              {getScoreMessage()}
-            </Text>
-          </View>
-        )}
-      </View>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollInner}>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
-        {currentMode === 'text' && feedback ? (
-          <View>
-            {/* Strengths */}
-            <Text style={styles.sectionLabel}>STRENGTHS</Text>
-            <View style={styles.feedbackSection}>
-              {feedback.strengths.map((point, i) => (
-                <View key={`str-${i}`} style={styles.feedbackPoint}>
-                  <Text style={styles.feedbackBullet}>+</Text>
-                  <Text style={styles.feedbackText}>{point}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Improvements */}
-            <Text style={styles.sectionLabel}>IMPROVEMENTS</Text>
-            <View style={styles.feedbackSection}>
-              {feedback.improvements.map((point, i) => (
-                <View key={`imp-${i}`} style={styles.feedbackPoint}>
-                  <Text style={styles.feedbackBullet}>-</Text>
-                  <Text style={styles.feedbackText}>{point}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Expert Comparison */}
-            <Text style={styles.sectionLabel}>EXPERT HIGHLIGHTS</Text>
-            <View style={styles.expertCard}>
-               {feedback.expertHighlights.map((point, i) => (
-                <View key={`exp-${i}`} style={styles.feedbackPoint}>
-                  <Text style={styles.feedbackBullet}>*</Text>
-                  <Text style={styles.feedbackText}>{point}</Text>
-                </View>
-               ))}
-            </View>
-          </View>
-        ) : (
-          <>
-            <Text style={styles.sectionLabel}>DETAILED BREAKDOWN</Text>
-        
-            <View style={styles.resultsList}>
-              {quizAnswers.map((answer, index) => (
-                <View
-                  key={`${answer.questionId}-${answer.subQuestionIndex}`}
-                  style={[
-                    styles.resultCard,
-                    answer.isCorrect ? styles.correctCard : styles.incorrectCard
-                  ]}
-                >
-                  <View style={styles.resultHeader}>
-                    <Text style={styles.questionNumber}>
-                      Q{index + 1}
-                    </Text>
-                    <Text style={[
-                      styles.resultStatus,
-                      { color: answer.isCorrect ? theme.colors.semantic.success : theme.colors.semantic.error }
-                    ]}>
-                      {answer.isCorrect ? 'CORRECT' : 'INCORRECT'}
-                    </Text>
-                  </View>
-                  
-                  <Text style={styles.questionText} numberOfLines={2}>
-                    {answer.questionText}
-                  </Text>
-                  
-                  <View style={styles.subQuestionContainer}>
-                    <Text style={styles.subQuestionPrompt}>
-                      {answer.subQuestionPrompt}
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.answerContainer}>
-                    <Text style={styles.answerLabel}>SELECTED:</Text>
-                    <Text style={styles.selectedAnswer}>
-                      {answer.selectedOptionText}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* Text Mode Answer Review */}
-        {currentMode === 'text' && (
-           <View style={styles.answerReviewSection}>
-             <Text style={styles.sectionLabel}>YOUR ANSWER</Text>
-             <View style={styles.answerReviewCard}>
-               <Text style={styles.answerReviewText}>{textAnswer}</Text>
-             </View>
-           </View>
-        )}
-
-        {/* Action Buttons - Swiss bordered */}
-        <View style={styles.actions}>
-          {currentMode === 'text' && sourceQuestionId ? (
+          {feedback ? (
             <>
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={handleContinue}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.primaryButtonText}>
-                  VIEW EXPERT ANSWER
+              {/* Score block */}
+              <View style={styles.scoreBlock}>
+                <Text style={[styles.scoreNum, { color: scoreColor() }]}>
+                  {feedback.score}
                 </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={handleTryAgain}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.secondaryButtonText}>
-                  PRACTICE AGAIN
-                </Text>
-              </TouchableOpacity>
+                <Text style={styles.scoreOutOf}>/10</Text>
+              </View>
+              <Text style={[styles.scoreVerdict, { color: scoreColor() }]}>
+                {feedback.score >= 8 ? 'EXCELLENT' : feedback.score >= 5 ? 'SOLID WORK' : 'NEEDS WORK'}
+              </Text>
+
+              <View style={styles.divider} />
+
+              {/* Strengths */}
+              {feedback.strengths?.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>WHAT WORKED</Text>
+                  {feedback.strengths.map((pt, i) => (
+                    <View key={i} style={styles.feedbackRow}>
+                      <Text style={[styles.bullet, { color: theme.colors.semantic.success }]}>+</Text>
+                      <Text style={styles.feedbackText}>{pt}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Improvements */}
+              {feedback.improvements?.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>IMPROVE ON</Text>
+                  {feedback.improvements.map((pt, i) => (
+                    <View key={i} style={styles.feedbackRow}>
+                      <Text style={[styles.bullet, { color: theme.colors.semantic.warning }]}>△</Text>
+                      <Text style={styles.feedbackText}>{pt}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Expert Highlights */}
+              {feedback.expertHighlights?.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>EXPERT APPROACH</Text>
+                  <View style={styles.expertCard}>
+                    {feedback.expertHighlights.map((pt, i) => (
+                      <View key={i} style={styles.feedbackRow}>
+                        <Text style={styles.bullet}>→</Text>
+                        <Text style={styles.feedbackText}>{pt}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Recommended Practice */}
+              {feedback.recommendedPractice && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>NEXT STEP</Text>
+                  <View style={styles.nextStepCard}>
+                    <Text style={styles.nextStepText}>{feedback.recommendedPractice}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Your Answer */}
+              {textAnswer ? (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>YOUR ANSWER</Text>
+                  <View style={styles.answerCard}>
+                    <Text style={styles.answerText}>{textAnswer}</Text>
+                  </View>
+                </View>
+              ) : null}
             </>
           ) : (
-            <>
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={handleContinue}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {sourceQuestionId ? 'VIEW QUESTION' : 'CONTINUE'}
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={handleTryAgain}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.secondaryButtonText}>
-                  {sourceQuestionId ? 'TRY AGAIN' : 'TRY ANOTHER QUIZ'}
-                </Text>
-              </TouchableOpacity>
-            </>
+            /* Feedback unavailable */
+            <View style={styles.noFeedbackBlock}>
+              <Text style={styles.noFeedbackTitle}>ANSWER SAVED</Text>
+              <Text style={styles.noFeedbackSub}>
+                AI feedback could not be generated, but your answer has been saved.
+              </Text>
+            </View>
           )}
+
+          {/* Actions */}
+          <View style={styles.actions}>
+            {sourceQuestionId ? (
+              <TouchableOpacity style={styles.primaryBtn} onPress={tryAgain}>
+                <Text style={styles.primaryBtnText}>PRACTICE AGAIN</Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              style={[styles.secondaryBtn, !sourceQuestionId && styles.primaryBtn]}
+              onPress={goHome}
+            >
+              <Text style={[styles.secondaryBtnText, !sourceQuestionId && styles.primaryBtnText]}>
+                BACK TO HOME
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // ── Render: QUIZ RESULTS (MCQ mode) ────────────────────────────────────
+  const verdictLabel =
+    quizScore.percentage >= 80 ? 'EXCELLENT' :
+    quizScore.percentage >= 60 ? 'GOOD JOB' :
+    'KEEP LEARNING';
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>QUIZ RESULTS</Text>
+        <TouchableOpacity onPress={goHome} style={styles.closeBtn}>
+          <Text style={styles.closeBtnText}>✕</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollInner}>
+        {/* Score block */}
+        <View style={styles.scoreBlock}>
+          <Text style={[styles.scoreNum, { color: scoreColor() }]}>
+            {quizScore.percentage}
+          </Text>
+          <Text style={styles.scoreOutOf}>%</Text>
+        </View>
+        <Text style={styles.scoreCorrect}>
+          {quizScore.correct} / {quizScore.total} CORRECT
+        </Text>
+        <Text style={[styles.scoreVerdict, { color: scoreColor() }]}>
+          {verdictLabel}
+        </Text>
+
+        <View style={styles.divider} />
+
+        {/* Answer list */}
+        <Text style={styles.sectionLabel}>BREAKDOWN</Text>
+        <View style={styles.quizList}>
+          {quizAnswers.map((ans, i) => (
+            <View
+              key={`${ans.questionId}-${ans.subQuestionIndex}`}
+              style={[
+                styles.quizCard,
+                ans.isCorrect ? styles.quizCardCorrect : styles.quizCardWrong,
+              ]}
+            >
+              <View style={styles.quizCardHeader}>
+                <Text style={styles.quizCardNum}>Q{i + 1}</Text>
+                <Text
+                  style={[
+                    styles.quizCardStatus,
+                    { color: ans.isCorrect ? theme.colors.semantic.success : theme.colors.semantic.error },
+                  ]}
+                >
+                  {ans.isCorrect ? 'CORRECT' : 'WRONG'}
+                </Text>
+              </View>
+              <Text style={styles.quizCardPrompt} numberOfLines={2}>
+                {ans.subQuestionPrompt || ans.questionText}
+              </Text>
+              <Text style={styles.quizCardAnswer}>→ {ans.selectedOptionText}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Actions */}
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.primaryBtn} onPress={goBack}>
+            <Text style={styles.primaryBtnText}>
+              {sourceQuestionId ? 'VIEW QUESTION' : 'CONTINUE'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryBtn} onPress={tryAgain}>
+            <Text style={styles.secondaryBtnText}>TRY AGAIN</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -260,93 +285,114 @@ export default function QuizResultsScreen() {
 }
 
 // ============================================
-// SWISS STYLE: Sharp edges, bold typography, no gradients
+// STYLES — Swiss: bold type, black borders, white bg
 // ============================================
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  
-  // Header - Swiss bold bar
+
+  // Header
   header: {
-    paddingTop: theme.swiss.layout.headerPaddingTop,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: theme.swiss.layout.screenPadding,
-    paddingBottom: theme.swiss.layout.headerPaddingBottom,
+    paddingVertical: theme.spacing[4],
     borderBottomWidth: theme.swiss.border.heavy,
     borderBottomColor: theme.colors.text.primary,
-    backgroundColor: theme.colors.background,
   },
-  title: {
+  headerTitle: {
     fontSize: theme.swiss.fontSize.title,
     fontWeight: theme.swiss.fontWeight.black,
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,
   },
-  
-  // Score Container
-  scoreContainer: {
-    borderBottomWidth: theme.swiss.border.standard,
-    borderBottomColor: theme.colors.text.primary,
+  closeBtn: {
+    padding: theme.spacing[2],
+  },
+  closeBtnText: {
+    fontSize: 18,
+    color: theme.colors.text.primary,
+    fontWeight: theme.swiss.fontWeight.bold,
+  },
+
+  // Scroll
+  scroll: { flex: 1 },
+  scrollInner: {
     padding: theme.swiss.layout.screenPadding,
-    paddingBottom: theme.swiss.layout.sectionGap,
+    paddingBottom: theme.spacing[12],
   },
-  scoreContent: {
-    alignItems: 'center',
-  },
-  scorePercentage: {
-    fontSize: 64,
-    fontWeight: theme.swiss.fontWeight.black,
-    letterSpacing: -2,
+
+  // Score
+  scoreBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    marginTop: theme.spacing[6],
     marginBottom: theme.spacing[2],
   },
-  scoreLabel: {
-    fontSize: theme.swiss.fontSize.small,
+  scoreNum: {
+    fontSize: 80,
+    fontWeight: theme.swiss.fontWeight.black,
+    lineHeight: 80,
+    letterSpacing: -4,
+  },
+  scoreOutOf: {
+    fontSize: 28,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.secondary,
+    marginBottom: 10,
+    marginLeft: 4,
+  },
+  scoreCorrect: {
+    textAlign: 'center',
+    fontSize: theme.swiss.fontSize.label,
     fontWeight: theme.swiss.fontWeight.medium,
     color: theme.colors.text.secondary,
     letterSpacing: theme.swiss.letterSpacing.wide,
     marginBottom: theme.spacing[2],
   },
-  scoreMessage: {
+  scoreVerdict: {
+    textAlign: 'center',
     fontSize: theme.swiss.fontSize.body,
-    fontWeight: theme.swiss.fontWeight.semibold,
-    letterSpacing: theme.swiss.letterSpacing.wide,
+    fontWeight: theme.swiss.fontWeight.bold,
+    letterSpacing: theme.swiss.letterSpacing.xwide3,
+    marginBottom: theme.spacing[6],
   },
-  
-  // Content
-  content: {
-    flex: 1,
+
+  // Divider
+  divider: {
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+    marginBottom: theme.swiss.layout.sectionGap,
   },
-  contentInner: {
-    padding: theme.swiss.layout.screenPadding,
-    paddingBottom: theme.swiss.layout.sectionGap + theme.spacing[8],
+
+  // Sections
+  section: {
+    marginBottom: theme.swiss.layout.sectionGap,
   },
-  
-  // Section Label
   sectionLabel: {
     fontSize: theme.swiss.fontSize.small,
     fontWeight: theme.swiss.fontWeight.semibold,
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.secondary,
-    marginBottom: theme.spacing[4],
-    marginTop: theme.spacing[4],
+    marginBottom: theme.spacing[3],
   },
-  
-  // Feedback Section
-  feedbackSection: {
-    marginBottom: theme.spacing[4],
-  },
-  feedbackPoint: {
+
+  // Feedback rows
+  feedbackRow: {
     flexDirection: 'row',
-    marginBottom: theme.spacing[2],
+    marginBottom: theme.spacing[3],
+    alignItems: 'flex-start',
   },
-  feedbackBullet: {
-    fontSize: theme.swiss.fontSize.body,
+  bullet: {
+    width: 20,
+    fontSize: 16,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.primary,
-    marginRight: theme.spacing[2],
-    width: 16,
+    marginTop: 2,
   },
   feedbackText: {
     flex: 1,
@@ -354,123 +400,126 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     lineHeight: 22,
   },
-  
-  // Expert Card - Swiss bordered
+
+  // Expert card
   expertCard: {
     borderWidth: theme.swiss.border.standard,
     borderColor: theme.colors.text.primary,
     padding: theme.spacing[4],
-    marginBottom: theme.spacing[4],
   },
-  
-  // Results List
-  resultsList: {
-    gap: theme.spacing[3],
-    marginBottom: theme.spacing[4],
+
+  // Next step card
+  nextStepCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.text.primary,
+    paddingLeft: theme.spacing[4],
+    paddingVertical: theme.spacing[3],
   },
-  resultCard: {
+  nextStepText: {
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.primary,
+    lineHeight: 22,
+    fontStyle: 'italic',
+  },
+
+  // Answer card
+  answerCard: {
     borderWidth: theme.swiss.border.light,
     borderColor: theme.colors.text.primary,
     padding: theme.spacing[4],
-    borderLeftWidth: 4,
+    backgroundColor: theme.colors.surface.secondary,
   },
-  correctCard: {
+  answerText: {
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
+    lineHeight: 22,
+  },
+
+  // No feedback
+  noFeedbackBlock: {
+    paddingVertical: theme.spacing[12],
+    alignItems: 'center',
+  },
+  noFeedbackTitle: {
+    fontSize: theme.swiss.fontSize.heading,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing[3],
+  },
+  noFeedbackSub: {
+    fontSize: theme.swiss.fontSize.body,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+
+  // Quiz cards
+  quizList: {
+    gap: theme.spacing[3],
+    marginBottom: theme.swiss.layout.sectionGap,
+  },
+  quizCard: {
+    borderWidth: theme.swiss.border.light,
+    borderColor: theme.colors.text.primary,
+    borderLeftWidth: 4,
+    padding: theme.spacing[4],
+  },
+  quizCardCorrect: {
     borderLeftColor: theme.colors.semantic.success,
   },
-  incorrectCard: {
+  quizCardWrong: {
     borderLeftColor: theme.colors.semantic.error,
   },
-  resultHeader: {
+  quizCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: theme.spacing[2],
   },
-  questionNumber: {
+  quizCardNum: {
     fontSize: theme.swiss.fontSize.small,
     fontWeight: theme.swiss.fontWeight.medium,
     color: theme.colors.text.secondary,
   },
-  resultStatus: {
+  quizCardStatus: {
     fontSize: theme.swiss.fontSize.small,
     fontWeight: theme.swiss.fontWeight.semibold,
     letterSpacing: theme.swiss.letterSpacing.wide,
   },
-  questionText: {
+  quizCardPrompt: {
     fontSize: theme.swiss.fontSize.body,
     fontWeight: theme.swiss.fontWeight.semibold,
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing[3],
+    marginBottom: theme.spacing[2],
+    lineHeight: 20,
   },
-  subQuestionContainer: {
-    padding: theme.spacing[3],
-    backgroundColor: theme.colors.surface.secondary,
-    borderLeftWidth: 2,
-    borderLeftColor: theme.colors.text.primary,
-    marginBottom: theme.spacing[3],
-  },
-  subQuestionPrompt: {
-    fontSize: theme.swiss.fontSize.body,
-    fontWeight: theme.swiss.fontWeight.medium,
-    color: theme.colors.text.secondary,
-    fontStyle: 'italic',
-  },
-  answerContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  answerLabel: {
-    fontSize: theme.swiss.fontSize.small,
-    fontWeight: theme.swiss.fontWeight.medium,
-    color: theme.colors.text.secondary,
-    marginRight: theme.spacing[2],
-  },
-  selectedAnswer: {
-    flex: 1,
-    fontSize: theme.swiss.fontSize.body,
-    fontWeight: theme.swiss.fontWeight.medium,
-    color: theme.colors.text.primary,
-  },
-  
-  // Answer Review
-  answerReviewSection: {
-    marginTop: theme.spacing[4],
-  },
-  answerReviewCard: {
-    borderWidth: theme.swiss.border.light,
-    borderColor: theme.colors.text.primary,
-    padding: theme.spacing[4],
-  },
-  answerReviewText: {
+  quizCardAnswer: {
     fontSize: theme.swiss.fontSize.body,
     color: theme.colors.text.secondary,
-    lineHeight: 24,
   },
-  
+
   // Actions
   actions: {
     gap: theme.spacing[3],
-    marginTop: theme.swiss.layout.sectionGap,
+    marginTop: theme.spacing[4],
   },
-  primaryButton: {
-    borderWidth: theme.swiss.border.heavy,
-    borderColor: theme.colors.text.primary,
+  primaryBtn: {
     backgroundColor: theme.colors.text.primary,
     paddingVertical: theme.spacing[5],
     alignItems: 'center',
   },
-  primaryButtonText: {
+  primaryBtnText: {
     fontSize: theme.swiss.fontSize.body,
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.inverse,
     letterSpacing: theme.swiss.letterSpacing.xwide3,
   },
-  secondaryButton: {
+  secondaryBtn: {
     borderWidth: theme.swiss.border.standard,
     borderColor: theme.colors.text.primary,
     paddingVertical: theme.spacing[4],
     alignItems: 'center',
   },
-  secondaryButtonText: {
+  secondaryBtnText: {
     fontSize: theme.swiss.fontSize.body,
     fontWeight: theme.swiss.fontWeight.semibold,
     color: theme.colors.text.primary,
