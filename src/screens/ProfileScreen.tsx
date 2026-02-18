@@ -178,8 +178,6 @@ export default function ProfileScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Heavy separator */}
-        <View style={styles.separator} />
 
         {/* Profile Card - Swiss style with sharp edges */}
         <View style={styles.profileCard}>
@@ -211,8 +209,6 @@ export default function ProfileScreen() {
         <View style={styles.separator} />
 
 
-        {/* Heavy separator */}
-        <View style={styles.separator} />
 
         {/* Premium CTA (for free users) - Swiss bordered */}
         {user.subscription_tier === 'free' && (

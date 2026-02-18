@@ -76,27 +76,49 @@ export function CategoryListSection({
     }
   };
 
-  // Loading state
+  // Show placeholder rows during loading to prevent layout shifts
   if (isLoading) {
     return (
       <View style={styles.container}>
         {showTitle && <Text style={styles.title}>BROWSE BY CATEGORY</Text>}
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={theme.colors.text.primary} />
-        </View>
+        {CATEGORIES.map((cat) => (
+          <View key={cat} style={styles.categoryRow}>
+            <View style={styles.categoryRowLeft}>
+              <Text style={styles.categoryLabel}>{CATEGORY_LABELS[cat]}</Text>
+            </View>
+            <View style={styles.categoryRowRight}>
+              <View style={styles.progressContainer}>
+                <View style={styles.progressIndicator} />
+              </View>
+              <Text style={styles.categoryCount}>—</Text>
+              <ArrowRight size={20} color={theme.colors.text.secondary} />
+            </View>
+          </View>
+        ))}
       </View>
     );
   }
 
-  // Empty state
+  // Show placeholder rows when no questions available
   const hasAnyQuestions = Object.values(categoryStats).some(count => count > 0);
   if (!hasAnyQuestions) {
     return (
       <View style={styles.container}>
         {showTitle && <Text style={styles.title}>BROWSE BY CATEGORY</Text>}
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No categories available</Text>
-        </View>
+        {CATEGORIES.map((cat) => (
+          <View key={cat} style={styles.categoryRow}>
+            <View style={styles.categoryRowLeft}>
+              <Text style={styles.categoryLabel}>{CATEGORY_LABELS[cat]}</Text>
+            </View>
+            <View style={styles.categoryRowRight}>
+              <View style={styles.progressContainer}>
+                <View style={styles.progressIndicator} />
+              </View>
+              <Text style={styles.categoryCount}>0/0</Text>
+              <ArrowRight size={20} color={theme.colors.text.secondary} />
+            </View>
+          </View>
+        ))}
       </View>
     );
   }
@@ -115,7 +137,9 @@ export function CategoryListSection({
             key={cat.category}
             style={[
               styles.categoryRow,
-              isNext && styles.categoryRowNext,
+              // Always reserve space for the left border to prevent shifts
+              { paddingLeft: theme.spacing[3] },
+              isNext && cat.completed > 0 && styles.categoryRowNext,
             ]}
             onPress={() => handleCategoryPress(cat.category)}
             activeOpacity={0.7}
@@ -130,15 +154,13 @@ export function CategoryListSection({
               </Text>
             </View>
             
-            {/* Count and progress */}
+            {/* Count and progress - Always render progress container to prevent shifts */}
             <View style={styles.categoryRowRight}>
-              {cat.completed > 0 && (
-                <View style={styles.progressContainer}>
-                  <View style={styles.progressIndicator}>
-                    <View style={[styles.progressFill, { width: `${Math.min(cat.percent, 100)}%` }]} />
-                  </View>
+              <View style={[styles.progressContainer, cat.completed === 0 && styles.progressContainerHidden]}>
+                <View style={styles.progressIndicator}>
+                  <View style={[styles.progressFill, { width: `${Math.min(cat.percent, 100)}%` }]} />
                 </View>
-              )}
+              </View>
               <Text style={[
                 styles.categoryCount,
                 cat.completed >= cat.total && cat.total > 0 && styles.categoryCountDone,
@@ -178,8 +200,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.neutral[50],
     borderLeftWidth: 3,
     borderLeftColor: theme.colors.text.primary,
-    paddingLeft: theme.spacing[3],
-    marginLeft: -theme.spacing[3],
+    paddingLeft: theme.spacing[3] - 3, // Adjust for border width
   },
   categoryRowLeft: {
     flexDirection: 'row',
@@ -211,6 +232,9 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     width: 60,
+  },
+  progressContainerHidden: {
+    opacity: 0,
   },
   progressIndicator: {
     width: '100%',

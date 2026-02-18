@@ -166,78 +166,60 @@ export default function LearnScreen() {
           />
         }
       >
-
-        {/* ============================================ */}
-        {/* ALL DONE STATE */}
-        {/* ============================================ */}
-        {allLessonsComplete && (
-          <View style={styles.doneContent}>
-            <View style={styles.doneLine} />
-            <Text style={styles.doneTitle}>COMPLETE</Text>
-            <Text style={styles.doneSubtitle}>All lessons done</Text>
-            <View style={styles.doneLine} />
-          </View>
-        )}
-
-        {/* ============================================ */}
-        {/* NEXT LESSON */}
-        {/* ============================================ */}
-        {currentLesson && !allLessonsComplete && (
-          <View style={styles.lessonSection}>
-            <Text style={styles.sectionLabel}>NEXT LESSON</Text>
-            
-            {/* Lesson card - stark bordered */}
+        {/* Unified Lesson Section - Same structure for all states */}
+        <View style={styles.lessonSection}>
+          <Text style={styles.sectionLabel}>
+            {allLessonsComplete ? 'COMPLETE' : 'NEXT LESSON'}
+          </Text>
+          
+          {allLessonsComplete ? (
+            // COMPLETE STATE - Centered content, same height as lesson card
+            <View style={styles.completeStateCard}>
+              <View style={styles.doneLine} />
+              <Text style={styles.doneTitle}>ALL DONE</Text>
+              <Text style={styles.doneSubtitle}>You've completed all lessons</Text>
+              <View style={styles.doneLine} />
+            </View>
+          ) : !currentLesson && totalLessons === 0 ? (
+            // NO LESSONS STATE
+            <View style={styles.emptyStateCard}>
+              <Text style={styles.emptyTitle}>NO LESSONS</Text>
+              <Text style={styles.emptySubtitle}>Browse learning paths below</Text>
+            </View>
+          ) : (
+            // LESSON CARD - Same structure for both with/without lesson
             <View style={styles.lessonCard}>            
-              {/* Lesson name - heavy */}
-              <Text style={styles.lessonName}>{currentLesson.name}</Text>
+              <Text style={styles.lessonName}>
+                {currentLesson ? currentLesson.name : 'Ready to start'}
+              </Text>
               
-              {/* Meta info */}
               <View style={styles.lessonMeta}>
                 <Text style={styles.lessonMetaText}>
-                  {currentLesson.estimated_minutes || 5} MIN
+                  {currentLesson ? `${currentLesson.estimated_minutes || 5} MIN` : '—'}
                 </Text>
                 <Text style={styles.lessonMetaText}>
-                  +{currentLesson.xp_reward || 10} XP
+                  {currentLesson ? `+${currentLesson.xp_reward || 10} XP` : '—'}
                 </Text>
               </View>
             </View>
+          )}
 
-            {/* START button - bordered */}
+          {/* START button - Always visible, disabled state handled */}
+          {!allLessonsComplete && (
             <TouchableOpacity
-              style={styles.startButton}
+              style={[
+                styles.startButton, 
+                !currentLesson && totalLessons > 0 && styles.startButtonOutline
+              ]}
               onPress={handleStartLesson}
               activeOpacity={0.8}
             >
-              <Text style={styles.startButtonText}>START</Text>
+              <Text style={styles.startButtonText}>
+                {currentLesson ? 'START' : 'START LEARNING'}
+              </Text>
             </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ============================================ */}
-        {/* CURRENT LESSON NULL - INITIALIZE */}
-        {/* ============================================ */}
-        {!currentLesson && !allLessonsComplete && totalLessons > 0 && (
-          <View style={styles.lessonSection}>
-            <Text style={styles.sectionLabel}>NEXT LESSON</Text>
-            <TouchableOpacity
-              style={styles.startButton}
-              onPress={() => userId && initializeCurrentLesson(userId)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.startButtonText}>START LEARNING</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ============================================ */}
-        {/* NO LESSONS */}
-        {/* ============================================ */}
-        {!currentLesson && !allLessonsComplete && totalLessons === 0 && (
-          <View style={styles.emptyContent}>
-            <Text style={styles.emptyTitle}>NO LESSONS</Text>
-            <Text style={styles.emptySubtitle}>Browse learning paths below</Text>
-          </View>
-        )}
+          )}
+        </View>
 
         {/* Full Learning Paths List - Combined */}
         <PathListSection onPathPress={(category) => navigation.navigate('CategoryDetail', { category })} />
@@ -318,11 +300,10 @@ function PathListSection({ onPathPress }: { onPathPress: (cat: QuestionCategory)
             {/* Path Info */}
             <View style={styles.pathInfo}>
               <View style={styles.pathRowLeft}>
-                {isNext && path.completed > 0 && (
-                  <View style={styles.nextBadgeSmall}>
-                    <Text style={styles.nextBadgeTextSmall}>NEXT</Text>
-                  </View>
-                )}
+                {/* Always reserve space for NEXT badge to prevent row height shifts */}
+                <View style={[styles.nextBadgeSmall, !(isNext && path.completed > 0) && styles.nextBadgeHidden]}>
+                  <Text style={styles.nextBadgeTextSmall}>NEXT</Text>
+                </View>
                 <Text style={[
                   styles.pathLabel,
                   path.completed >= path.total && path.total > 0 && styles.pathLabelDone,
@@ -333,14 +314,12 @@ function PathListSection({ onPathPress }: { onPathPress: (cat: QuestionCategory)
               <Text style={styles.pathDescription}>{info.description}</Text>
             </View>
             
-            {/* Progress count */}
-            {path.total > 0 && (
-              <View style={[styles.progressBadge, path.completed >= path.total && styles.progressBadgeDone]}>
-                <Text style={[styles.progressText, path.completed >= path.total && styles.progressTextDone]}>
-                  {path.completed}/{path.total}
-                </Text>
-              </View>
-            )}
+            {/* Progress count - Always render to prevent layout shifts */}
+            <View style={[styles.progressBadge, path.completed >= path.total && path.total > 0 && styles.progressBadgeDone]}>
+              <Text style={[styles.progressText, path.completed >= path.total && path.total > 0 && styles.progressTextDone]}>
+                {path.total > 0 ? `${path.completed}/${path.total}` : '—'}
+              </Text>
+            </View>
             
             {/* Arrow */}
             <ArrowRight size={24} color={theme.colors.text.secondary} />
@@ -461,6 +440,9 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing[5] - 2,
     alignItems: 'center',
   },
+  startButtonOutline: {
+    backgroundColor: 'transparent',
+  },
   startButtonText: {
     fontSize: theme.swiss.fontSize.body,
     fontWeight: theme.swiss.fontWeight.bold,
@@ -468,22 +450,26 @@ const styles = StyleSheet.create({
     letterSpacing: theme.swiss.letterSpacing.xwide3,
   },
   
-  // Done State
-  doneContent: {
-    flex: 1,
+  // Complete State Card - Matches lesson card height
+  completeStateCard: {
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.text.primary,
+    padding: theme.swiss.layout.sectionGap,
+    marginBottom: theme.swiss.layout.elementGap,
+    minHeight: 120,
     alignItems: 'center',
-    paddingVertical: theme.swiss.layout.sectionGap + theme.spacing[4],
+    justifyContent: 'center',
   },
   doneLine: {
     width: 40,
     height: theme.swiss.border.heavy,
     backgroundColor: theme.colors.text.primary,
-    marginVertical: theme.spacing[5],
+    marginVertical: theme.spacing[3],
   },
   doneTitle: {
-    fontSize: theme.swiss.fontSize.title,
+    fontSize: theme.swiss.fontSize.heading,
     fontWeight: theme.swiss.fontWeight.black,
-    letterSpacing: theme.swiss.letterSpacing.xwide3,
+    letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,
   },
   doneSubtitle: {
@@ -492,11 +478,17 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     letterSpacing: theme.swiss.letterSpacing.wide,
     textTransform: 'uppercase',
+    marginTop: theme.spacing[2],
   },
-  // Empty State
-  emptyContent: {
+  // Empty State Card - Matches lesson card height
+  emptyStateCard: {
+    borderWidth: theme.swiss.border.standard,
+    borderColor: theme.colors.border.light,
+    padding: theme.swiss.layout.sectionGap,
+    marginBottom: theme.swiss.layout.elementGap,
+    minHeight: 120,
     alignItems: 'center',
-    paddingVertical: theme.swiss.layout.sectionGap + theme.spacing[4],
+    justifyContent: 'center',
   },
   emptyTitle: {
     fontSize: theme.swiss.fontSize.heading,
@@ -594,6 +586,9 @@ const styles = StyleSheet.create({
     fontWeight: theme.swiss.fontWeight.bold,
     color: theme.colors.text.inverse,
     letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  nextBadgeHidden: {
+    opacity: 0,
   },
   progressBadge: {
     paddingHorizontal: theme.spacing[2],

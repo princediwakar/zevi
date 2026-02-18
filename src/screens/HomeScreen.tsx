@@ -109,50 +109,11 @@ export default function HomeScreen() {
   }
 
   // ============================================
-  // SWISS STYLE: DONE FOR TODAY
-  // Using theme tokens for consistency
-  // ============================================
-  if (hasPracticedToday) {
-    return (
-      <View style={styles.doneContainer}>
-        {/* Stark header bar */}
-        <View style={styles.doneHeader}>
-          <Text style={styles.doneHeaderText}>ZEVI</Text>
-          {streak > 0 && (
-            <View style={styles.streakBox}>
-              <Text style={styles.streakBoxText}>{streak}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Scrollable content */}
-        <ScrollView
-          style={styles.doneScrollView}
-          contentContainerStyle={styles.doneScrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Centered content with heavy line */}
-          <View style={styles.doneContent}>
-            <View style={styles.doneLine} />
-            <Text style={styles.doneTitle}>DONE</Text>
-            <Text style={styles.doneSubtitle}>Come back tomorrow</Text>
-            <View style={styles.doneLine} />
-          </View>
-
-          {/* Full Category List - Combined */}
-          <CategoryListSection onCategoryPress={(category) => navigation.navigate('QuestionList', { category })} />
-        </ScrollView>
-      </View>
-    );
-  }
-
-  // ============================================
-  // SWISS STYLE: TODAY'S QUESTION
-  // Using theme tokens for all styling
+  // UNIFIED LAYOUT - Same structure for both states to prevent UI shifts
   // ============================================
   return (
     <View style={styles.container}>
-      {/* Top bar - Swiss grid */}
+      {/* Top bar - Swiss grid - Same for both states */}
       <View style={styles.topBar}>
         <Text style={styles.brand}>ZEVI</Text>
         {/* Always reserve space for streak to prevent layout shift */}
@@ -173,51 +134,60 @@ export default function HomeScreen() {
           />
         }
       >
-
-        {/* TODAY'S QUESTION Section */}
-        <View style={styles.questionSection}>
-          <Text style={styles.sectionLabel}>TODAY'S QUESTION</Text>
-          
-          {/* Question card - bordered */}
-          <View style={styles.questionCard}>
-            {todaysQuestion ? (
-              <Text style={styles.questionText}>
-                {todaysQuestion.question_text}
-              </Text>
-            ) : (
-              <Text style={styles.noQuestion}>No question available</Text>
-            )}
+        {hasPracticedToday ? (
+          // DONE STATE - Same height as question section to prevent shifts
+          <View style={styles.doneStateContainer}>
+            <View style={styles.doneLine} />
+            <Text style={styles.doneTitle}>DONE</Text>
+            <Text style={styles.doneSubtitle}>Come back tomorrow</Text>
+            <View style={styles.doneLine} />
           </View>
+        ) : (
+          // TODAY'S QUESTION Section
+          <View style={styles.questionSection}>
+            <Text style={styles.sectionLabel}>TODAY'S QUESTION</Text>
+            
+            {/* Question card - bordered */}
+            <View style={styles.questionCard}>
+              {todaysQuestion ? (
+                <Text style={styles.questionText}>
+                  {todaysQuestion.question_text}
+                </Text>
+              ) : (
+                <Text style={styles.noQuestion}>No question available</Text>
+              )}
+            </View>
 
-          {/* Minimal metadata - bordered boxes - always render to prevent shifts */}
-          <View style={styles.metaRow}>
-            <View style={[styles.metaBox, !todaysQuestion && styles.metaBoxEmpty]}>
-              <Text style={styles.metaText}>
-                {todaysQuestion ? todaysQuestion.category.replace('_', ' ') : ''}
-              </Text>
+            {/* Minimal metadata - bordered boxes - always render to prevent shifts */}
+            <View style={styles.metaRow}>
+              <View style={[styles.metaBox, !todaysQuestion && styles.metaBoxEmpty]}>
+                <Text style={styles.metaText}>
+                  {todaysQuestion ? todaysQuestion.category.replace('_', ' ') : ''}
+                </Text>
+              </View>
+              <View style={[styles.metaBox, !todaysQuestion && styles.metaBoxEmpty]}>
+                <Text style={styles.metaText}>
+                  {todaysQuestion ? todaysQuestion.difficulty : ''}
+                </Text>
+              </View>
+              <View style={[styles.metaBox, !todaysQuestion && styles.metaBoxEmpty, !todaysQuestion?.company && styles.metaBoxHidden]}>
+                <Text style={styles.metaText}>
+                  {todaysQuestion?.company || ''}
+                </Text>
+              </View>
             </View>
-            <View style={[styles.metaBox, !todaysQuestion && styles.metaBoxEmpty]}>
-              <Text style={styles.metaText}>
-                {todaysQuestion ? todaysQuestion.difficulty : ''}
-              </Text>
-            </View>
-            <View style={[styles.metaBox, !todaysQuestion && styles.metaBoxEmpty, !todaysQuestion?.company && styles.metaBoxHidden]}>
-              <Text style={styles.metaText}>
-                {todaysQuestion?.company || ''}
-              </Text>
-            </View>
+
+            {/* START - Large bordered button */}
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={handleStartQuestion}
+              disabled={loadingQuestion || !todaysQuestion}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.startButtonText}>START</Text>
+            </TouchableOpacity>
           </View>
-        </View>
-
-        {/* START - Large bordered button */}
-        <TouchableOpacity
-          style={styles.startButton}
-          onPress={handleStartQuestion}
-          disabled={loadingQuestion || !todaysQuestion}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.startButtonText}>START</Text>
-        </TouchableOpacity>
+        )}
 
         {/* Full Category List - Combined with Today's Question */}
         <CategoryListSection onCategoryPress={(category) => navigation.navigate('QuestionList', { category })} />
@@ -369,38 +339,14 @@ const styles = StyleSheet.create({
   },
 
   // ============================================
-  // DONE STATE - Swiss stark
+  // DONE STATE - Unified with question section
   // ============================================
-  doneContainer: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  doneHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  doneStateContainer: {
     alignItems: 'center',
-    paddingTop: theme.swiss.layout.headerPaddingTop,
-    paddingHorizontal: theme.swiss.layout.screenPadding,
-    paddingBottom: theme.swiss.layout.headerPaddingBottom,
-    borderBottomWidth: theme.swiss.border.heavy,
-    borderBottomColor: theme.colors.text.primary,
-  },
-  doneHeaderText: {
-    fontSize: theme.swiss.fontSize.heading,
-    fontWeight: theme.swiss.fontWeight.black,
-    letterSpacing: theme.swiss.letterSpacing.wide,
-    color: theme.colors.text.primary,
-  },
-  doneScrollView: {
-    flex: 1,
-  },
-  doneScrollContent: {
-    paddingHorizontal: theme.swiss.layout.screenPadding,
-    paddingTop: theme.swiss.layout.sectionGap,
-  },
-  doneContent: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing[6],
+    paddingVertical: theme.spacing[10],
+    marginBottom: theme.swiss.layout.elementGap,
+    minHeight: 300, // Match approximate question section height
+    justifyContent: 'center',
   },
   doneLine: {
     width: 60,
