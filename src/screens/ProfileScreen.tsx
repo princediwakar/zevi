@@ -20,6 +20,7 @@ import { useProgressStore } from '../stores/progressStore';
 // Theme
 import { theme } from '../theme';
 import { SubscriptionTier } from '../types';
+import { SwissStreakBox } from '../components';
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
@@ -60,12 +61,10 @@ const SubscriptionBadge = ({ tier }: { tier: SubscriptionTier }) => {
 
 // Quick action button - sharp borders
 const QuickActionButton = ({
-  code,
   label,
   onPress,
   variant = 'default',
 }: {
-  code: string;
   label: string;
   onPress: () => void;
   variant?: 'default' | 'danger';
@@ -76,9 +75,6 @@ const QuickActionButton = ({
     activeOpacity={0.8}
   >
     <View style={styles.quickActionContent}>
-      <View style={styles.quickActionCodeBox}>
-        <Text style={[styles.quickActionCode, variant === 'danger' && styles.quickActionCodeDanger]}>{code}</Text>
-      </View>
       <Text style={[styles.quickActionLabel, variant === 'danger' && styles.quickActionLabelDanger]}>{label}</Text>
     </View>
   </TouchableOpacity>
@@ -146,9 +142,7 @@ export default function ProfileScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>PROFILE</Text>
-          <View style={[styles.streakBox, styles.streakBoxHidden]}>
-            <Text style={styles.streakText}>{''}</Text>
-          </View>
+          <SwissStreakBox streak={0} />
         </View>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>LOADING...</Text>
@@ -171,9 +165,7 @@ export default function ProfileScreen() {
       {/* Header - Swiss bold bar */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>PROFILE</Text>
-        <View style={[styles.streakBox, userStreak === 0 && styles.streakBoxHidden]}>
-          <Text style={styles.streakText}>{userStreak > 0 ? userStreak : ''}</Text>
-        </View>
+        <SwissStreakBox streak={userStreak} />
       </View>
 
       <ScrollView
@@ -247,19 +239,16 @@ export default function ProfileScreen() {
           <Text style={styles.sectionLabel}>SETTINGS</Text>
           <View style={styles.actionsCard}>
             <QuickActionButton
-              code="SET"
               label="App Settings"
               onPress={() => navigation.navigate('Settings')}
             />
             <View style={styles.actionDivider} />
             <QuickActionButton
-              code="PRG"
               label="View Progress"
               onPress={() => navigation.navigate('ProgressTab' as any)}
             />
             <View style={styles.actionDivider} />
             <QuickActionButton
-              code="HLP"
               label="Help & Support"
               onPress={() => Alert.alert('Coming Soon', 'Help center will be available soon!')}
             />
@@ -274,7 +263,6 @@ export default function ProfileScreen() {
           <Text style={styles.sectionLabel}>ACCOUNT</Text>
           <View style={styles.actionsCard}>
             <QuickActionButton
-              code="OUT"
               label="Sign Out"
               variant="danger"
               onPress={handleLogout}
@@ -325,20 +313,6 @@ const styles = StyleSheet.create({
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,
   },
-  streakBox: {
-    borderWidth: theme.swiss.border.standard,
-    borderColor: theme.colors.text.primary,
-    paddingHorizontal: theme.spacing[3],
-    paddingVertical: theme.spacing[1],
-  },
-  streakText: {
-    fontSize: theme.swiss.fontSize.label,
-    fontWeight: theme.swiss.fontWeight.semibold,
-    color: theme.colors.text.primary,
-  },
-  streakBoxHidden: {
-    borderColor: 'transparent',
-  },
   
   // Loading
   loadingContainer: {
@@ -355,7 +329,7 @@ const styles = StyleSheet.create({
   
   // Heavy separator
   separator: {
-    height: theme.swiss.border.heavy,
+    height: theme.swiss.border.standard,
     backgroundColor: theme.colors.text.primary,
   },
   

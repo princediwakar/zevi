@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Text } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useProgressStore } from '../stores/progressStore';
 import { useLearningPathStore } from '../stores/learningPathStore';
@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { theme } from '../theme';
 import { QUESTION_CATEGORIES } from '../types';
 import { FRAMEWORKS } from '../data/frameworks';
+import { SwissStreakBox } from '../components';
 
 // ============================================
 // SWISS DESIGN: Sharp, bold, minimal, high contrast
@@ -337,9 +338,7 @@ export default function ProgressScreen() {
           <View style={styles.container}>
               <View style={styles.header}>
                   <Text style={styles.headerTitle}>PROGRESS</Text>
-                  <View style={[styles.streakBox, styles.streakBoxHidden]}>
-                      <Text style={styles.streakText}>{''}</Text>
-                  </View>
+              <SwissStreakBox streak={0} />
               </View>
               <View style={styles.loadingContainer}>
                   <Text style={styles.loadingText}>LOADING...</Text>
@@ -353,9 +352,7 @@ export default function ProgressScreen() {
       {/* Swiss Header - bold bar */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>PROGRESS</Text>
-        <View style={[styles.streakBox, currentStreak === 0 && styles.streakBoxHidden]}>
-          <Text style={styles.streakText}>{currentStreak > 0 ? currentStreak : ''}</Text>
-        </View>
+        <SwissStreakBox streak={currentStreak} />
       </View>
 
       <ScrollView 
@@ -550,20 +547,6 @@ const styles = StyleSheet.create({
     fontWeight: theme.swiss.fontWeight.black,
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,
-  },
-  streakBox: {
-    borderWidth: theme.swiss.border.standard,
-    borderColor: theme.colors.text.primary,
-    paddingHorizontal: theme.spacing[3],
-    paddingVertical: theme.spacing[1],
-  },
-  streakText: {
-    fontSize: theme.swiss.fontSize.label,
-    fontWeight: theme.swiss.fontWeight.semibold,
-    color: theme.colors.text.primary,
-  },
-  streakBoxHidden: {
-    borderColor: 'transparent',
   },
   
   // Scroll view

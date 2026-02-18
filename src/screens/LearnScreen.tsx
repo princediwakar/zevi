@@ -14,7 +14,7 @@ import { theme } from '../theme';
 import { useProgressStore } from '../stores/progressStore';
 import { useLearningPathStore } from '../stores/learningPathStore';
 import { useAuth } from '../hooks/useAuth';
-import { Spacer, LearnScreenSkeleton } from '../components';
+  import { Spacer, LearnScreenSkeleton, SwissStreakBox } from '../components';
 import { Lesson, QuestionCategory } from '../types';
 import { ArrowRight } from 'lucide-react-native';
 
@@ -147,10 +147,7 @@ export default function LearnScreen() {
           <Text style={styles.headerCount}>
             {totalLessonsCompleted}/{totalLessons}
           </Text>
-          {/* Always reserve space for streak to prevent layout shift */}
-          <View style={[styles.streakBox, streak === 0 && styles.streakBoxHidden]}>
-            <Text style={styles.streakText}>{streak > 0 ? streak : ''}</Text>
-          </View>
+          <SwissStreakBox streak={streak} />
         </View>
       </View>
 
@@ -363,20 +360,6 @@ const styles = StyleSheet.create({
     fontSize: theme.swiss.fontSize.label,
     fontWeight: theme.swiss.fontWeight.medium,
     color: theme.colors.text.secondary,
-  },
-  streakBox: {
-    borderWidth: theme.swiss.border.standard,
-    borderColor: theme.colors.text.primary,
-    paddingHorizontal: theme.spacing[3],
-    paddingVertical: theme.spacing[1],
-  },
-  streakText: {
-    fontSize: theme.swiss.fontSize.label,
-    fontWeight: theme.swiss.fontWeight.semibold,
-    color: theme.colors.text.primary,
-  },
-  streakBoxHidden: {
-    borderColor: 'transparent',
   },
 
   // Scroll View

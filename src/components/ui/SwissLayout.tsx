@@ -9,7 +9,7 @@
  * - Heavy borders and separators
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import {
   ViewStyle,
   TextStyle,
   StyleSheet,
+  Modal,
 } from 'react-native';
 import { theme } from '../../theme';
 
@@ -63,12 +64,68 @@ interface SwissStreakBoxProps {
 }
 
 export const SwissStreakBox: React.FC<SwissStreakBoxProps> = ({ streak }) => {
-  if (streak <= 0) return null;
-  
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // Always render (preserve layout space), but hide border when streak = 0
   return (
-    <View style={styles.streakBox}>
-      <Text style={styles.streakText}>{streak}</Text>
-    </View>
+    <>
+      <TouchableOpacity
+        onPress={() => streak > 0 && setModalVisible(true)}
+        style={[styles.streakBox, streak === 0 && styles.streakBoxHidden]}
+        activeOpacity={0.7}
+        disabled={streak <= 0}
+      >
+        <Text style={styles.streakText}>{streak > 0 ? streak : ''}</Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={streakModalStyles.overlay}
+          onPress={() => setModalVisible(false)}
+          activeOpacity={1}
+        >
+          <View style={streakModalStyles.container}>
+            {/* Modal header */}
+            <View style={streakModalStyles.header}>
+              <Text style={streakModalStyles.title}>DAY STREAK</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={streakModalStyles.closeText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Heavy divider */}
+            <View style={streakModalStyles.divider} />
+
+            {/* Big streak number */}
+            <View style={streakModalStyles.streakRow}>
+              <Text style={streakModalStyles.streakNumber}>{streak}</Text>
+              <Text style={streakModalStyles.streakUnit}>
+                {streak === 1 ? 'DAY' : 'DAYS'}
+              </Text>
+            </View>
+
+            {/* Description */}
+            <Text style={streakModalStyles.description}>
+              Practice at least once every day to keep your streak alive.
+              Complete any lesson or question to count toward your streak.
+            </Text>
+
+            {/* Light divider */}
+            <View style={streakModalStyles.dividerLight} />
+
+            {/* Warning note */}
+            <Text style={streakModalStyles.warning}>
+              Missing a day resets your streak to 0.
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
   );
 };
 
@@ -367,6 +424,9 @@ const styles = StyleSheet.create({
     fontWeight: theme.swiss.fontWeight.semibold,
     color: theme.colors.text.primary,
   },
+  streakBoxHidden: {
+    borderColor: 'transparent',
+  },
 
   // Separator
   separator: {
@@ -523,5 +583,82 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.body.sm.fontWeight,
     lineHeight: theme.typography.body.sm.lineHeight,
     color: theme.colors.text.primary,
+  },
+});
+
+// ============================================
+// Streak Modal Styles (separate to keep main StyleSheet clean)
+// ============================================
+const streakModalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  container: {
+    backgroundColor: theme.colors.background,
+    borderTopWidth: theme.swiss.border.heavy,
+    borderTopColor: theme.colors.text.primary,
+    paddingHorizontal: theme.swiss.layout.screenPadding,
+    paddingTop: theme.swiss.layout.sectionGap,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing[4],
+  },
+  title: {
+    fontSize: theme.swiss.fontSize.small,
+    fontWeight: theme.swiss.fontWeight.semibold,
+    letterSpacing: theme.swiss.letterSpacing.xwide3,
+    color: theme.colors.text.secondary,
+  },
+  closeText: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    paddingHorizontal: theme.spacing[2],
+  },
+  divider: {
+    height: theme.swiss.border.heavy,
+    backgroundColor: theme.colors.text.primary,
+    marginBottom: theme.swiss.layout.elementGap,
+  },
+  dividerLight: {
+    height: theme.swiss.border.light,
+    backgroundColor: theme.colors.border.light,
+    marginVertical: theme.swiss.layout.elementGap,
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: theme.spacing[3],
+    marginBottom: theme.swiss.layout.elementGap,
+  },
+  streakNumber: {
+    fontSize: 64,
+    fontWeight: theme.swiss.fontWeight.black,
+    color: theme.colors.text.primary,
+    lineHeight: 72,
+  },
+  streakUnit: {
+    fontSize: theme.swiss.fontSize.title,
+    fontWeight: theme.swiss.fontWeight.bold,
+    color: theme.colors.text.primary,
+    letterSpacing: theme.swiss.letterSpacing.wide,
+  },
+  description: {
+    fontSize: theme.swiss.fontSize.body,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.primary,
+    lineHeight: 24,
+  },
+  warning: {
+    fontSize: theme.swiss.fontSize.label,
+    fontWeight: theme.swiss.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    letterSpacing: theme.swiss.letterSpacing.normal,
   },
 });

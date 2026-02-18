@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../hooks/useAuth';
 import { theme } from '../theme';
-import { HomeScreenSkeleton, CategoryListSection } from '../components';
+  import { HomeScreenSkeleton, CategoryListSection, SwissStreakBox } from '../components';
 import { useProgressStore } from '../stores/progressStore';
 import { useQuestionsStore } from '../stores/questionsStore';
 import { getPersonalizedQuestion } from '../services/questionService';
@@ -116,10 +116,7 @@ export default function HomeScreen() {
       {/* Top bar - Swiss grid - Same for both states */}
       <View style={styles.topBar}>
         <Text style={styles.brand}>ZEVI</Text>
-        {/* Always reserve space for streak to prevent layout shift */}
-        <View style={[styles.streakBox, streak === 0 && styles.streakBoxHidden]}>
-          <Text style={styles.streakBoxText}>{streak > 0 ? streak : ''}</Text>
-        </View>
+        <SwissStreakBox streak={streak} />
       </View>
 
       <ScrollView
@@ -219,20 +216,6 @@ const styles = StyleSheet.create({
     fontWeight: theme.swiss.fontWeight.black,
     letterSpacing: theme.swiss.letterSpacing.wide,
     color: theme.colors.text.primary,
-  },
-  streakBox: {
-    borderWidth: theme.swiss.border.standard,
-    borderColor: theme.colors.text.primary,
-    paddingHorizontal: theme.spacing[3],
-    paddingVertical: theme.spacing[1],
-  },
-  streakBoxText: {
-    fontSize: theme.swiss.fontSize.label,
-    fontWeight: theme.swiss.fontWeight.semibold,
-    color: theme.colors.text.primary,
-  },
-  streakBoxHidden: {
-    borderColor: 'transparent',
   },
   
   // Scroll View
