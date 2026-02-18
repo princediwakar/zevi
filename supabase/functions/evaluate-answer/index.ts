@@ -52,25 +52,21 @@ serve(async (req) => {
       "clarity": { "weight": 0.2, "criteria": ["Clear communication", "Concise", "Easy to understand"] }
     };
 
-    // Optional auth — verify user if token provided (for rate limiting), but don't block
+    // Optional auth — verify user via ANON_KEY client (Supabase recommended pattern)
     let userId: string | null = null;
     try {
       const authHeader = req.headers.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.replace('Bearer ', '').trim();
-        // Only try to verify if it looks like a JWT (has 3 dot-separated parts)
-        if (token.split('.').length === 3) {
-          const supabaseAdmin = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-          );
-          const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-          userId = user?.id ?? null;
-        }
+      if (authHeader) {
+        const supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        userId = user?.id ?? null;
       }
     } catch (_authErr) {
       // Auth failed — continue without userId (unauthenticated request)
-      console.log('Auth check failed, continuing without user context');
     }
 
     // API keys — DeepSeek primary, OpenAI fallback
