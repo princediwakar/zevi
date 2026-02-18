@@ -41,17 +41,77 @@ export async function getUserProgress(userId: string): Promise<UserProgress | nu
       throw error;
     }
 
+    const frameworkMastery: Record<string, number> = data.framework_mastery || {};
+    const patternMastery: Record<string, number> = data.pattern_mastery || {};
+    const categoryProgress: Record<string, number> = data.category_progress || {};
+    const totalCompleted: number = data.total_questions_completed || 0;
+
+    // If readiness_score is 0 but the user has actual activity, compute it
+    // client-side so the screen always reflects real progress.
+    let readinessScore: number = data.readiness_score || 0;
+    if (readinessScore === 0 && totalCompleted > 0) {
+      readinessScore = computeReadinessLocally(
+        frameworkMastery,
+        patternMastery,
+        categoryProgress,
+        totalCompleted,
+      );
+      // Persist the computed value asynchronously — don't block the return
+      if (readinessScore > 0) {
+        supabase
+          .from('user_progress')
+          .update({ readiness_score: readinessScore, updated_at: new Date().toISOString() })
+          .eq('user_id', userId)
+          .then(({ error }) => {
+            if (error) logger.warn('Failed to persist computed readiness_score:', error);
+          });
+      }
+    }
+
     return {
       ...data,
-      framework_mastery: data.framework_mastery || {},
-      pattern_mastery: data.pattern_mastery || {},
-      readiness_score: data.readiness_score || 0,
+      framework_mastery: frameworkMastery,
+      pattern_mastery: patternMastery,
+      category_progress: categoryProgress,
+      readiness_score: readinessScore,
       readiness_by_category: data.readiness_by_category || {},
     } as UserProgress;
   } catch (error) {
     logger.error('Error fetching user progress:', error);
     throw error;
   }
+}
+
+/**
+ * Compute readiness score purely from local data — no DB call needed.
+ * Weights: framework 40%, pattern 30%, category completion 20%, volume 10%.
+ */
+function computeReadinessLocally(
+  frameworkMastery: Record<string, number>,
+  patternMastery: Record<string, number>,
+  categoryProgress: Record<string, number>,
+  totalCompleted: number,
+): number {
+  const avg = (obj: Record<string, number>) => {
+    const vals = Object.values(obj);
+    return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  };
+
+  const frameworkAvg = avg(frameworkMastery);
+  const patternAvg = avg(patternMastery);
+
+  // Normalize each category: questions_completed / 10 * 100, capped at 100
+  const catVals = Object.values(categoryProgress).map(v => Math.min((v / 10) * 100, 100));
+  const categoryAvg = catVals.length > 0 ? catVals.reduce((a, b) => a + b, 0) / catVals.length : 0;
+
+  const volumeScore = Math.min((totalCompleted / 50) * 100, 100);
+
+  return Math.round(
+    frameworkAvg * 0.4 +
+    patternAvg * 0.3 +
+    categoryAvg * 0.2 +
+    volumeScore * 0.1,
+  );
 }
 
 
@@ -206,13 +266,13 @@ export async function getPracticeActivity(userId: string): Promise<string[]> {
 // Check if user is within weekly free tier limit
 export async function checkWeeklyLimit(userId: string): Promise<{ used: number; limit: number; remaining: number; canPractice: boolean }> {
   try {
-    // Check via RPC function
-    const { data, error } = await supabase.rpc('check_rate_limit', {
+    // Call the correct weekly limit RPC (not the API rate-limiter)
+    const { data, error } = await supabase.rpc('check_weekly_limit', {
       p_user_id: userId,
     });
 
     if (error) {
-      // Fallback to manual check
+      // Fallback to manual check from user_progress directly
       const progress = await getUserProgress(userId);
       const used = progress?.weekly_questions_used || 0;
       const remaining = FREE_WEEKLY_LIMIT - used;
@@ -224,11 +284,15 @@ export async function checkWeeklyLimit(userId: string): Promise<{ used: number; 
       };
     }
 
+    // check_weekly_limit returns JSON: { allowed, weekly_used, limit, remaining, reset_date, message }
+    const result = typeof data === 'string' ? JSON.parse(data) : data;
+    const weeklyUsed: number = result?.weekly_used ?? 0;
+    const remaining: number = result?.remaining ?? Math.max(0, FREE_WEEKLY_LIMIT - weeklyUsed);
     return {
-      used: data.remaining ? FREE_WEEKLY_LIMIT - data.remaining : 0,
-      limit: FREE_WEEKLY_LIMIT,
-      remaining: data.remaining || 0,
-      canPractice: data.allowed || false,
+      used: weeklyUsed,
+      limit: result?.limit === -1 ? Infinity : (result?.limit ?? FREE_WEEKLY_LIMIT),
+      remaining,
+      canPractice: result?.allowed ?? remaining > 0,
     };
   } catch (error) {
     logger.error('Error checking weekly limit:', error);

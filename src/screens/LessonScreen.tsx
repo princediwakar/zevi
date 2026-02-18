@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { useQuestionsStore } from '../stores/questionsStore';
 import { useLearningPathStore } from '../stores/learningPathStore';
@@ -29,6 +30,7 @@ const LESSON_TYPE_LABELS: Record<LessonType, { label: string; code: string }> = 
 // ============================================
 
 export default function LessonScreen() {
+  const insets = useSafeAreaInsets();
   const route = useRoute<LessonScreenRouteProp>();
   const lessonId = route.params?.lessonId as string | undefined;
   const navigation = useNavigation();
@@ -108,7 +110,7 @@ export default function LessonScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backButtonText}>← BACK</Text>
           </TouchableOpacity>
@@ -125,7 +127,7 @@ export default function LessonScreen() {
   if (!lesson) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backButtonText}>← BACK</Text>
           </TouchableOpacity>
@@ -361,7 +363,7 @@ export default function LessonScreen() {
   return (
     <View style={styles.container}>
       {/* Swiss Header - bold bar */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← BACK</Text>
         </TouchableOpacity>

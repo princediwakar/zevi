@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, Modal, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../theme';
 import { FullPracticeContent, UserOutline, AIFeedback } from '../../types';
@@ -16,6 +17,7 @@ interface FullPracticeLessonProps {
 }
 
 export function FullPracticeLesson({ content, questionId, onComplete, onError }: FullPracticeLessonProps) {
+  const insets = useSafeAreaInsets();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [outline, setOutline] = useState<UserOutline>({});
   const [timeLeft, setTimeLeft] = useState<number>(content.time_limit ? content.time_limit * 60 : 0); // seconds
@@ -314,6 +316,7 @@ export function FullPracticeLesson({ content, questionId, onComplete, onError }:
       {/* Main Content Area */}
       <ScrollView 
         style={styles.contentArea}
+        contentContainerStyle={styles.contentAreaInner}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
@@ -406,7 +409,7 @@ export function FullPracticeLesson({ content, questionId, onComplete, onError }:
       </ScrollView>
 
       {/* Submit Button */}
-      <View style={styles.submitSection}>
+      <View style={[styles.submitSection, { paddingBottom: Math.max(insets.bottom, theme.spacing[5]) }]}>
         <TouchableOpacity
           style={[styles.submitButton, { backgroundColor: theme.colors.primary[500] }]}
           onPress={handleSubmit}
@@ -586,7 +589,10 @@ const styles = StyleSheet.create({
   },
   contentArea: {
     flex: 1,
+  },
+  contentAreaInner: {
     padding: theme.spacing[5],
+    paddingBottom: theme.spacing[8],
   },
   stepHeader: {
     flexDirection: 'row',

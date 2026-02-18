@@ -248,12 +248,12 @@ const styles = StyleSheet.create({
   container: {
     borderWidth: 2,
     borderRadius: 12,
-    padding: theme.spacing[6],
+    padding: theme.spacing[4],
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.spacing[6],
+    marginBottom: theme.spacing[4],
   },
   statusDot: {
     width: 10,
@@ -288,14 +288,14 @@ const styles = StyleSheet.create({
     letterSpacing: theme.swiss.letterSpacing.normal,
   },
   transcriptionBox: {
-    marginTop: theme.spacing[6],
+    marginTop: theme.spacing[4],
     borderWidth: 1,
     borderRadius: 8,
-    padding: theme.spacing[4],
-    maxHeight: 180,
+    padding: theme.spacing[3],
+    maxHeight: 150,
   },
   transcriptionScroll: {
-    maxHeight: 140,
+    maxHeight: 110,
   },
   transcriptionText: {
     fontSize: theme.swiss.fontSize.body,
