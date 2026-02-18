@@ -7,7 +7,6 @@ export { default as QuestionListScreen } from './QuestionListScreen';
 export { default as QuestionDetailScreen } from './QuestionDetailScreen';
 export { default as TextPracticeScreen } from './TextPracticeScreen';
 export { default as ProgressScreen } from './ProgressScreen';
-export { default as SettingsScreen } from './SettingsScreen';
 export { default as ProfileScreen } from './ProfileScreen';
 export { default as LessonScreen } from './LessonScreen';
 export { default as LearnScreen } from './LearnScreen';

@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { theme } from '../theme';
 
-type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
+type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
 
 // ============================================
 // SWISS DESIGN: Sharp edges, bold typography
@@ -14,7 +14,6 @@ type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList
 
 export default function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const [darkMode, setDarkMode] = React.useState(false);
   const [notifications, setNotifications] = React.useState(true);
 
   return (
@@ -24,31 +23,6 @@ export default function SettingsScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>SETTINGS</Text>
           <Text style={styles.headerSubtitle}>Customize your app</Text>
-        </View>
-
-        {/* Heavy separator */}
-        <View style={styles.separator} />
-
-        {/* Appearance Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>APPEARANCE</Text>
-          
-          {/* Setting Row - bordered */}
-          <View style={styles.settingRow}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Dark Mode</Text>
-              <Text style={styles.settingDescription}>Switch theme (coming soon)</Text>
-            </View>
-            <Switch
-              value={darkMode}
-              onValueChange={setDarkMode}
-              trackColor={{ 
-                false: theme.colors.neutral[300], 
-                true: theme.colors.text.primary 
-              }}
-              thumbColor={theme.colors.background}
-            />
-          </View>
         </View>
 
         {/* Heavy separator */}

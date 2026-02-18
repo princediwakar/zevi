@@ -17,7 +17,6 @@ export type RootStackParamList = {
   FrameworkDetail: { frameworkName: string };
   Progress: undefined;
   Profile: undefined;
-  Settings: undefined;
   MainTabs: undefined;
 };
 

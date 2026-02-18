@@ -15,7 +15,6 @@ import {
   QuestionListScreen,
   QuestionDetailScreen,
   TextPracticeScreen,
-  SettingsScreen,
   LessonScreen,
   LearnScreen,
   CategoryDetailScreen,
@@ -66,7 +65,6 @@ function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} />
-      <ProfileStack.Screen name="Settings" component={SettingsScreen} />
     </ProfileStack.Navigator>
   );
 }

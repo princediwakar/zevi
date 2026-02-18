@@ -22,7 +22,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   children,
   isDark = false,
 }) => {
-  // In the future, we could support dark mode by providing a dark theme
   const currentTheme = theme;
 
   return (
