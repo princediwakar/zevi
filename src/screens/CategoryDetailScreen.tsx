@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
@@ -47,6 +48,7 @@ export default function CategoryDetailScreen() {
   const { category } = route.params;
   const { progress, currentLesson } = useProgressStore();
   const { units } = useLearningPathStore();
+  const insets = useSafeAreaInsets();
 
   const categoryKey = category as QuestionCategory;
   const info = CATEGORY_INFO[categoryKey];

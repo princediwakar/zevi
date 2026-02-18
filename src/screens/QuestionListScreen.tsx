@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Keyboard,
   Text,
+  TextInput,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -45,6 +46,7 @@ export default function QuestionListScreen() {
   );
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | undefined>();
   const [isSearching, setIsSearching] = useState(false);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [categoryProgress, setCategoryProgress] = useState<{completed: number, total: number}>({ completed: 0, total: 0 });
 
   const userId = user?.id;
@@ -76,6 +78,30 @@ export default function QuestionListScreen() {
     });
   };
 
+  const handleSearchQuery = useCallback((text: string) => {
+    setSearchQuery(text);
+
+    // Clear any pending debounce
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    if (!text.trim()) {
+      setIsSearching(false);
+      fetchQuestions({
+        category: selectedCategory,
+        difficulty: selectedDifficulty,
+      });
+      return;
+    }
+
+    // Debounce the search by 300ms
+    searchDebounceRef.current = setTimeout(async () => {
+      setIsSearching(true);
+      await searchQuestions(text);
+    }, 300);
+  }, [selectedCategory, selectedDifficulty, fetchQuestions, searchQuestions]);
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       setIsSearching(false);
@@ -90,6 +116,9 @@ export default function QuestionListScreen() {
   const handleClearSearch = () => {
     setSearchQuery('');
     setIsSearching(false);
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
     loadQuestions();
   };
 
@@ -129,17 +158,25 @@ export default function QuestionListScreen() {
 
       {/* Search bar - bordered */}
       <View style={styles.searchContainer}>
-        <TouchableOpacity 
-          style={styles.searchBar}
-          onPress={handleSearch}
-        >
+        <View style={styles.searchBar}>
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={handleSearchQuery}
+            onSubmitEditing={handleSearch}
+            placeholder="Search questions..."
+            placeholderTextColor={theme.colors.text.disabled}
+            returnKeyType="search"
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="never"
+          />
           {searchQuery ? (
-            <Text style={styles.searchClear} onPress={handleClearSearch}>✕</Text>
+            <TouchableOpacity onPress={handleClearSearch} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={styles.searchClear}>✕</Text>
+            </TouchableOpacity>
           ) : null}
-          <Text style={searchQuery ? styles.searchText : styles.searchPlaceholder}>
-            {searchQuery || 'Search...'}
-          </Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* Filter chips - bordered boxes */}
@@ -276,21 +313,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing[4],
     paddingVertical: theme.spacing[3],
   },
-  searchText: {
+  searchInput: {
+    flex: 1,
     fontSize: theme.typography.body.md.fontSize,
     color: theme.colors.text.primary,
-    flex: 1,
-  },
-  searchPlaceholder: {
-    fontSize: theme.typography.body.md.fontSize,
-    color: theme.colors.text.disabled,
-    flex: 1,
+    padding: 0,
+    margin: 0,
   },
   searchClear: {
     fontSize: theme.typography.body.md.fontSize,
     color: theme.colors.text.primary,
-    marginRight: theme.spacing[3],
     fontWeight: theme.swiss.fontWeight.medium,
+    paddingLeft: theme.spacing[3],
   },
   
   // Filters - Swiss bordered
